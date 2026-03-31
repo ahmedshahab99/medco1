@@ -30,10 +30,12 @@ export type PatientStatus = "active" | "inactive";
 export type PatientFile = {
   id: string;
   name: string;
-  type: "image" | "pdf" | "lab" | "other";
+  type: "image" | "pdf" | "lab" | "other" | "docx";
   size: string;
   date: string;
   url?: string;
+  appointmentId?: string;
+  uploaderName?: string;
 };
 
 export type MedicalNote = {
@@ -41,7 +43,9 @@ export type MedicalNote = {
   appointmentId: string;
   content: string;
   createdAt: string;
+  updatedAt?: string;
   doctorName: string;
+  doctorAvatar?: string;
 };
 
 export type CommunicationLog = {
@@ -55,11 +59,13 @@ export type CommunicationLog = {
 export type VisitRecord = {
   id: string;
   date: string;
+  time: string;
   service: string;
   doctor: string;
-  status: "completed" | "no_show" | "cancelled";
-  noteId?: string;
-  hasFiles?: boolean;
+  doctorAvatar?: string;
+  status: "completed" | "no_show" | "cancelled" | "confirmed";
+  noteIds?: string[];
+  fileIds?: string[];
 };
 
 export type Patient = {
