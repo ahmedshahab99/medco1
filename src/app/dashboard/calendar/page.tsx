@@ -7,7 +7,7 @@ import {
   XCircle, AlertCircle, Phone, FileText, Paperclip 
 } from "lucide-react";
 import { format, addDays, subDays, isSameDay, startOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth } from "date-fns";
-import { arSA } from "date-fns/locale";
+import { arSA } from "date-fns/locale/ar-SA";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
