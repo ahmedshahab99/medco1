@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
+import { useState, useEffect } from "react";
 
 type Lang = "ar" | "en";
 
@@ -48,7 +47,7 @@ const T = {
     orContinue: "or",
     trust: ["🔒 Secure & Encrypted", "✅ Data Protected", "🌐 Access Anywhere"],
     errors: {
-      softIdentifierRequired: "Please enter your email or phone number",
+      identifierRequired: "Please enter your email or phone number",
       passwordRequired: "Please enter your password",
       invalidCredentials: "Invalid credentials, please try again",
     },
@@ -56,7 +55,7 @@ const T = {
   },
 };
 
-export default function LoginPage() {
+export default function DigitalClinicLogin() {
   const [lang, setLang] = useState<Lang>("ar");
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -122,8 +121,8 @@ export default function LoginPage() {
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
-    if (!identifier.trim()) newErrors.identifier = lang === "ar" ? T.ar.errors.identifierRequired : T.en.errors.softIdentifierRequired;
-    if (!password.trim()) newErrors.password = lang === "ar" ? T.ar.errors.passwordRequired : T.en.errors.passwordRequired;
+    if (!identifier.trim()) newErrors.identifier = t.errors.identifierRequired;
+    if (!password.trim()) newErrors.password = t.errors.passwordRequired;
     return newErrors;
   };
 
@@ -163,17 +162,17 @@ export default function LoginPage() {
       {/* ── NAVBAR ── */}
       <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(6,13,24,0.95)", backdropFilter: "blur(20px)", borderBottom: `1px solid ${C.border}`, padding: "0" }}>
         <div style={{ ...container, display: "flex", alignItems: "center", justifyContent: "space-between", height: 64 }}>
-          <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{ width: 36, height: 36, borderRadius: 10, background: `linear-gradient(135deg,${C.blue},${C.teal})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, animation: "glow 3s ease-in-out infinite" }}>🏥</div>
             <span style={{ fontSize: 18, fontWeight: 900, color: C.white }}>{t.brand}</span>
-          </Link>
-          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-            <Link href="/" style={{ fontSize: 13, fontWeight: 700, color: C.muted, textDecoration: "none", fontFamily: "'Cairo','Syne',sans-serif" }}>
+          </div>
+          <div style={{ display: "flex", gap: 12 }}>
+            <a href="#" style={{ fontSize: 13, fontWeight: 700, color: C.muted, background: "none", border: "none", cursor: "pointer", fontFamily: "'Cairo','Syne',sans-serif", textDecoration: "none" }}>
               {lang === "ar" ? "الرئيسية" : "Home"}
-            </Link>
-            <Link href="/signup" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 20px", borderRadius: 50, fontSize: 13, fontWeight: 800, border: "none", background: `linear-gradient(135deg, ${C.blue}, #2563eb)`, color: "#fff", fontFamily: "'Cairo','Syne',sans-serif", boxShadow: "0 4px 16px rgba(26,111,186,0.4)", textDecoration: "none" }}>
+            </a>
+            <button style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 20px", borderRadius: 50, fontSize: 13, fontWeight: 800, border: "none", background: `linear-gradient(135deg, ${C.blue}, #2563eb)`, color: "#fff", fontFamily: "'Cairo','Syne',sans-serif", boxShadow: "0 4px 16px rgba(26,111,186,0.4)" }}>
               {lang === "ar" ? "إنشاء حساب" : "Sign Up"}
-            </Link>
+            </button>
           </div>
         </div>
       </nav>
@@ -194,7 +193,7 @@ export default function LoginPage() {
                   {t.badge}
                 </div>
 
-                <h1 style={{ fontSize: 48, fontWeight: 900, color: C.white, lineHeight: 1.15, marginBottom: 20 }}>
+                <h1 style={{ fontSize: 52, fontWeight: 900, color: C.white, lineHeight: 1.15, marginBottom: 20 }}>
                   {t.title}
                   <br />
                   <span className="gradient-text">{lang === "ar" ? "بعيادتك الرقمية" : "to Your Digital Clinic"}</span>
@@ -335,9 +334,9 @@ export default function LoginPage() {
                     {/* Sign up link */}
                     <div style={{ textAlign: "center", fontSize: 14, color: C.muted }}>
                       {t.noAccount}{" "}
-                      <Link href="/signup" style={{ background: "none", border: "none", color: C.blue, fontWeight: 800, fontSize: 14, fontFamily: "'Cairo','Syne',sans-serif", textDecoration: "none" }}>
+                      <button style={{ background: "none", border: "none", color: C.blue, fontWeight: 800, fontSize: 14, fontFamily: "'Cairo','Syne',sans-serif" }}>
                         {t.signup}
-                      </Link>
+                      </button>
                     </div>
                   </div>
                 )}

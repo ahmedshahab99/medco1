@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 
 type Lang = "ar" | "en";
 
@@ -125,7 +124,7 @@ function getPasswordStrength(password: string): number {
   return score;
 }
 
-export default function SignupPage() {
+export default function DigitalClinicSignup() {
   const [lang, setLang] = useState<Lang>("ar");
   const [form, setForm] = useState({ fullName: "", email: "", phone: "", password: "", confirmPassword: "" });
   const [showPassword, setShowPassword] = useState(false);
@@ -274,15 +273,15 @@ export default function SignupPage() {
       {/* ── NAVBAR ── */}
       <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(6,13,24,0.95)", backdropFilter: "blur(20px)", borderBottom: `1px solid ${C.border}` }}>
         <div style={{ ...container, display: "flex", alignItems: "center", justifyContent: "space-between", height: 64 }}>
-          <Link href="/" style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{ width: 36, height: 36, borderRadius: 10, background: `linear-gradient(135deg,${C.blue},${C.teal})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, animation: "glow 3s ease-in-out infinite" }}>🏥</div>
             <span style={{ fontSize: 18, fontWeight: 900, color: C.white }}>{t.brand}</span>
-          </Link>
+          </div>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
             <span style={{ fontSize: 13, color: C.muted }}>{t.hasAccount}</span>
-            <Link href="/login" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 20px", borderRadius: 50, fontSize: 13, fontWeight: 800, border: `2px solid rgba(255,255,255,0.2)`, background: "rgba(255,255,255,0.05)", color: C.white, fontFamily: "'Cairo','Syne',sans-serif", textDecoration: "none" }}>
+            <button style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 20px", borderRadius: 50, fontSize: 13, fontWeight: 800, border: `2px solid rgba(255,255,255,0.2)`, background: "rgba(255,255,255,0.05)", color: C.white, fontFamily: "'Cairo','Syne',sans-serif" }}>
               {t.login}
-            </Link>
+            </button>
           </div>
         </div>
       </nav>
@@ -357,11 +356,6 @@ export default function SignupPage() {
                       {lang === "ar" ? "أهلاً بك في العيادة الرقمية!" : "Welcome to Digital Clinic!"}
                     </h3>
                     <div style={{ fontSize: 14, fontWeight: 600, color: C.green, lineHeight: 1.7 }}>{t.success}</div>
-                    <div style={{ marginTop: 24 }}>
-                      <Link href="/login" style={{ color: C.blue, fontWeight: 800, textDecoration: "none" }}>
-                        {lang === "ar" ? "تسجيل الدخول الآن" : "Sign In Now"}
-                      </Link>
-                    </div>
                   </div>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
@@ -512,9 +506,9 @@ export default function SignupPage() {
                     {/* Login link */}
                     <div style={{ textAlign: "center", fontSize: 14, color: C.muted, paddingTop: 4 }}>
                       {t.hasAccount}{" "}
-                      <Link href="/login" style={{ background: "none", border: "none", color: C.blue, fontWeight: 800, fontSize: 14, fontFamily: "'Cairo','Syne',sans-serif", textDecoration: "none" }}>
+                      <button style={{ background: "none", border: "none", color: C.blue, fontWeight: 800, fontSize: 14, fontFamily: "'Cairo','Syne',sans-serif" }}>
                         {t.login}
-                      </Link>
+                      </button>
                     </div>
                   </div>
                 )}
