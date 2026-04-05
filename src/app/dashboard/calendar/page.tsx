@@ -172,7 +172,7 @@ const STATUS_MAP: Record<ApptStatus, { label: string, icon: React.ElementType, b
   confirmed: { label: "مؤكد", icon: CheckCircle, badgeClass: "bg-blue-100 text-blue-700" },
   pending: { label: "قيد الانتظار", icon: Clock, badgeClass: "bg-amber-100 text-amber-700" },
   arrived: { label: "تم الوصول", icon: User, badgeClass: "bg-emerald-100 text-emerald-700" },
-  no_show: { label: "لم يحضر", icon: AlertCircle, badgeClass: "bg-slate-100 text-slate-700" },
+  no_show: { label: "لم يحضر", icon: AlertCircle, badgeClass: "bg-red-100 text-red-700" },
   cancelled: { label: "ملغي", icon: XCircle, badgeClass: "bg-red-100 text-red-700" },
 };
 
@@ -242,10 +242,10 @@ export default function CalendarPage() {
     }
   };
 
-  const handleArrived = (appt: Appointment) => updateAppointment(appt.id, { status: "arrived" });
-  const handleNoShow = (appt: Appointment) => updateAppointment(appt.id, { status: "no_show" });
+  const handleArrived = (appt: Appointment) => updateAppointment(appt.id, { status: "arrived", colorClass: "bg-emerald-600 border-emerald-700 text-white" });
+  const handleNoShow = (appt: Appointment) => updateAppointment(appt.id, { status: "no_show", colorClass: "bg-red-600 border-red-700 text-white" });
   const handleCancelAppt = (apptId: string) => {
-    updateAppointment(apptId, { status: "cancelled" });
+    updateAppointment(apptId, { status: "cancelled", colorClass: "bg-red-500 border-red-600 text-white" });
     setSelectedAppt(null);
   };
   const handleArchiveAppt = (apptId: string) => {
@@ -307,7 +307,7 @@ export default function CalendarPage() {
     // Only allow interactions in 'day' view
     if (viewMode !== 'day') return;
     // Only allow drag/resize for certain statuses
-    if (appt.status === 'cancelled' || appt.status === 'no_show') return;
+    if (appt.status === 'cancelled') return;
     
     e.stopPropagation();
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
@@ -745,7 +745,7 @@ export default function CalendarPage() {
                         )}
 
                         {/* Resize Handle */}
-                        {!['cancelled', 'no_show'].includes(appt.status) && (
+                        {appt.status !== 'cancelled' && (
                           <div 
                             className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize hover:bg-black/5 flex items-center justify-center group"
                             onPointerDown={(e) => onInteractionStart(e, appt, 'resize')}
