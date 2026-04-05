@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { 
   ChevronRight, ChevronLeft, Calendar as CalendarIcon, 
   Filter, Plus, Search, User, Clock, CheckCircle, 
-  XCircle, AlertCircle, Phone, FileText, Paperclip 
+  XCircle, AlertCircle, Phone, FileText, Paperclip,
+  Users, Trash2, Edit2, PlusCircle, ArrowRight,
+  CreditCard, Wallet, RotateCcw, Archive
 } from "lucide-react";
 import { format, addDays, subDays, isSameDay, startOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth } from "date-fns";
 import { arSA } from "date-fns/locale/ar-SA";
@@ -27,7 +29,33 @@ interface Appointment {
   startTime: Date;
   endTime: Date;
   notes?: string;
+  treatmentNote?: string;
+  appointmentNumber?: number;
+  caseName?: string;
   colorClass: string;
+}
+
+type InteractionType = 'drag' | 'resize';
+
+interface InteractionState {
+  apptId: string;
+  type: InteractionType;
+  startPointerY: number;
+  startPointerX: number;
+  originalStartTime: Date;
+  originalEndTime: Date;
+  currentStartTime: Date;
+  currentEndTime: Date;
+  currentDayIndex?: number; // for week view
+}
+
+interface WaitlistEntry {
+  id: string;
+  patientName: string;
+  patientPhone: string;
+  appointmentType: string;
+  notes?: string;
+  addedAt: Date;
 }
 
 // ------------- MOCK DATA -------------
@@ -44,7 +72,10 @@ const MOCK_APPOINTMENTS: Appointment[] = [
     startTime: new Date(today.setHours(9, 0, 0, 0)),
     endTime: new Date(today.setHours(9, 45, 0, 0)),
     notes: "المريض يعاني من ألم متقطع في الصدر.",
-    colorClass: "bg-blue-50 border-blue-200 text-blue-700",
+    treatmentNote: "ضغط الدم 140/90. تم طلب فحوصات إضافية.",
+    appointmentNumber: 1,
+    caseName: "متابعة ضغط الدم",
+    colorClass: "bg-blue-600 border-blue-700 text-white",
   },
   {
     id: "2",
@@ -54,7 +85,9 @@ const MOCK_APPOINTMENTS: Appointment[] = [
     status: "pending",
     startTime: new Date(today.setHours(11, 30, 0, 0)),
     endTime: new Date(today.setHours(12, 0, 0, 0)),
-    colorClass: "bg-amber-50 border-amber-200 text-amber-700",
+    appointmentNumber: 3,
+    caseName: "صداع نصفي مزمن",
+    colorClass: "bg-amber-500 border-amber-600 text-white",
   },
   {
     id: "3",
@@ -65,7 +98,8 @@ const MOCK_APPOINTMENTS: Appointment[] = [
     startTime: new Date(today.setHours(14, 0, 0, 0)),
     endTime: new Date(today.setHours(15, 0, 0, 0)),
     notes: "أول زيارة للمريض للعيادة.",
-    colorClass: "bg-emerald-50 border-emerald-200 text-emerald-700",
+    appointmentNumber: 1,
+    colorClass: "bg-emerald-600 border-emerald-700 text-white",
   },
   {
     id: "4",
@@ -75,9 +109,64 @@ const MOCK_APPOINTMENTS: Appointment[] = [
     status: "cancelled",
     startTime: new Date(today.setHours(16, 0, 0, 0)),
     endTime: new Date(today.setHours(16, 30, 0, 0)),
-    colorClass: "bg-red-50 border-red-200 text-red-700",
+    appointmentNumber: 2,
+    colorClass: "bg-red-500 border-red-600 text-white",
+  },
+  {
+    id: "5",
+    patientName: "ليلى أحمد",
+    patientPhone: "0555555555",
+    service: "تخطيط قلب",
+    status: "confirmed",
+    startTime: new Date(today.setHours(9, 15, 0, 0)),
+    endTime: new Date(today.setHours(10, 0, 0, 0)),
+    appointmentNumber: 1,
+    colorClass: "bg-purple-600 border-purple-700 text-white",
   }
 ];
+
+const MOCK_WAITLIST: WaitlistEntry[] = [
+  {
+    id: "w1",
+    patientName: "محمد الراجحي",
+    patientPhone: "0554433221",
+    appointmentType: "استشارة طبية عامة",
+    notes: "يفضل موعد في الفترة الصباحية",
+    addedAt: new Date(new Date().getTime() - 1000 * 60 * 120), // 2 hours ago
+  },
+  {
+    id: "w2",
+    patientName: "فاطمة الزهراء",
+    patientPhone: "0505500600",
+    appointmentType: "مراجعة نتائج",
+    addedAt: new Date(new Date().getTime() - 1000 * 60 * 45), // 45 mins ago
+  },
+  {
+    id: "w3",
+    patientName: "ياسر القحطاني",
+    patientPhone: "0567788990",
+    appointmentType: "استشارة قلبية",
+    notes: "حالة مستعجلة",
+    addedAt: new Date(new Date().getTime() - 1000 * 60 * 10), // 10 mins ago
+  }
+];
+
+const MOCK_DOCTORS = [
+  { id: "d1", name: "د. عبدالمحسن العتيبي", specialty: "استشاري قلب" },
+  { id: "d2", name: "د. سمية المطيري", specialty: "استشارية أعصاب" },
+  { id: "d3", name: "د. فيصل السعيد", specialty: "طبيب عام" },
+];
+
+const MOCK_PATIENTS = [
+  { id: "p1", name: "أحمد عبدالله", phone: "0501234567" },
+  { id: "p2", name: "سارة محمد", phone: "0509876543" },
+  { id: "p3", name: "خالد فهد", phone: "0551122334" },
+];
+
+const MOCK_CASES: Record<string, { id: string; title: string; createdAt: Date }[]> = {
+  "p1": [{ id: "c1", title: "متابعة ضغط الدم", createdAt: subDays(new Date(), 30) }],
+  "p2": [{ id: "c2", title: "صداع نصفي مزمن", createdAt: subDays(new Date(), 15) }],
+};
 
 const STATUS_MAP: Record<ApptStatus, { label: string, icon: React.ElementType, badgeClass: string }> = {
   confirmed: { label: "مؤكد", icon: CheckCircle, badgeClass: "bg-blue-100 text-blue-700" },
@@ -101,10 +190,303 @@ export default function CalendarPage() {
   
   const [isNewApptModalOpen, setIsNewApptModalOpen] = useState(false);
   const [currentTimeLine, setCurrentTimeLine] = useState<number | null>(null);
+  
+  const [interaction, setInteraction] = useState<InteractionState | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const wasMovedRef = useRef(false);
+  const blockClickRef = useRef(false);
 
-  // Filter appointments for the current day
-  const dailyAppointments = useMemo(() => {
-    return appointments.filter(appt => isSameDay(appt.startTime, currentDate));
+  // Waitlist State
+  const [isWaitlistModalOpen, setIsWaitlistModalOpen] = useState(false);
+  const [waitlist, setWaitlist] = useState<WaitlistEntry[]>(MOCK_WAITLIST);
+  const [isAddingWaitlist, setIsAddingWaitlist] = useState(false);
+  const [editingWaitlistId, setEditingWaitlistId] = useState<string | null>(null);
+  
+  // Waitlist Form State (for simple waitlist modal)
+  const [waitlistForm, setWaitlistForm] = useState({
+    patientName: "",
+    patientPhone: "",
+    appointmentType: "استشارة طبية عامة",
+    notes: "",
+    isNewPatient: false
+  });
+
+  // NEW APPOINTMENT FORM STATE
+  const [newApptForm, setNewApptForm] = useState({
+    doctorId: MOCK_DOCTORS[0].id,
+    appointmentType: "استشارة طبية عامة (30 دقيقة)",
+    patientMode: "existing" as 'existing' | 'new' | 'waitlist',
+    patientId: "", 
+    waitlistId: "",
+    newPatientName: "",
+    newPatientPhone: "",
+    caseMode: "existing" as 'existing' | 'new',
+    caseId: "",
+    newCaseTitle: "",
+    newCaseNote: "",
+    date: format(currentDate, "yyyy-MM-dd"),
+    startTime: "09:00",
+    notes: ""
+  });
+
+  // Modal Panel State
+  const [apptDetailPanel, setApptDetailPanel] = useState<'none' | 'payment' | 'notes' | 'reschedule'>('none');
+  const [tempTreatmentNote, setTempTreatmentNote] = useState("");
+  const [rescheduleData, setRescheduleData] = useState({ date: "", time: "" });
+
+  // Update functions
+  const updateAppointment = (id: string, updates: Partial<Appointment>) => {
+    setAppointments(prev => prev.map(a => a.id === id ? { ...a, ...updates } : a));
+    if (selectedAppt?.id === id) {
+      setSelectedAppt(prev => prev ? { ...prev, ...updates } : null);
+    }
+  };
+
+  const handleArrived = (appt: Appointment) => updateAppointment(appt.id, { status: "arrived" });
+  const handleNoShow = (appt: Appointment) => updateAppointment(appt.id, { status: "no_show" });
+  const handleCancelAppt = (apptId: string) => {
+    updateAppointment(apptId, { status: "cancelled" });
+    setSelectedAppt(null);
+  };
+  const handleArchiveAppt = (apptId: string) => {
+    setAppointments(prev => prev.filter(a => a.id !== apptId));
+    setSelectedAppt(null);
+  };
+
+  const saveTreatmentNote = () => {
+    if (selectedAppt) {
+      updateAppointment(selectedAppt.id, { treatmentNote: tempTreatmentNote });
+      setApptDetailPanel('none');
+    }
+  };
+
+  useEffect(() => {
+    if (selectedAppt) {
+      setTempTreatmentNote(selectedAppt.treatmentNote || "");
+      setApptDetailPanel('none');
+    }
+  }, [selectedAppt]);
+
+  // Sync date when currentDate changes
+  useEffect(() => {
+    setNewApptForm(prev => ({ ...prev, date: format(currentDate, "yyyy-MM-dd") }));
+  }, [currentDate]);
+
+  // ------------- HELPERS -------------
+
+  const snapToQuarter = (date: Date): Date => {
+    const minutes = date.getMinutes();
+    const snappedMinutes = Math.round(minutes / 15) * 15;
+    const newDate = new Date(date);
+    newDate.setMinutes(snappedMinutes);
+    newDate.setSeconds(0);
+    newDate.setMilliseconds(0);
+    return newDate;
+  };
+
+  const pixelsToTime = (y: number, baseDate: Date): Date => {
+    const hoursDecimal = (y / HOUR_HEIGHT) + START_HOUR;
+    const hours = Math.floor(hoursDecimal);
+    const minutes = Math.round((hoursDecimal - hours) * 60);
+    
+    const date = new Date(baseDate);
+    date.setHours(hours, minutes, 0, 0);
+    return date;
+  };
+
+  const getTimeFromPointer = (e: React.PointerEvent | PointerEvent, baseDate: Date) => {
+    if (!containerRef.current) return baseDate;
+    const rect = containerRef.current.getBoundingClientRect();
+    const y = e.clientY - rect.top + containerRef.current.scrollTop;
+    return pixelsToTime(y, baseDate);
+  };
+
+  // ------------- EVENT HANDLERS -------------
+
+  const onInteractionStart = (e: React.PointerEvent, appt: Appointment, type: InteractionType) => {
+    // Only allow interactions in 'day' view
+    if (viewMode !== 'day') return;
+    // Only allow drag/resize for certain statuses
+    if (appt.status === 'cancelled' || appt.status === 'no_show') return;
+    
+    e.stopPropagation();
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+
+    setInteraction({
+      apptId: appt.id,
+      type,
+      startPointerY: e.clientY,
+      startPointerX: e.clientX,
+      originalStartTime: new Date(appt.startTime),
+      originalEndTime: new Date(appt.endTime),
+      currentStartTime: new Date(appt.startTime),
+      currentEndTime: new Date(appt.endTime),
+    });
+  };
+
+  const onInteractionMove = useCallback((e: PointerEvent) => {
+    if (!interaction) return;
+
+    if (!wasMovedRef.current) {
+        // Small threshold to prevent unintended drag detection
+        if (Math.abs(e.clientY - interaction.startPointerY) > 5) {
+            wasMovedRef.current = true;
+        }
+    }
+
+    const deltaY = e.clientY - interaction.startPointerY;
+    const deltaH = (deltaY / HOUR_HEIGHT);
+    const deltaMs = deltaH * 60 * 60 * 1000;
+
+    if (interaction.type === 'drag') {
+      const newStart = new Date(interaction.originalStartTime.getTime() + deltaMs);
+      const duration = interaction.originalEndTime.getTime() - interaction.originalStartTime.getTime();
+      
+      // Snapping
+      const snappedStart = snapToQuarter(newStart);
+      
+      // Clamping to grid hours
+      const gridStart = new Date(snappedStart);
+      gridStart.setHours(START_HOUR, 0, 0, 0);
+      const gridEnd = new Date(snappedStart);
+      gridEnd.setHours(END_HOUR, 0, 0, 0);
+      
+      let finalStart = snappedStart;
+      if (finalStart.getHours() < START_HOUR) {
+        finalStart = new Date(finalStart);
+        finalStart.setHours(START_HOUR, 0, 0, 0);
+      }
+      const potentialEnd = new Date(finalStart.getTime() + duration);
+      if (potentialEnd.getHours() > END_HOUR || (potentialEnd.getHours() === END_HOUR && potentialEnd.getMinutes() > 0)) {
+          finalStart = new Date(potentialEnd);
+          finalStart.setHours(END_HOUR, 0, 0, 0);
+          finalStart = new Date(finalStart.getTime() - duration);
+      }
+
+      setInteraction(prev => prev ? {
+        ...prev,
+        currentStartTime: finalStart,
+        currentEndTime: new Date(finalStart.getTime() + duration)
+      } : null);
+
+    } else if (interaction.type === 'resize') {
+      const newEnd = new Date(interaction.originalEndTime.getTime() + deltaMs);
+      const minEnd = new Date(interaction.originalStartTime.getTime() + 15 * 60 * 1000); // min 15 min
+      
+      const snappedEnd = snapToQuarter(newEnd);
+      
+      const gridEnd = new Date(interaction.originalStartTime);
+      gridEnd.setHours(END_HOUR, 0, 0, 0);
+
+      let finalEnd = snappedEnd;
+      if (finalEnd < minEnd) finalEnd = minEnd;
+      if (finalEnd > gridEnd) finalEnd = gridEnd;
+
+      setInteraction(prev => prev ? {
+        ...prev,
+        currentEndTime: finalEnd
+      } : null);
+    }
+  }, [interaction]);
+
+  const onInteractionEnd = useCallback((e: PointerEvent) => {
+    if (!interaction) return;
+
+    if (wasMovedRef.current) {
+      blockClickRef.current = true;
+      setAppointments(prev => prev.map(appt => {
+        if (appt.id === interaction.apptId) {
+          return {
+            ...appt,
+            startTime: interaction.currentStartTime,
+            endTime: interaction.currentEndTime
+          };
+        }
+        return appt;
+      }));
+    }
+
+    setInteraction(null);
+    wasMovedRef.current = false;
+  }, [interaction]);
+
+  useEffect(() => {
+    if (interaction) {
+      window.addEventListener('pointermove', onInteractionMove);
+      window.addEventListener('pointerup', onInteractionEnd);
+    } else {
+      window.removeEventListener('pointermove', onInteractionMove);
+      window.removeEventListener('pointerup', onInteractionEnd);
+    }
+    return () => {
+      window.removeEventListener('pointermove', onInteractionMove);
+      window.removeEventListener('pointerup', onInteractionEnd);
+    };
+  }, [interaction, onInteractionMove, onInteractionEnd]);
+
+  // Filter and process layout for Day view appointments
+  const dailyAppointmentsWithLayout = useMemo(() => {
+    // 1. Filter for current day
+    const dayAppts = appointments.filter(appt => isSameDay(appt.startTime, currentDate));
+    
+    // 2. Sort by start time, then duration
+    const sorted = [...dayAppts].sort((a, b) => {
+      const startDiff = a.startTime.getTime() - b.startTime.getTime();
+      if (startDiff !== 0) return startDiff;
+      return (b.endTime.getTime() - b.startTime.getTime()) - (a.endTime.getTime() - a.startTime.getTime());
+    });
+
+    const columns: Appointment[][] = [];
+    const results: (Appointment & { columnIndex: number; totalColumns: number })[] = [];
+
+    // 3. Assign each appt to a column greedily
+    sorted.forEach(appt => {
+      let placed = false;
+      for (let i = 0; i < columns.length; i++) {
+        const lastApptInCol = columns[i][columns[i].length - 1];
+        if (appt.startTime.getTime() >= lastApptInCol.endTime.getTime()) {
+          columns[i].push(appt);
+          // Temporary placeholder for final column count
+          results.push({ ...appt, columnIndex: i, totalColumns: 0 });
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) {
+        results.push({ ...appt, columnIndex: columns.length, totalColumns: 0 });
+        columns.push([appt]);
+      }
+    });
+
+    // 4. Calculate total columns for overlapping clusters
+    // This is a simple cluster-based approach:
+    // Any group of overlapping appointments shares the max columns within that cluster.
+    let clusterStart = 0;
+    let maxClusterEndTime = 0;
+
+    for (let i = 0; i < results.length; i++) {
+        const appt = results[i];
+        if (appt.startTime.getTime() >= maxClusterEndTime) {
+            // New cluster found, process previous cluster
+            const cluster = results.slice(clusterStart, i);
+            const totalCols = cluster.reduce((max, a) => Math.max(max, a.columnIndex + 1), 0);
+            for (let j = clusterStart; j < i; j++) {
+                results[j].totalColumns = totalCols;
+            }
+            clusterStart = i;
+            maxClusterEndTime = appt.endTime.getTime();
+        } else {
+            maxClusterEndTime = Math.max(maxClusterEndTime, appt.endTime.getTime());
+        }
+    }
+    // Process final cluster
+    const lastCluster = results.slice(clusterStart);
+    const lastTotalCols = lastCluster.reduce((max, a) => Math.max(max, a.columnIndex + 1), 0);
+    for (let j = clusterStart; j < results.length; j++) {
+        results[j].totalColumns = lastTotalCols;
+    }
+
+    return results;
   }, [appointments, currentDate]);
 
   // Update real-time line
@@ -205,6 +587,20 @@ export default function CalendarPage() {
 
         {/* Right: Actions */}
         <div className="flex items-center gap-3">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="gap-2 text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700"
+            onClick={() => setIsWaitlistModalOpen(true)}
+          >
+            <Users className="w-4 h-4" />
+            <span className="hidden sm:inline">قائمة الانتظار</span>
+            {waitlist.length > 0 && (
+              <span className="bg-amber-500 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                {waitlist.length}
+              </span>
+            )}
+          </Button>
           <Button variant="outline" size="sm" className="gap-2">
             <Filter className="w-4 h-4" />
             فلترة
@@ -221,7 +617,7 @@ export default function CalendarPage() {
         
         {/* DAY VIEW SCOPE */}
         {viewMode === "day" && (
-          <div className="flex-1 overflow-y-auto custom-scrollbar relative">
+          <div className="flex-1 overflow-y-auto custom-scrollbar relative" ref={containerRef}>
             <div className="min-w-[800px]">
               {/* Header row for 'Day' view is practically just spacing over the timeline */}
               <div className="sticky top-0 bg-white/95 backdrop-blur z-20 flex border-b border-slate-100">
@@ -289,36 +685,53 @@ export default function CalendarPage() {
                   )}
 
                   {/* Render Appointments */}
-                  {dailyAppointments.map((appt) => {
-                    // Calculation for Y and Height
-                    const startH = appt.startTime.getHours() + (appt.startTime.getMinutes() / 60);
-                    const endH = appt.endTime.getHours() + (appt.endTime.getMinutes() / 60);
+                  {dailyAppointmentsWithLayout.map((appt) => {
+                    const isInteracting = interaction?.apptId === appt.id;
+                    const displayStart = isInteracting ? interaction.currentStartTime : appt.startTime;
+                    const displayEnd = isInteracting ? interaction.currentEndTime : appt.endTime;
+
+                    const startH = displayStart.getHours() + (displayStart.getMinutes() / 60);
+                    const endH = displayEnd.getHours() + (displayEnd.getMinutes() / 60);
                     
-                    if (startH < START_HOUR || startH > END_HOUR) return null; // out of scope
+                    if (startH < START_HOUR || startH > END_HOUR) return null;
                     
                     const topOffset = (startH - START_HOUR) * HOUR_HEIGHT;
-                    const durationInH = endH - startH;
-                    const height = durationInH * HOUR_HEIGHT;
+                    const height = (endH - startH) * HOUR_HEIGHT;
                     const StatusIcon = STATUS_MAP[appt.status].icon;
+
+                    // Compute layout with shared width
+                    // If interacting, we go full width for visibility (optional) or stick with shared width
+                    const widthPercent = isInteracting ? 96 : (100 / appt.totalColumns);
+                    const rightPercent = isInteracting ? 2 : (appt.columnIndex * widthPercent);
 
                     return (
                       <div
                         key={appt.id}
-                        className={`absolute right-4 left-4 rounded-xl border p-3 flex flex-col overflow-hidden transition-all hover:shadow-md hover:z-20 cursor-pointer shadow-sm ${appt.colorClass}`}
-                        style={{ top: `${topOffset}px`, height: `${height}px` }}
+                        className={`absolute rounded-xl border p-3 flex flex-col overflow-hidden transition-all hover:shadow-md cursor-grab active:cursor-grabbing shadow-sm ${appt.colorClass} ${isInteracting ? 'opacity-40 z-50 scale-[0.98]' : 'hover:z-20'}`}
+                        style={{ 
+                            top: `${topOffset}px`, 
+                            height: `${height}px`,
+                            width: `calc(${widthPercent}% - ${appt.totalColumns > 1 ? '12px' : '32px'})`,
+                            right: `calc(${rightPercent}% + ${appt.totalColumns > 1 ? '6px' : '16px'})`,
+                        }}
                         onClick={(e) => {
                           e.stopPropagation();
+                          if (blockClickRef.current) {
+                            blockClickRef.current = false;
+                            return;
+                          }
                           setSelectedAppt(appt);
                         }}
+                        onPointerDown={(e) => onInteractionStart(e, appt, 'drag')}
                       >
                         <div className="flex justify-between items-start mb-1 h-full flex-col sm:flex-row gap-1">
-                           <div>
+                           <div className="select-none">
                              <h4 className="font-bold text-sm line-clamp-1">{appt.patientName}</h4>
                              <p className="text-xs font-medium opacity-80 mt-0.5 line-clamp-1">{appt.service}</p>
                            </div>
-                           <div className="flex flex-col items-end gap-1 shrink-0">
+                           <div className="flex flex-col items-end gap-1 shrink-0 select-none">
                               <span className="text-xs font-semibold whitespace-nowrap bg-white/50 px-2 py-0.5 rounded-md">
-                                {format(appt.startTime, "h:mm a")} - {format(appt.endTime, "h:mm a")}
+                                {format(displayStart, "h:mm a")} - {format(displayEnd, "h:mm a")}
                               </span>
                               {height > 60 && (
                                 <StatusIcon className="w-4 h-4 opacity-70 mt-1" />
@@ -326,13 +739,45 @@ export default function CalendarPage() {
                            </div>
                         </div>
                         {height > 100 && appt.notes && (
-                          <div className="mt-auto pt-2 border-t border-current/10">
+                          <div className="mt-auto pt-2 border-t border-current/10 select-none">
                             <p className="text-xs opacity-80 line-clamp-2">{appt.notes}</p>
+                          </div>
+                        )}
+
+                        {/* Resize Handle */}
+                        {!['cancelled', 'no_show'].includes(appt.status) && (
+                          <div 
+                            className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize hover:bg-black/5 flex items-center justify-center group"
+                            onPointerDown={(e) => onInteractionStart(e, appt, 'resize')}
+                          >
+                            <div className="w-8 h-1 bg-current opacity-20 rounded-full group-hover:opacity-40" />
                           </div>
                         )}
                       </div>
                     );
                   })}
+
+                  {/* Drag/Resize Ghost Overlay */}
+                  {interaction && isSameDay(interaction.currentStartTime, currentDate) && (
+                    <div 
+                      className="absolute rounded-xl border-2 border-dashed border-blue-400 bg-blue-50/20 pointer-events-none z-50 flex flex-col p-3"
+                      style={{ 
+                        top: `${(interaction.currentStartTime.getHours() + interaction.currentStartTime.getMinutes()/60 - START_HOUR) * HOUR_HEIGHT}px`,
+                        height: `${(interaction.currentEndTime.getTime() - interaction.currentStartTime.getTime()) / (1000 * 60 * 60) * HOUR_HEIGHT}px`,
+                        width: 'calc(100% - 32px)',
+                        right: '16px'
+                      }}
+                    >
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-bold text-blue-600 bg-white px-2 py-0.5 rounded shadow-sm border border-blue-100">
+                          {format(interaction.currentStartTime, "h:mm a")}
+                        </span>
+                        <span className="text-xs font-bold text-blue-600 bg-white px-2 py-0.5 rounded shadow-sm border border-blue-100">
+                          {format(interaction.currentEndTime, "h:mm a")}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -568,117 +1013,676 @@ export default function CalendarPage() {
 
       {/* ----------------- MODALS ----------------- */}
       
-      {/* Appointment Detail Modal */}
-      <Modal isOpen={!!selectedAppt} onClose={() => setSelectedAppt(null)} title="تفاصيل الموعد">
-        {selectedAppt && (
-          <div className="space-y-6">
-            <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
-               <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold text-xl shrink-0">
-                 {selectedAppt.patientName.charAt(0)}
-               </div>
-               <div className="flex-1">
-                 <h3 className="font-bold text-slate-900 text-lg">{selectedAppt.patientName}</h3>
-                 <p className="text-slate-500 text-sm flex items-center gap-1 mt-0.5">
-                   <Phone className="w-3.5 h-3.5" />
-                   <span dir="ltr">{selectedAppt.patientPhone}</span>
-                 </p>
-               </div>
-               <div className={`px-3 py-1 rounded-full flex items-center gap-1.5 text-sm font-semibold ${STATUS_MAP[selectedAppt.status].badgeClass}`}>
-                  {React.createElement(STATUS_MAP[selectedAppt.status].icon, { className: "w-4 h-4" })}
-                  {STATUS_MAP[selectedAppt.status].label}
-               </div>
+      {/* Appointment Detail Modal Redesign */}
+      {selectedAppt && (
+        <Modal 
+          isOpen={!!selectedAppt} 
+          onClose={() => setSelectedAppt(null)} 
+          hideHeader
+          width="max-w-2xl"
+        >
+          <div className="flex flex-col shadow-2xl rounded-2xl overflow-hidden bg-white">
+            {/* 1. Colored Header */}
+            <div className={`${selectedAppt.colorClass} p-6 border-b`}>
+              <div className="flex justify-between items-start mb-4">
+                <h2 className="text-2xl font-bold">{selectedAppt.service.split('(')[0].trim() || "موعد"}</h2>
+                <button 
+                   onClick={() => setSelectedAppt(null)}
+                   className="p-1 hover:bg-white/20 rounded-full transition-colors"
+                >
+                  <XCircle className="w-6 h-6" />
+                </button>
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-xl font-semibold opacity-95">{selectedAppt.patientName}</h3>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-medium opacity-90">
+                  <span className="flex items-center gap-1.5">
+                    <CalendarIcon className="w-4 h-4" />
+                    {format(selectedAppt.startTime, "EEEE، d MMMM yyyy", { locale: arSA })}
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <Clock className="w-4 h-4" />
+                    في {format(selectedAppt.startTime, "hh:mm a")} لمدة {Math.round((selectedAppt.endTime.getTime() - selectedAppt.startTime.getTime()) / 60000)} دقيقة
+                  </span>
+                </div>
+              </div>
             </div>
 
-            {/* Mock Tabs Structure */}
-            <div className="flex border-b border-slate-100">
-              <button className="px-4 py-2 text-sm font-semibold text-blue-600 border-b-2 border-blue-600">التفاصيل</button>
-              <button className="px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-700 hover:border-b-2 hover:border-slate-300 transition-colors">ملاحظات الطبيب</button>
-              <button className="px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-700 hover:border-b-2 hover:border-slate-300 transition-colors">الملفات</button>
+            {/* 2. Body Grid */}
+            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8 bg-white min-h-[300px]">
+              {/* Left Column - Info */}
+              <div className="space-y-6">
+                <div>
+                  <h4 className="text-xl font-bold text-slate-800 mb-1">{selectedAppt.patientName}</h4>
+                  <div className="space-y-2.5 mt-4">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-sm font-semibold text-blue-600">الحالة</span>
+                      <a href="#" className="text-slate-700 font-medium underline hover:text-blue-700 transition-colors">
+                        {selectedAppt.caseName || "زيارة عامة"}
+                      </a>
+                    </div>
+                    <div className="text-slate-600 text-sm font-medium">
+                      الموعد رقم {selectedAppt.appointmentNumber || 1}
+                    </div>
+                    <div className="flex flex-col gap-0.5 mt-2">
+                       <span className="text-sm font-semibold text-blue-600">الموعد القادم</span>
+                       <span className="text-slate-500 font-medium">لا يوجد</span>
+                    </div>
+                    <div className="flex flex-col gap-0.5 mt-2">
+                       <span className="text-sm font-semibold text-blue-600">النماذج</span>
+                       <span className="text-slate-500 font-medium">لا يوجد</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column - Controls */}
+              <div className="space-y-3">
+                <div className="flex gap-2">
+                  <Button 
+                    className={`flex-1 gap-2 ${selectedAppt.status === 'arrived' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border-none'}`}
+                    onClick={() => handleArrived(selectedAppt)}
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                    حضر
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    className={`flex-1 gap-2 ${selectedAppt.status === 'no_show' ? 'bg-red-50 border-red-200 text-red-600' : 'text-slate-500 border-slate-200'}`}
+                    onClick={() => handleNoShow(selectedAppt)}
+                  >
+                    <XCircle className="w-4 h-4" />
+                    لم يحضر
+                  </Button>
+                </div>
+
+                <div className="pt-2">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-between items-center text-slate-700 border-slate-200 h-11"
+                    onClick={() => setApptDetailPanel(prev => prev === 'payment' ? 'none' : 'payment')}
+                  >
+                    <span className="flex items-center gap-2">إضافة دفعة (فاتورة)</span>
+                    <CreditCard className="w-4 h-4 text-slate-400" />
+                  </Button>
+                  
+                  {apptDetailPanel === 'payment' && (
+                    <div className="mt-2 p-4 bg-slate-50 rounded-xl border border-slate-200 animate-in slide-in-from-top-2 duration-200">
+                      <div className="space-y-3">
+                        <Input placeholder="المبلغ" type="number" className="bg-white" />
+                        <select className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm outline-none">
+                          <option>نقداً</option>
+                          <option>بطاقة مدى</option>
+                          <option>تحويل بنكي</option>
+                        </select>
+                        <Button className="w-full h-10 bg-blue-600" onClick={() => setApptDetailPanel('none')}>تسجيل الدفعة</Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                   <Button 
+                    variant="outline" 
+                    className="w-full justify-between items-center text-slate-700 border-slate-200 h-11"
+                    onClick={() => setApptDetailPanel(prev => prev === 'notes' ? 'none' : 'notes')}
+                  >
+                    <span className="flex items-center gap-2">ملاحظات العلاج</span>
+                    <Edit2 className="w-4 h-4 text-slate-400" />
+                  </Button>
+
+                  {apptDetailPanel === 'notes' && (
+                    <div className="mt-2 p-4 bg-slate-50 rounded-xl border border-slate-200 animate-in slide-in-from-top-2 duration-200">
+                      <Textarea 
+                        placeholder="أدخل ملاحظات العلاج هنا..." 
+                        className="bg-white min-h-[100px] mb-3 text-sm" 
+                        value={tempTreatmentNote}
+                        onChange={(e) => setTempTreatmentNote(e.target.value)}
+                      />
+                      <Button className="w-full h-10 bg-blue-600 font-bold" onClick={saveTreatmentNote}>حفظ الملاحظة</Button>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-4">
-               <div>
-                 <p className="text-sm text-slate-500 font-medium mb-1">الخدمة الطبية</p>
-                 <p className="font-semibold text-slate-800">{selectedAppt.service}</p>
+            {/* 3. Dark Footer Action Bar */}
+            <div className="bg-[#2D2431] p-3 flex flex-wrap items-center justify-between gap-2 overflow-hidden shrink-0">
+               <div className="flex bg-white/5 rounded-lg overflow-hidden border border-white/10">
+                 <button 
+                  className="px-4 py-2 text-sm font-semibold text-white hover:bg-white/10 border-l border-white/10 flex items-center gap-2"
+                  onClick={() => {
+                    setNewApptForm(prev => ({ 
+                      ...prev, 
+                      patientMode: 'existing', 
+                      patientId: MOCK_PATIENTS.find(p => p.name === selectedAppt.patientName)?.id || "" 
+                    }));
+                    setIsNewApptModalOpen(true);
+                  }}
+                 >
+                   <Plus className="w-4 h-4" />
+                   حجز آخر
+                 </button>
+                 <button 
+                   className="px-4 py-2 text-sm font-semibold text-white hover:bg-white/10 border-l border-white/10"
+                   onClick={() => setApptDetailPanel(prev => prev === 'reschedule' ? 'none' : 'reschedule')}
+                 >
+                   إعادة جدولة
+                 </button>
+                 <button 
+                  className="px-4 py-2 text-sm font-semibold text-white hover:bg-white/10 border-l border-white/10"
+                  onClick={() => {
+                     // In real app, this would open edit modal
+                     alert("تعديل بيانات الموعد");
+                  }}
+                 >
+                   تعديل
+                 </button>
+                 <button 
+                  className="px-4 py-2 text-sm font-semibold text-white hover:bg-white/10"
+                  onClick={() => handleCancelAppt(selectedAppt.id)}
+                 >
+                   إلغاء
+                 </button>
                </div>
-               <div>
-                 <p className="text-sm text-slate-500 font-medium mb-1">تاريخ ووقت الموعد</p>
-                 <p className="font-semibold text-slate-800 flex items-center gap-2">
-                   {format(selectedAppt.startTime, "dd MMMM yyyy", { locale: arSA })}
-                   <span className="text-slate-400">|</span>
-                   <span dir="ltr" className="font-mono text-sm">{format(selectedAppt.startTime, "hh:mm a")} - {format(selectedAppt.endTime, "hh:mm a")}</span>
-                 </p>
-               </div>
-               {selectedAppt.notes && (
-                 <div>
-                   <p className="text-sm text-slate-500 font-medium mb-1">ملاحظات مبدئية</p>
-                   <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 text-sm leading-relaxed text-slate-700">
-                     {selectedAppt.notes}
-                   </div>
-                 </div>
-               )}
-            </div>
 
-            <div className="pt-4 border-t border-slate-100 flex gap-3 flex-wrap">
-              <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white">
-                 تأكيد الحضور
-              </Button>
-              <Button variant="outline" className="flex-1 border-slate-200">
-                 إعادة جدولة
-              </Button>
-              <Button variant="outline" className="text-red-600 hover:text-red-700 hover:bg-red-50 border-transparent">
-                 إلغاء الموعد
-              </Button>
+               <button 
+                 className="flex items-center gap-2 text-slate-300 hover:text-white px-4 py-2 text-sm font-semibold transition-colors"
+                 onClick={() => handleArchiveAppt(selectedAppt.id)}
+                >
+                 <Archive className="w-4 h-4" />
+                 أرشفة
+               </button>
+            </div>
+            
+            {/* 4. Last Updated line */}
+            <div className="bg-slate-100 py-3 text-center">
+              <p className="text-[11px] italic text-slate-500 font-medium">
+                آخر تحديث: {format(new Date(), "d MMM yyyy، hh:mm a", { locale: arSA })}
+              </p>
             </div>
           </div>
-        )}
-      </Modal>
+        </Modal>
+      )}
 
       {/* New Appointment Modal */}
-      <Modal isOpen={isNewApptModalOpen} onClose={() => setIsNewApptModalOpen(false)} title="حجز موعد جديد">
-        <div className="space-y-5">
-          <div className="space-y-2">
-            <label className="text-sm font-semibold text-slate-700">ابحث عن مريض أو أضف مريض جديد</label>
-            <div className="relative">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <Input className="pr-10" placeholder="اسم المريض، رقم الملف، الهاتف..." />
+      <Modal 
+        isOpen={isNewApptModalOpen} 
+        onClose={() => setIsNewApptModalOpen(false)} 
+        title="حجز موعد جديد"
+      >
+        <div className="space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar px-1">
+          
+          {/* A. PROVIDER & SERVICE */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-slate-700">الطبيب المعالج</label>
+              <select 
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 outline-none transition-all focus:border-blue-500 focus:ring-1 focus:ring-blue-500 appearance-none text-sm"
+                value={newApptForm.doctorId}
+                onChange={(e) => setNewApptForm({...newApptForm, doctorId: e.target.value})}
+              >
+                {MOCK_DOCTORS.map(d => <option key={d.id} value={d.id}>{d.name} ({d.specialty})</option>)}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-slate-700">نوع الموعد</label>
+              <select 
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 outline-none transition-all focus:border-blue-500 focus:ring-1 focus:ring-blue-500 appearance-none text-sm"
+                value={newApptForm.appointmentType}
+                onChange={(e) => setNewApptForm({...newApptForm, appointmentType: e.target.value})}
+              >
+                <option>استشارة طبية عامة (30 دقيقة)</option>
+                <option>مراجعة نتائج (15 دقيقة)</option>
+                <option>استشارة قلبية (45 دقيقة)</option>
+                <option>تخطيط قلب (20 دقيقة)</option>
+              </select>
             </div>
           </div>
-          
+
+          <div className="border-t border-slate-100 pt-5"></div>
+
+          {/* B. PATIENT SELECTION */}
+          <div className="space-y-4">
+            <label className="text-sm font-semibold text-slate-700">بيانات المريض</label>
+            <div className="flex p-1 bg-slate-100 rounded-lg">
+              {(['existing', 'new', 'waitlist'] as const).map((mode) => (
+                <button 
+                  key={mode}
+                  className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${newApptForm.patientMode === mode ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}
+                  onClick={() => setNewApptForm(prev => ({ 
+                    ...prev, 
+                    patientMode: mode,
+                    caseMode: mode === 'new' ? 'new' : prev.caseMode 
+                  }))}
+                >
+                  {mode === 'existing' && 'مريض موجود'}
+                  {mode === 'new' && 'مريض جديد'}
+                  {mode === 'waitlist' && 'من الانتظار'}
+                </button>
+              ))}
+            </div>
+
+            {newApptForm.patientMode === 'existing' && (
+              <div className="relative">
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <select 
+                  className="w-full rounded-xl border border-slate-200 bg-white pr-10 pl-4 py-2.5 outline-none transition-all focus:border-blue-500 focus:ring-1 focus:ring-blue-500 appearance-none text-sm"
+                  value={newApptForm.patientId}
+                  onChange={(e) => setNewApptForm({...newApptForm, patientId: e.target.value})}
+                >
+                  <option value="" disabled>اختر المريض...</option>
+                  {MOCK_PATIENTS.map(p => <option key={p.id} value={p.id}>{p.name} - {p.phone}</option>)}
+                </select>
+              </div>
+            )}
+
+            {newApptForm.patientMode === 'new' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Input 
+                  placeholder="اسم المريض بالكامل" 
+                  value={newApptForm.newPatientName}
+                  onChange={(e) => setNewApptForm({...newApptForm, newPatientName: e.target.value})}
+                />
+                <Input 
+                   placeholder="رقم الجوال" 
+                   dir="ltr" 
+                   value={newApptForm.newPatientPhone}
+                   onChange={(e) => setNewApptForm({...newApptForm, newPatientPhone: e.target.value})}
+                />
+              </div>
+            )}
+
+            {newApptForm.patientMode === 'waitlist' && (
+               <select 
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 outline-none transition-all focus:border-blue-500 focus:ring-1 focus:ring-blue-500 appearance-none text-sm"
+                  value={newApptForm.waitlistId}
+                  onChange={(e) => {
+                    const entry = waitlist.find(w => w.id === e.target.value);
+                    setNewApptForm({
+                      ...newApptForm, 
+                      waitlistId: e.target.value,
+                      appointmentType: entry?.appointmentType || newApptForm.appointmentType
+                    });
+                  }}
+               >
+                 <option value="" disabled>اختر من القائمة...</option>
+                 {waitlist.map(w => <option key={w.id} value={w.id}>{w.patientName} - {w.appointmentType}</option>)}
+               </select>
+            )}
+          </div>
+
+          {/* C. CASE DETAILS */}
+          <div className="border-t border-slate-100 pt-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-semibold text-slate-700">الملف الطبي / الحالة</label>
+              {newApptForm.patientMode !== 'new' && (
+                <div className="flex p-0.5 bg-slate-100 rounded-md">
+                   <button 
+                    className={`px-3 py-1 text-[10px] font-bold rounded transition-all ${newApptForm.caseMode === 'existing' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}
+                    onClick={() => setNewApptForm({...newApptForm, caseMode: 'existing'})}
+                   >
+                     ملف حالي
+                   </button>
+                   <button 
+                    className={`px-3 py-1 text-[10px] font-bold rounded transition-all ${newApptForm.caseMode === 'new' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}
+                    onClick={() => setNewApptForm({...newApptForm, caseMode: 'new'})}
+                   >
+                     جديد
+                   </button>
+                </div>
+              )}
+            </div>
+
+            {newApptForm.caseMode === 'existing' && newApptForm.patientMode !== 'new' && (
+              <select 
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 outline-none transition-all focus:border-blue-500 focus:ring-1 focus:ring-blue-500 appearance-none text-sm"
+                value={newApptForm.caseId}
+                onChange={(e) => setNewApptForm({...newApptForm, caseId: e.target.value})}
+              >
+                <option value="">لا يوجد / زيارة عامة</option>
+                {newApptForm.patientId && MOCK_CASES[newApptForm.patientId]?.map(c => (
+                  <option key={c.id} value={c.id}>{c.title}</option>
+                ))}
+              </select>
+            )}
+
+            {newApptForm.caseMode === 'new' && (
+              <div className="space-y-3 p-3 bg-blue-50/50 rounded-xl border border-blue-100">
+                <Input 
+                  placeholder="عنوان الحالة (مثلاً: متابعة سكري)" 
+                  className="bg-white border-blue-100"
+                  value={newApptForm.newCaseTitle}
+                  onChange={(e) => setNewApptForm({...newApptForm, newCaseTitle: e.target.value})}
+                />
+                <Textarea 
+                  placeholder="ملاحظات تشخيصية أولية..." 
+                  className="bg-white border-blue-100 h-20 text-sm"
+                  value={newApptForm.newCaseNote}
+                  onChange={(e) => setNewApptForm({...newApptForm, newCaseNote: e.target.value})}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* D. SCHEDULING DETAILS */}
+          <div className="border-t border-slate-100 pt-5 grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-slate-700">التاريخ</label>
+              <Input 
+                type="date" 
+                value={newApptForm.date} 
+                onChange={(e) => setNewApptForm({...newApptForm, date: e.target.value})}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-slate-700">الوقت</label>
+              <Input 
+                type="time" 
+                dir="ltr" 
+                className="text-right" 
+                value={newApptForm.startTime}
+                onChange={(e) => setNewApptForm({...newApptForm, startTime: e.target.value})}
+              />
+            </div>
+          </div>
+
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-slate-700">الخدمة الطبية</label>
-            <select className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 outline-none transition-all focus:border-blue-500 focus:ring-1 focus:ring-blue-500 appearance-none">
-              <option disabled selected>اختر الخدمة...</option>
-              <option>استشارة طبية عامة (30 دقيقة)</option>
-              <option>مراجعة نتائج (15 دقيقة)</option>
-            </select>
+            <label className="text-sm font-semibold text-slate-700">ملاحظات إضافية</label>
+            <Textarea 
+              placeholder="أضف أي ملاحظات إدارية هنا..." 
+              className="h-20 text-sm"
+              value={newApptForm.notes}
+              onChange={(e) => setNewApptForm({...newApptForm, notes: e.target.value})}
+            />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-             <div className="space-y-2">
-                <label className="text-sm font-semibold text-slate-700">التاريخ</label>
-                <Input type="date" value={format(currentDate, "yyyy-MM-dd")} />
-             </div>
-             <div className="space-y-2">
-                <label className="text-sm font-semibold text-slate-700">وقت البدء</label>
-                <Input type="time" dir="ltr" className="text-right" />
-             </div>
-          </div>
+          <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setIsNewApptModalOpen(false)}>إلغاء</Button>
+            <Button 
+              className="px-8 shadow-md shadow-blue-100"
+              onClick={() => {
+                // Validation logic (summary)
+                let name = "";
+                let phone = "";
+                
+                if (newApptForm.patientMode === 'existing') {
+                  const p = MOCK_PATIENTS.find(p => p.id === newApptForm.patientId);
+                  name = p?.name || "مريض موجود";
+                  phone = p?.phone || "";
+                } else if (newApptForm.patientMode === 'new') {
+                  name = newApptForm.newPatientName;
+                  phone = newApptForm.newPatientPhone;
+                } else if (newApptForm.patientMode === 'waitlist') {
+                  const w = waitlist.find(w => w.id === newApptForm.waitlistId);
+                  name = w?.patientName || "مريض من القائمة";
+                  phone = w?.patientPhone || "";
+                  // Remove from waitlist
+                  setWaitlist(prev => prev.filter(item => item.id !== newApptForm.waitlistId));
+                }
 
-          <div className="space-y-2">
-            <label className="text-sm font-semibold text-slate-700">ملاحظات (اختياري)</label>
-            <Textarea placeholder="أضف أي ملاحظات قبل الزيارة..." className="h-24" />
-          </div>
+                if (!name) {
+                  alert("يرجى اختيار مريض");
+                  return;
+                }
 
-          <div className="pt-4 mt-2 border-t border-slate-100 flex justify-end gap-3">
-            <Button variant="outline" onClick={() => setIsNewApptModalOpen(false)}>
-              إلغاء
-            </Button>
-            <Button onClick={() => setIsNewApptModalOpen(false)}>
+                const [h, m] = newApptForm.startTime.split(':').map(Number);
+                const start = new Date(newApptForm.date);
+                start.setHours(h || 9, m || 0, 0, 0);
+                
+                const end = new Date(start.getTime() + 30 * 60 * 1000); // 30 min default
+
+                const newAppt: Appointment = {
+                  id: `appt-${Date.now()}`,
+                  patientName: name,
+                  patientPhone: phone,
+                  service: newApptForm.appointmentType,
+                  status: 'confirmed',
+                  startTime: start,
+                  endTime: end,
+                  notes: newApptForm.notes || newApptForm.newCaseNote,
+                  colorClass: "bg-blue-50 border-blue-200 text-blue-700",
+                };
+
+                setAppointments(prev => [...prev, newAppt]);
+                setIsNewApptModalOpen(false);
+              }}
+            >
               تأكيد الحجز
             </Button>
           </div>
         </div>
+      </Modal>
+      {/* Waitlist Modal */}
+      <Modal 
+        isOpen={isWaitlistModalOpen} 
+        onClose={() => {
+          setIsWaitlistModalOpen(false);
+          setIsAddingWaitlist(false);
+          setEditingWaitlistId(null);
+        }} 
+        title={editingWaitlistId ? "تعديل بيانات الانتظار" : isAddingWaitlist ? "إضافة مريض للقائمة" : "قائمة الانتظار الحالية"}
+      >
+        {!isAddingWaitlist && !editingWaitlistId ? (
+          <div className="space-y-4">
+            <div className="flex justify-between items-center mb-2">
+              <div className="text-sm text-slate-500">
+                يوجد <span className="font-bold text-slate-900">{waitlist.length}</span> مرضى في الانتظار
+              </div>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="gap-2 text-blue-600 border-blue-200 hover:bg-blue-50"
+                onClick={() => {
+                  setWaitlistForm({
+                    patientName: "",
+                    patientPhone: "",
+                    appointmentType: "استشارة طبية عامة",
+                    notes: "",
+                    isNewPatient: false
+                  });
+                  setIsAddingWaitlist(true);
+                }}
+              >
+                <PlusCircle className="w-4 h-4" />
+                إضافة مريض
+              </Button>
+            </div>
+
+            {waitlist.length === 0 ? (
+              <div className="py-12 flex flex-col items-center justify-center text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                <Users className="w-12 h-12 mb-3 opacity-20" />
+                <p>قائمة الانتظار فارغة حالياً</p>
+              </div>
+            ) : (
+              <div className="grid gap-3 max-h-[400px] overflow-y-auto custom-scrollbar pr-1">
+                {waitlist.map((entry) => (
+                  <div key={entry.id} className="group p-4 rounded-xl border border-slate-100 bg-white hover:border-blue-200 hover:shadow-sm transition-all flex justify-between items-center">
+                    <div className="flex gap-4 items-start">
+                      <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center font-bold">
+                        {entry.patientName.charAt(0)}
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-slate-800">{entry.patientName}</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 mt-1 text-sm">
+                          <p className="text-slate-500 flex items-center gap-1.5">
+                            <Phone className="w-3.5 h-3.5" />
+                            <span dir="ltr">{entry.patientPhone}</span>
+                          </p>
+                          <p className="text-blue-600 font-medium flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5" />
+                            {entry.appointmentType}
+                          </p>
+                        </div>
+                        {entry.notes && (
+                          <div className="mt-2 text-xs text-slate-500 bg-slate-50 px-2 py-1 rounded">
+                            {entry.notes}
+                          </div>
+                        )}
+                        <p className="text-[10px] text-slate-400 mt-2">
+                          تمت الإضافة: {format(entry.addedAt, "hh:mm a", { locale: arSA })}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button 
+                        onClick={() => {
+                          setEditingWaitlistId(entry.id);
+                          setWaitlistForm({
+                            patientName: entry.patientName,
+                            patientPhone: entry.patientPhone,
+                            appointmentType: entry.appointmentType,
+                            notes: entry.notes || "",
+                            isNewPatient: false
+                          });
+                        }}
+                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => setWaitlist(prev => prev.filter(w => w.id !== entry.id))}
+                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-5">
+            <div className="flex items-center gap-2 mb-2 text-sm text-blue-600 font-medium cursor-pointer hover:underline" onClick={() => {
+              setIsAddingWaitlist(false);
+              setEditingWaitlistId(null);
+            }}>
+              <ArrowRight className="w-4 h-4" />
+              العودة للقائمة
+            </div>
+
+            {!editingWaitlistId && (
+              <div className="flex p-1 bg-slate-100 rounded-lg">
+                <button 
+                  className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${!waitlistForm.isNewPatient ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}
+                  onClick={() => setWaitlistForm(prev => ({ ...prev, isNewPatient: false }))}
+                >
+                  مريض موجود
+                </button>
+                <button 
+                  className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${waitlistForm.isNewPatient ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}
+                  onClick={() => setWaitlistForm(prev => ({ ...prev, isNewPatient: true }))}
+                >
+                  مريض جديد
+                </button>
+              </div>
+            )}
+
+            <div className="space-y-4">
+              {waitlistForm.isNewPatient || editingWaitlistId ? (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-slate-700">اسم المريض</label>
+                    <Input 
+                      placeholder="الاسم الكامل" 
+                      value={waitlistForm.patientName}
+                      onChange={e => setWaitlistForm(prev => ({ ...prev, patientName: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-slate-700">رقم الجوال</label>
+                    <Input 
+                      placeholder="05xxxxxxx" 
+                      dir="ltr"
+                      value={waitlistForm.patientPhone}
+                      onChange={e => setWaitlistForm(prev => ({ ...prev, patientPhone: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700">ابحث عن مريض</label>
+                  <div className="relative">
+                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Input 
+                      className="pr-10" 
+                      placeholder="اسم المريض، رقم الهاتف..." 
+                      value={waitlistForm.patientName}
+                      onChange={e => setWaitlistForm(prev => ({ ...prev, patientName: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700">نوع الموعد المطلوب</label>
+                <select 
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 outline-none transition-all focus:border-blue-500 focus:ring-1 focus:ring-blue-500 appearance-none"
+                  value={waitlistForm.appointmentType}
+                  onChange={e => setWaitlistForm(prev => ({ ...prev, appointmentType: e.target.value }))}
+                >
+                  <option>استشارة طبية عامة</option>
+                  <option>مراجعة نتائج</option>
+                  <option>استشارة قلبية</option>
+                  <option>تخطيط قلب</option>
+                  <option>فحص روتيني</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700">ملاحظات إضافية</label>
+                <Textarea 
+                  placeholder="أدخل أي تفاصيل إضافية..." 
+                  className="h-24" 
+                  value={waitlistForm.notes}
+                  onChange={e => setWaitlistForm(prev => ({ ...prev, notes: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="pt-4 flex gap-3">
+              <Button 
+                variant="outline" 
+                className="flex-1"
+                onClick={() => {
+                  setIsAddingWaitlist(false);
+                  setEditingWaitlistId(null);
+                }}
+              >
+                إلغاء
+              </Button>
+              <Button 
+                className="flex-1"
+                onClick={() => {
+                  if (editingWaitlistId) {
+                    setWaitlist(prev => prev.map(w => w.id === editingWaitlistId ? {
+                      ...w,
+                      patientName: waitlistForm.patientName,
+                      patientPhone: waitlistForm.patientPhone,
+                      appointmentType: waitlistForm.appointmentType,
+                      notes: waitlistForm.notes
+                    } : w));
+                  } else {
+                    const newEntry: WaitlistEntry = {
+                      id: `w${Date.now()}`,
+                      patientName: waitlistForm.patientName,
+                      patientPhone: waitlistForm.patientPhone,
+                      appointmentType: waitlistForm.appointmentType,
+                      notes: waitlistForm.notes,
+                      addedAt: new Date(),
+                    };
+                    setWaitlist(prev => [newEntry, ...prev]);
+                  }
+                  setIsAddingWaitlist(false);
+                  setEditingWaitlistId(null);
+                }}
+              >
+                {editingWaitlistId ? "حفظ التعديلات" : "إضافة للقائمة"}
+              </Button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );
