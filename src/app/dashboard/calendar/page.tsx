@@ -87,7 +87,7 @@ const MOCK_APPOINTMENTS: Appointment[] = [
     endTime: new Date(today.setHours(12, 0, 0, 0)),
     appointmentNumber: 3,
     caseName: "صداع نصفي مزمن",
-    colorClass: "bg-amber-500 border-amber-600 text-white",
+    colorClass: "bg-blue-600 border-blue-700 text-white",
   },
   {
     id: "3",
@@ -121,7 +121,7 @@ const MOCK_APPOINTMENTS: Appointment[] = [
     startTime: new Date(today.setHours(9, 15, 0, 0)),
     endTime: new Date(today.setHours(10, 0, 0, 0)),
     appointmentNumber: 1,
-    colorClass: "bg-purple-600 border-purple-700 text-white",
+    colorClass: "bg-blue-600 border-blue-700 text-white",
   }
 ];
 
@@ -170,7 +170,7 @@ const MOCK_CASES: Record<string, { id: string; title: string; createdAt: Date }[
 
 const STATUS_MAP: Record<ApptStatus, { label: string, icon: React.ElementType, badgeClass: string }> = {
   confirmed: { label: "مؤكد", icon: CheckCircle, badgeClass: "bg-blue-100 text-blue-700" },
-  pending: { label: "قيد الانتظار", icon: Clock, badgeClass: "bg-amber-100 text-amber-700" },
+  pending: { label: "قيد الانتظار", icon: Clock, badgeClass: "bg-blue-100 text-blue-700" },
   arrived: { label: "تم الوصول", icon: User, badgeClass: "bg-emerald-100 text-emerald-700" },
   no_show: { label: "لم يحضر", icon: AlertCircle, badgeClass: "bg-red-100 text-red-700" },
   cancelled: { label: "ملغي", icon: XCircle, badgeClass: "bg-red-100 text-red-700" },
@@ -245,7 +245,7 @@ export default function CalendarPage() {
   const handleArrived = (appt: Appointment) => updateAppointment(appt.id, { status: "arrived", colorClass: "bg-emerald-600 border-emerald-700 text-white" });
   const handleNoShow = (appt: Appointment) => updateAppointment(appt.id, { status: "no_show", colorClass: "bg-red-600 border-red-700 text-white" });
   const handleCancelAppt = (apptId: string) => {
-    updateAppointment(apptId, { status: "cancelled", colorClass: "bg-red-500 border-red-600 text-white" });
+    updateAppointment(apptId, { status: "cancelled", colorClass: "bg-red-600 border-red-700 text-white" });
     setSelectedAppt(null);
   };
   const handleArchiveAppt = (apptId: string) => {
@@ -542,11 +542,11 @@ export default function CalendarPage() {
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)]">
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-6 shrink-0 z-10">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-3 md:p-4 rounded-2xl shadow-sm border border-slate-100 mb-4 md:mb-6 shrink-0 z-10">
         
         {/* Left: Date Nav */}
-        <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" onClick={handleToday} className="font-semibold px-4">
+        <div className="flex items-center flex-wrap gap-2 md:gap-3">
+          <Button variant="outline" size="sm" onClick={handleToday} className="font-semibold px-3 md:px-4">
             اليوم
           </Button>
           <div className="flex items-center gap-1 bg-slate-50 rounded-lg p-1 border border-slate-100">
@@ -557,25 +557,27 @@ export default function CalendarPage() {
               <ChevronLeft className="w-5 h-5 text-slate-600" />
             </button>
           </div>
-          <h2 className="text-xl font-bold text-slate-800 min-w-[200px] flex items-center gap-2">
-            <CalendarIcon className="w-5 h-5 text-blue-600" />
-            {viewMode === "week" ? (
-              `${format(weekStart, "d MMM", { locale: arSA })} - ${format(endOfWeek(currentDate, { weekStartsOn: 0 }), "d MMM yyyy", { locale: arSA })}`
-            ) : viewMode === "month" ? (
-              format(currentDate, "MMMM yyyy", { locale: arSA })
-            ) : (
-              format(currentDate, "EEEE، d MMMM yyyy", { locale: arSA })
-            )}
+          <h2 className="text-base md:text-xl font-bold text-slate-800 md:min-w-[200px] flex items-center gap-2 truncate">
+            <CalendarIcon className="w-4 h-4 md:w-5 md:h-5 text-blue-600 shrink-0" />
+            <span className="truncate">
+              {viewMode === "week" ? (
+                `${format(weekStart, "d MMM", { locale: arSA })} - ${format(endOfWeek(currentDate, { weekStartsOn: 0 }), "d MMM yyyy", { locale: arSA })}`
+              ) : viewMode === "month" ? (
+                format(currentDate, "MMMM yyyy", { locale: arSA })
+              ) : (
+                format(currentDate, "EEEE، d MMMM yyyy", { locale: arSA })
+              )}
+            </span>
           </h2>
         </div>
 
         {/* Center: View Switcher */}
-        <div className="flex items-center p-1 bg-slate-50 border border-slate-100 rounded-lg self-start md:self-auto">
+        <div className="flex items-center p-1 bg-slate-50 border border-slate-100 rounded-lg overflow-x-auto no-scrollbar max-w-full">
           {(["day", "week", "month", "agenda"] as const).map(mode => (
             <button 
               key={mode}
               onClick={() => setViewMode(mode)}
-              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${viewMode === mode ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}
+              className={`px-3 md:px-4 py-1.5 text-xs md:text-sm font-medium rounded-md transition-all whitespace-nowrap ${viewMode === mode ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}
             >
               {mode === "day" && "يوم"}
               {mode === "week" && "أسبوع"}
@@ -586,28 +588,26 @@ export default function CalendarPage() {
         </div>
 
         {/* Right: Actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-3 ml-auto md:ml-0">
           <Button 
             variant="outline" 
             size="sm" 
-            className="gap-2 text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700"
+            className="gap-2 text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700 h-9 px-2 md:px-3"
             onClick={() => setIsWaitlistModalOpen(true)}
           >
             <Users className="w-4 h-4" />
-            <span className="hidden sm:inline">قائمة الانتظار</span>
+            <span className="hidden md:inline text-xs font-bold">قائمة الانتظار</span>
             {waitlist.length > 0 && (
-              <span className="bg-amber-500 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-bold">
+              <span className="bg-amber-500 text-white text-[10px] rounded-full w-4 h-4 md:w-5 md:h-5 flex items-center justify-center font-bold">
                 {waitlist.length}
               </span>
             )}
           </Button>
-          <Button variant="outline" size="sm" className="gap-2">
-            <Filter className="w-4 h-4" />
-            فلترة
-          </Button>
-          <Button size="sm" className="gap-2 shrink-0" onClick={() => setIsNewApptModalOpen(true)}>
+          
+          <Button size="sm" className="gap-2 shrink-0 h-9 px-3 md:px-4" onClick={() => setIsNewApptModalOpen(true)}>
             <Plus className="w-4 h-4" />
-            موعد جديد
+            <span className="hidden sm:inline text-xs font-bold">موعد جديد</span>
+            <span className="sm:hidden text-xs font-bold">جديد</span>
           </Button>
         </div>
       </div>
@@ -618,16 +618,16 @@ export default function CalendarPage() {
         {/* DAY VIEW SCOPE */}
         {viewMode === "day" && (
           <div className="flex-1 overflow-y-auto custom-scrollbar relative" ref={containerRef}>
-            <div className="min-w-[800px]">
+            <div className="min-w-[400px] md:min-w-0">
               {/* Header row for 'Day' view is practically just spacing over the timeline */}
               <div className="sticky top-0 bg-white/95 backdrop-blur z-20 flex border-b border-slate-100">
-                <div className="w-24 shrink-0 text-center py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider border-l border-slate-100">
+                <div className="w-16 md:w-24 shrink-0 text-center py-3 text-[10px] md:text-xs font-semibold text-slate-400 uppercase tracking-wider border-l border-slate-100">
                   الوقت
                 </div>
                 <div className="flex-1 py-3 px-4 flex justify-center">
                    <div className="text-center">
-                     <div className="font-bold text-slate-800 text-lg">{format(currentDate, "EEEE", { locale: arSA })}</div>
-                     <div className="text-sm text-slate-500">{format(currentDate, "d MMM", { locale: arSA })}</div>
+                     <div className="font-bold text-slate-800 text-base md:text-lg">{format(currentDate, "EEEE", { locale: arSA })}</div>
+                     <div className="text-xs md:text-sm text-slate-500">{format(currentDate, "d MMM", { locale: arSA })}</div>
                    </div>
                 </div>
               </div>
@@ -636,14 +636,14 @@ export default function CalendarPage() {
               <div className="flex relative" style={{ height: `${(END_HOUR - START_HOUR + 1) * HOUR_HEIGHT}px` }}>
                 
                 {/* Time labels column */}
-                <div className="w-24 shrink-0 border-l border-slate-100 relative bg-slate-50/30">
+                <div className="w-16 md:w-24 shrink-0 border-l border-slate-100 relative bg-slate-50/30">
                   {hoursArray.map((hour, index) => {
                     const ampm = hour >= 12 ? 'م' : 'ص';
                     const h12 = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
                     return (
                       <div 
                         key={hour} 
-                        className="absolute w-full text-center text-sm font-medium text-slate-500 -mt-3 pr-2"
+                        className="absolute w-full text-center text-[10px] md:text-sm font-medium text-slate-500 -mt-3 pr-1 md:pr-2"
                         style={{ top: `${index * HOUR_HEIGHT}px` }}
                       >
                        {h12}:00 {ampm}
@@ -707,12 +707,12 @@ export default function CalendarPage() {
                     return (
                       <div
                         key={appt.id}
-                        className={`absolute rounded-xl border p-3 flex flex-col overflow-hidden transition-all hover:shadow-md cursor-grab active:cursor-grabbing shadow-sm ${appt.colorClass} ${isInteracting ? 'opacity-40 z-50 scale-[0.98]' : 'hover:z-20'}`}
+                        className={`absolute rounded-xl border flex flex-col overflow-hidden transition-all hover:shadow-md cursor-grab active:cursor-grabbing shadow-sm ${appt.colorClass} ${isInteracting ? 'opacity-40 z-50 scale-[0.98]' : 'hover:z-20'}`}
                         style={{ 
                             top: `${topOffset}px`, 
                             height: `${height}px`,
-                            width: `calc(${widthPercent}% - ${appt.totalColumns > 1 ? '12px' : '32px'})`,
-                            right: `calc(${rightPercent}% + ${appt.totalColumns > 1 ? '6px' : '16px'})`,
+                            width: `calc(${widthPercent}% - ${appt.totalColumns > 1 ? '4px' : '8px'})`,
+                            right: `calc(${rightPercent}% + ${appt.totalColumns > 1 ? '2px' : '4px'})`,
                         }}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -724,25 +724,19 @@ export default function CalendarPage() {
                         }}
                         onPointerDown={(e) => onInteractionStart(e, appt, 'drag')}
                       >
-                        <div className="flex justify-between items-start mb-1 h-full flex-col sm:flex-row gap-1">
-                           <div className="select-none">
-                             <h4 className="font-bold text-sm line-clamp-1">{appt.patientName}</h4>
-                             <p className="text-xs font-medium opacity-80 mt-0.5 line-clamp-1">{appt.service}</p>
+                        <div className={`flex ${height < 45 ? 'flex-row items-center gap-2 p-0.5' : 'flex-col justify-between p-1.5 md:p-3'} h-full w-full select-none overflow-hidden relative group/card`}>
+                           <div className="flex-1 min-w-0">
+                             <h4 className="font-bold text-[10px] md:text-sm truncate">
+                               {appt.patientName}
+                             </h4>
                            </div>
-                           <div className="flex flex-col items-end gap-1 shrink-0 select-none">
-                              <span className="text-xs font-semibold whitespace-nowrap bg-white/50 px-2 py-0.5 rounded-md">
-                                {format(displayStart, "h:mm a")} - {format(displayEnd, "h:mm a")}
+                           
+                           <div className={`flex items-center gap-1 opacity-90 shrink-0 ${height < 45 ? 'bg-white/20 px-1 rounded' : ''}`}>
+                              <span className="text-[9px] md:text-xs font-bold whitespace-nowrap" dir="ltr">
+                                {format(displayStart, "HH:mm")} - {format(displayEnd, "HH:mm")}
                               </span>
-                              {height > 60 && (
-                                <StatusIcon className="w-4 h-4 opacity-70 mt-1" />
-                              )}
                            </div>
                         </div>
-                        {height > 100 && appt.notes && (
-                          <div className="mt-auto pt-2 border-t border-current/10 select-none">
-                            <p className="text-xs opacity-80 line-clamp-2">{appt.notes}</p>
-                          </div>
-                        )}
 
                         {/* Resize Handle */}
                         {appt.status !== 'cancelled' && (
@@ -764,8 +758,8 @@ export default function CalendarPage() {
                       style={{ 
                         top: `${(interaction.currentStartTime.getHours() + interaction.currentStartTime.getMinutes()/60 - START_HOUR) * HOUR_HEIGHT}px`,
                         height: `${(interaction.currentEndTime.getTime() - interaction.currentStartTime.getTime()) / (1000 * 60 * 60) * HOUR_HEIGHT}px`,
-                        width: 'calc(100% - 32px)',
-                        right: '16px'
+                        width: 'calc(100% - 16px)',
+                        right: '8px'
                       }}
                     >
                       <div className="flex justify-between items-center">
@@ -787,22 +781,22 @@ export default function CalendarPage() {
         {/* WEEK VIEW SCOPE */}
         {viewMode === "week" && (
           <div className="flex-1 overflow-auto custom-scrollbar relative">
-            <div className="min-w-[1000px]">
+            <div className="min-w-[700px] md:min-w-0 h-full flex flex-col">
               {/* Header row for 'Week' view */}
-              <div className="sticky top-0 bg-white/95 backdrop-blur z-30 flex border-b border-slate-100">
-                <div className="w-20 shrink-0 text-center py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider border-l border-slate-100 z-30 bg-white/95">
+              <div className="sticky top-0 bg-white/95 backdrop-blur z-30 flex border-b border-slate-100 shrink-0">
+                <div className="w-14 md:w-20 shrink-0 text-center py-2 md:py-3 text-[10px] md:text-xs font-semibold text-slate-400 uppercase tracking-wider border-l border-slate-100 z-30 bg-white/95">
                   الوقت
                 </div>
                 <div className="flex-1 flex">
                   {weekDays.map(day => {
                     const isToday = isSameDay(day, new Date());
                     return (
-                      <div key={day.toISOString()} className="flex-1 py-3 px-2 flex justify-center border-l border-slate-100 last:border-l-0">
-                         <div className={`text-center px-4 py-1.5 rounded-xl ${isToday ? 'bg-blue-50' : ''}`}>
-                           <div className={`font-bold text-sm ${isToday ? 'text-blue-700' : 'text-slate-800'}`}>
-                             {format(day, "EEEE", { locale: arSA })}
+                      <div key={day.toISOString()} className="flex-1 py-1.5 md:py-3 px-1 md:px-2 flex justify-center border-l border-slate-100 last:border-l-0">
+                         <div className={`text-center px-2 md:px-4 py-1 rounded-xl ${isToday ? 'bg-blue-50' : ''}`}>
+                           <div className={`font-bold text-[10px] md:text-sm ${isToday ? 'text-blue-700' : 'text-slate-800'}`}>
+                             {format(day, "EEE", { locale: arSA })}
                            </div>
-                           <div className={`text-xs mt-0.5 ${isToday ? 'text-blue-600 font-semibold' : 'text-slate-500'}`}>
+                           <div className={`text-[9px] md:text-xs mt-0.5 ${isToday ? 'text-blue-600 font-semibold' : 'text-slate-500'}`}>
                              {format(day, "d MMM", { locale: arSA })}
                            </div>
                          </div>
@@ -816,14 +810,14 @@ export default function CalendarPage() {
               <div className="flex relative" style={{ height: `${(END_HOUR - START_HOUR + 1) * HOUR_HEIGHT}px` }}>
                 
                 {/* Time labels column */}
-                <div className="w-20 shrink-0 border-l border-slate-100 relative bg-slate-50/30">
+                <div className="w-14 md:w-20 shrink-0 border-l border-slate-100 relative bg-slate-50/30">
                   {hoursArray.map((hour, index) => {
                     const ampm = hour >= 12 ? 'م' : 'ص';
                     const h12 = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
                     return (
                       <div 
                         key={hour} 
-                        className="absolute w-full text-center text-xs font-medium text-slate-500 -mt-2 pr-1"
+                        className="absolute w-full text-center text-[10px] md:text-xs font-medium text-slate-500 -mt-2 pr-1"
                         style={{ top: `${index * HOUR_HEIGHT}px` }}
                       >
                        {h12}:00 {ampm}
@@ -891,7 +885,7 @@ export default function CalendarPage() {
                           return (
                             <div
                               key={appt.id}
-                              className={`absolute right-1.5 left-1.5 rounded-lg border p-1.5 flex flex-col overflow-hidden transition-all hover:shadow-md hover:z-30 cursor-pointer shadow-sm ${appt.colorClass}`}
+                              className={`absolute right-0.5 left-0.5 md:right-1.5 md:left-1.5 rounded-lg border p-1 md:p-1.5 flex flex-col overflow-hidden transition-all hover:shadow-md hover:z-30 cursor-pointer shadow-sm ${appt.colorClass}`}
                               style={{ top: `${topOffset}px`, height: `${height}px` }}
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -899,14 +893,14 @@ export default function CalendarPage() {
                               }}
                             >
                               <div className="flex flex-col h-full gap-0.5 relative">
-                                 <h4 className="font-bold text-[11px] leading-tight line-clamp-1">{appt.patientName}</h4>
+                                 <h4 className="font-bold text-[9px] md:text-[11px] leading-tight line-clamp-1">{appt.patientName}</h4>
                                  {height >= 45 && (
-                                   <p className="text-[10px] font-medium opacity-80 leading-tight line-clamp-1">{appt.service}</p>
+                                   <p className="text-[8px] md:text-[10px] font-medium opacity-80 leading-tight line-clamp-1">{appt.service}</p>
                                  )}
                                  {height >= 60 && (
-                                   <div className="mt-auto text-[10px] font-semibold opacity-80 flex items-center justify-between">
-                                     <span dir="ltr">{format(appt.startTime, "h:mm")}</span>
-                                     {React.createElement(STATUS_MAP[appt.status].icon, { className: "w-3 h-3" })}
+                                   <div className="mt-auto text-[8px] md:text-[10px] font-semibold opacity-80 flex items-center justify-between">
+                                     <span dir="ltr" className="md:inline hidden">{format(appt.startTime, "h:mm")}</span>
+                                     {React.createElement(STATUS_MAP[appt.status].icon, { className: "w-2.5 h-2.5 md:w-3 md:h-3" })}
                                    </div>
                                  )}
                               </div>
@@ -924,19 +918,22 @@ export default function CalendarPage() {
 
         {/* MONTH VIEW SCOPE */}
         {viewMode === "month" && (
-          <div className="flex-1 flex flex-col p-4 overflow-hidden min-h-[600px] overflow-y-auto">
-            <div className="min-w-[800px] flex-1 flex flex-col h-full">
+          <div className="flex-1 flex flex-col p-2 md:p-4 overflow-hidden min-h-[500px] md:min-h-[600px] overflow-y-auto">
+            <div className="min-w-[500px] md:min-w-0 flex-1 flex flex-col h-full">
               {/* Weekday headers */}
-              <div className="grid grid-cols-7 gap-2 mb-2 shrink-0">
-                {['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'].map(day => (
-                  <div key={day} className="text-center text-sm font-semibold text-slate-400 uppercase tracking-wider py-2 bg-slate-50/50 rounded-xl border border-slate-100/50">
-                    {day}
+              <div className="grid grid-cols-7 gap-1 md:gap-2 mb-2 shrink-0">
+                {['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'].map((day, i) => (
+                  <div key={day} className="text-center text-[10px] md:text-sm font-semibold text-slate-400 uppercase tracking-wider py-1.5 md:py-2 bg-slate-50/50 rounded-lg md:rounded-xl border border-slate-100/50">
+                    <span className="hidden md:inline">{day}</span>
+                    <span className="md:hidden">
+                        {['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س'][i]}
+                    </span>
                   </div>
                 ))}
               </div>
               
               {/* Month Grid */}
-              <div className="flex-1 grid grid-cols-7 auto-rows-fr gap-2">
+              <div className="flex-1 grid grid-cols-7 auto-rows-fr gap-1 md:gap-2">
                 {monthDays.map(day => {
                   const isCurrentMonth = isSameMonth(day, monthStart);
                   const isToday = isSameDay(day, new Date());
@@ -954,26 +951,31 @@ export default function CalendarPage() {
                         }
                       }}
                       className={`
-                        min-h-[100px] p-2 flex flex-col rounded-2xl border transition-all cursor-pointer hover:shadow-md hover:-translate-y-0.5
+                        min-h-[80px] md:min-h-[100px] p-1.5 md:p-2 flex flex-col rounded-xl md:rounded-2xl border transition-all cursor-pointer hover:shadow-md hover:-translate-y-0.5
                         ${isCurrentMonth ? 'bg-white border-slate-100' : 'bg-slate-50/50 border-transparent text-slate-400 opacity-60 hover:opacity-100'}
                         ${isToday ? 'ring-2 ring-blue-500 shadow-sm' : ''}
                       `}
                     >
-                      <div className="flex justify-between items-start mb-2">
+                      <div className="flex justify-between items-start mb-1 md:mb-2 text-right">
                         <span className={`
-                          w-7 h-7 flex items-center justify-center text-sm font-bold rounded-full
-                          ${isToday ? 'bg-blue-600 text-white shadow-sm ring-4 ring-blue-50' : isCurrentMonth ? 'text-slate-700 bg-slate-50' : 'text-slate-400'}
+                          w-6 h-6 md:w-7 md:h-7 flex items-center justify-center text-[11px] md:text-sm font-bold rounded-full
+                          ${isToday ? 'bg-blue-600 text-white shadow-sm ring-2 md:ring-4 ring-blue-50' : isCurrentMonth ? 'text-slate-700 bg-slate-50' : 'text-slate-400'}
                         `}>
                           {format(day, 'd')}
                         </span>
                         {dayAppointments.length > 0 && (
-                          <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded-full">
+                          <span className="text-[9px] md:text-[10px] font-bold text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded-full inline md:hidden">
+                            {dayAppointments.length}
+                          </span>
+                        )}
+                        {dayAppointments.length > 0 && (
+                          <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded-full hidden md:inline">
                             {dayAppointments.length}
                           </span>
                         )}
                       </div>
 
-                      <div className="flex flex-col gap-1.5 overflow-hidden">
+                      <div className="hidden md:flex flex-col gap-1.5 overflow-hidden">
                         {dayAppointments.slice(0, 3).map(appt => (
                           <div 
                             key={appt.id} 
@@ -989,9 +991,16 @@ export default function CalendarPage() {
                         ))}
                         {dayAppointments.length > 3 && (
                           <div className="text-[10px] text-slate-500 font-bold px-1 mt-0.5 hover:text-blue-600 transition-colors">
-                            عرض {dayAppointments.length - 3} موعد إضافي...
+                            عرض {dayAppointments.length - 3} إضافي...
                           </div>
                         )}
+                      </div>
+
+                      {/* Mobile Appointment Dots */}
+                      <div className="flex md:hidden flex-wrap gap-0.5 mt-auto">
+                        {dayAppointments.slice(0, 4).map(appt => (
+                          <div key={appt.id} className={`w-1.5 h-1.5 rounded-full ${appt.colorClass.split(' ')[0]}`} />
+                        ))}
                       </div>
                     </div>
                   );
@@ -1019,41 +1028,41 @@ export default function CalendarPage() {
           isOpen={!!selectedAppt} 
           onClose={() => setSelectedAppt(null)} 
           hideHeader
-          width="max-w-2xl"
+          width="max-w-2xl w-[95%] md:w-full"
         >
           <div className="flex flex-col shadow-2xl rounded-2xl overflow-hidden bg-white">
             {/* 1. Colored Header */}
-            <div className={`${selectedAppt.colorClass} p-6 border-b`}>
+            <div className={`${selectedAppt.colorClass} p-4 md:p-6 border-b`}>
               <div className="flex justify-between items-start mb-4">
-                <h2 className="text-2xl font-bold">{selectedAppt.service.split('(')[0].trim() || "موعد"}</h2>
+                <h2 className="text-xl md:text-2xl font-bold">{selectedAppt.service.split('(')[0].trim() || "موعد"}</h2>
                 <button 
                    onClick={() => setSelectedAppt(null)}
                    className="p-1 hover:bg-white/20 rounded-full transition-colors"
                 >
-                  <XCircle className="w-6 h-6" />
+                  <XCircle className="w-5 h-5 md:w-6 md:h-6" />
                 </button>
               </div>
               <div className="space-y-1">
-                <h3 className="text-xl font-semibold opacity-95">{selectedAppt.patientName}</h3>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-medium opacity-90">
+                <h3 className="text-lg md:text-xl font-semibold opacity-95">{selectedAppt.patientName}</h3>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs md:text-sm font-medium opacity-90">
                   <span className="flex items-center gap-1.5">
-                    <CalendarIcon className="w-4 h-4" />
+                    <CalendarIcon className="w-3.5 h-3.5 md:w-4 md:h-4" />
                     {format(selectedAppt.startTime, "EEEE، d MMMM yyyy", { locale: arSA })}
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <Clock className="w-4 h-4" />
-                    في {format(selectedAppt.startTime, "hh:mm a")} لمدة {Math.round((selectedAppt.endTime.getTime() - selectedAppt.startTime.getTime()) / 60000)} دقيقة
+                    <Clock className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                    في {format(selectedAppt.startTime, "hh:mm a")}
                   </span>
                 </div>
               </div>
             </div>
 
             {/* 2. Body Grid */}
-            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8 bg-white min-h-[300px]">
+            <div className="p-4 md:p-6 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 bg-white min-h-[300px]">
               {/* Left Column - Info */}
               <div className="space-y-6">
                 <div>
-                  <h4 className="text-xl font-bold text-slate-800 mb-1">{selectedAppt.patientName}</h4>
+                  <h4 className="text-lg md:text-xl font-bold text-slate-800 mb-1">{selectedAppt.patientName}</h4>
                   <div className="space-y-2.5 mt-4">
                     <div className="flex flex-col gap-0.5">
                       <span className="text-sm font-semibold text-blue-600">الحالة</span>
@@ -1147,10 +1156,10 @@ export default function CalendarPage() {
             </div>
 
             {/* 3. Dark Footer Action Bar */}
-            <div className="bg-[#2D2431] p-3 flex flex-wrap items-center justify-between gap-2 overflow-hidden shrink-0">
-               <div className="flex bg-white/5 rounded-lg overflow-hidden border border-white/10">
+            <div className="bg-[#2D2431] p-3 flex flex-col md:flex-row md:items-center justify-between gap-3 overflow-hidden shrink-0">
+               <div className="flex bg-white/5 rounded-lg overflow-x-auto no-scrollbar border border-white/10 w-full md:w-auto">
                  <button 
-                  className="px-4 py-2 text-sm font-semibold text-white hover:bg-white/10 border-l border-white/10 flex items-center gap-2"
+                  className="px-3 md:px-4 py-2 text-xs md:text-sm font-semibold text-white hover:bg-white/10 border-l border-white/10 flex items-center gap-2 whitespace-nowrap"
                   onClick={() => {
                     setNewApptForm(prev => ({ 
                       ...prev, 
@@ -1160,17 +1169,17 @@ export default function CalendarPage() {
                     setIsNewApptModalOpen(true);
                   }}
                  >
-                   <Plus className="w-4 h-4" />
+                   <Plus className="w-3.5 h-3.5 md:w-4 md:h-4" />
                    حجز آخر
                  </button>
-                 <button 
-                   className="px-4 py-2 text-sm font-semibold text-white hover:bg-white/10 border-l border-white/10"
+                  <button 
+                   className="px-3 md:px-4 py-2 text-xs md:text-sm font-semibold text-white hover:bg-white/10 border-l border-white/10 whitespace-nowrap"
                    onClick={() => setApptDetailPanel(prev => prev === 'reschedule' ? 'none' : 'reschedule')}
                  >
                    إعادة جدولة
                  </button>
                  <button 
-                  className="px-4 py-2 text-sm font-semibold text-white hover:bg-white/10 border-l border-white/10"
+                  className="px-3 md:px-4 py-2 text-xs md:text-sm font-semibold text-white hover:bg-white/10 border-l border-white/10 whitespace-nowrap"
                   onClick={() => {
                      // In real app, this would open edit modal
                      alert("تعديل بيانات الموعد");
@@ -1179,7 +1188,7 @@ export default function CalendarPage() {
                    تعديل
                  </button>
                  <button 
-                  className="px-4 py-2 text-sm font-semibold text-white hover:bg-white/10"
+                  className="px-3 md:px-4 py-2 text-xs md:text-sm font-semibold text-white hover:bg-white/10 whitespace-nowrap"
                   onClick={() => handleCancelAppt(selectedAppt.id)}
                  >
                    إلغاء
@@ -1187,10 +1196,10 @@ export default function CalendarPage() {
                </div>
 
                <button 
-                 className="flex items-center gap-2 text-slate-300 hover:text-white px-4 py-2 text-sm font-semibold transition-colors"
+                 className="flex items-center gap-2 text-slate-300 hover:text-white px-2 md:px-4 py-2 text-xs md:text-sm font-semibold transition-colors self-end md:self-auto"
                  onClick={() => handleArchiveAppt(selectedAppt.id)}
                 >
-                 <Archive className="w-4 h-4" />
+                 <Archive className="w-3.5 h-3.5 md:w-4 md:h-4" />
                  أرشفة
                </button>
             </div>
@@ -1441,7 +1450,7 @@ export default function CalendarPage() {
                   startTime: start,
                   endTime: end,
                   notes: newApptForm.notes || newApptForm.newCaseNote,
-                  colorClass: "bg-blue-50 border-blue-200 text-blue-700",
+                  colorClass: "bg-blue-600 border-blue-700 text-white",
                 };
 
                 setAppointments(prev => [...prev, newAppt]);
@@ -1503,23 +1512,23 @@ export default function CalendarPage() {
                         {entry.patientName.charAt(0)}
                       </div>
                       <div>
-                        <h4 className="font-bold text-slate-800">{entry.patientName}</h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 mt-1 text-sm">
-                          <p className="text-slate-500 flex items-center gap-1.5">
-                            <Phone className="w-3.5 h-3.5" />
+                        <h4 className="font-bold text-slate-800 text-sm md:text-base">{entry.patientName}</h4>
+                        <div className="flex flex-col md:flex-row md:items-center gap-x-4 gap-y-1 mt-1 text-[11px] md:text-sm">
+                          <p className="text-slate-500 flex items-center gap-1.5 whitespace-nowrap">
+                            <Phone className="w-3 md:w-3.5 h-3 md:h-3.5" />
                             <span dir="ltr">{entry.patientPhone}</span>
                           </p>
-                          <p className="text-blue-600 font-medium flex items-center gap-1.5">
-                            <Clock className="w-3.5 h-3.5" />
+                          <p className="text-blue-600 font-medium flex items-center gap-1.5 whitespace-nowrap">
+                            <Clock className="w-3 md:w-3.5 h-3 md:h-3.5" />
                             {entry.appointmentType}
                           </p>
                         </div>
                         {entry.notes && (
-                          <div className="mt-2 text-xs text-slate-500 bg-slate-50 px-2 py-1 rounded">
+                          <div className="mt-2 text-[10px] md:text-xs text-slate-500 bg-slate-50 px-2 py-1 rounded">
                             {entry.notes}
                           </div>
                         )}
-                        <p className="text-[10px] text-slate-400 mt-2">
+                        <p className="text-[9px] md:text-[10px] text-slate-400 mt-2 italic">
                           تمت الإضافة: {format(entry.addedAt, "hh:mm a", { locale: arSA })}
                         </p>
                       </div>
@@ -1581,7 +1590,7 @@ export default function CalendarPage() {
 
             <div className="space-y-4">
               {waitlistForm.isNewPatient || editingWaitlistId ? (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-semibold text-slate-700">اسم المريض</label>
                     <Input 
