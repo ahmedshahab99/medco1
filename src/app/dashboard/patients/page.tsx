@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { Search, SlidersHorizontal, Plus, UsersRound, ChevronRight, ChevronLeft, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { PatientTable } from "@/components/dashboard/patients/PatientTable";
@@ -49,7 +50,7 @@ export default function PatientsPage() {
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [isNewPatientOpen, setIsNewPatientOpen] = useState(false);
 
-  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const router = useRouter();
   const [page, setPage] = useState(1);
 
   // Responsive: detect if side panel should be full-page
@@ -101,16 +102,8 @@ export default function PatientsPage() {
     (filters.hasUpcoming !== "all" ? 1 : 0);
 
   const handleSelectPatient = useCallback((p: Patient) => {
-    setSelectedPatient((prev) => (prev?.id === p.id ? null : p));
-  }, []);
-
-  const handleBookAppointment = useCallback((p: Patient) => {
-    // TODO: open booking modal pre-filled with patient
-    console.log("Book appointment for", p.name);
-  }, []);
-
-  const showPanel = !!selectedPatient;
-  const panelFullPage = isMobile && showPanel;
+    router.push(`/dashboard/patients/${p.id}`);
+  }, [router]);
 
   return (
     <div className="flex flex-col h-full gap-6">
@@ -132,9 +125,7 @@ export default function PatientsPage() {
 
         {/* ═══ LEFT: List panel ═══ */}
         <div
-          className={`flex flex-col bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden transition-all duration-300 ${
-            showPanel && !isMobile ? "flex-1" : "w-full"
-          } ${panelFullPage ? "hidden" : "flex"}`}
+          className="flex flex-col bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden w-full"
         >
           {/* Top Bar */}
           <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center gap-3">
@@ -224,9 +215,6 @@ export default function PatientsPage() {
                 ? `عرض ${filtered.length} مريض`
                 : `${filtered.length} نتيجة من أصل ${MOCK_PATIENTS.length}`}
             </span>
-            {showPanel && (
-              <span className="text-blue-500 font-semibold">ملف مفتوح: {selectedPatient?.name}</span>
-            )}
           </div>
 
           {/* Table */}
@@ -234,8 +222,6 @@ export default function PatientsPage() {
             <PatientTable
               patients={paginated}
               onSelectPatient={handleSelectPatient}
-              selectedPatientId={selectedPatient?.id}
-              onBookAppointment={handleBookAppointment}
             />
           </div>
 
@@ -283,29 +269,6 @@ export default function PatientsPage() {
           )}
         </div>
 
-        {/* ═══ RIGHT: Detail panel (desktop side panel) ═══ */}
-        {showPanel && !isMobile && (
-          <div className="w-[440px] shrink-0 rounded-2xl overflow-hidden shadow-sm border border-slate-100 flex flex-col h-[calc(100vh-14rem)] sticky top-0">
-            <PatientDetailPanel
-              patient={selectedPatient!}
-              onClose={() => setSelectedPatient(null)}
-              onBookAppointment={handleBookAppointment}
-              fullPage={false}
-            />
-          </div>
-        )}
-
-        {/* ═══ Mobile: Full page overlay ═══ */}
-        {panelFullPage && (
-          <div className="fixed inset-0 z-50 bg-white flex flex-col">
-            <PatientDetailPanel
-              patient={selectedPatient!}
-              onClose={() => setSelectedPatient(null)}
-              onBookAppointment={handleBookAppointment}
-              fullPage={true}
-            />
-          </div>
-        )}
       </div>
 
       {/* ── Modals ── */}

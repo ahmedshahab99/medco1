@@ -1,10 +1,15 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { navigationGroups } from "../../../lib/constants/navigation";
 import { SidebarItem } from "./SidebarItem";
-import { Activity, Menu } from "lucide-react";
+import { 
+  Activity, Menu, ChevronLeft, User, FileText, 
+  Files, Calendar, Briefcase, CreditCard, Bell 
+} from "lucide-react";
 import { Button } from "../../ui/Button";
+import { useParams, usePathname } from "next/navigation";
+import { MOCK_PATIENTS } from "@/lib/mock/patients";
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -14,6 +19,30 @@ interface SidebarProps {
 }
 
 export function Sidebar({ isCollapsed, onToggleCollapse, isMobileOpen, onCloseMobile }: SidebarProps) {
+  const params = useParams();
+  const pathname = usePathname();
+  const patientId = params.id as string;
+
+  const patient = useMemo(() => {
+    if (!patientId) return null;
+    return MOCK_PATIENTS.find((p) => p.id === patientId);
+  }, [patientId]);
+
+  // Specific links for the patient context
+  const patientLinks = useMemo(() => {
+    if (!patientId) return [];
+    const baseUrl = `/dashboard/patients/${patientId}`;
+    return [
+      { title: "تفاصيل المريض", href: `${baseUrl}?tab=overview`, icon: User },
+      { title: "ملاحظات العلاج", href: `${baseUrl}?tab=notes`, icon: FileText },
+      { title: "الملفات", href: `${baseUrl}?tab=files`, icon: Files },
+      { title: "المواعيد", href: `${baseUrl}?tab=appointments`, icon: Calendar },
+      { title: "الحالات", href: `${baseUrl}?tab=history`, icon: Briefcase },
+      { title: "المدفوعات", href: `${baseUrl}?tab=payment`, icon: CreditCard },
+      { title: "التذكيرات", href: `${baseUrl}?tab=reminders`, icon: Bell },
+    ];
+  }, [patientId]);
+
   return (
     <>
       {/* Mobile Backdrop */}
@@ -57,8 +86,47 @@ export function Sidebar({ isCollapsed, onToggleCollapse, isMobileOpen, onCloseMo
         {/* Navigation Wrapper */}
         <div className="flex-1 overflow-y-auto py-4 px-3 custom-scrollbar">
           <div className="flex flex-col gap-6">
+            {/* Patient Specific Context */}
+            {patient && (
+              <div className="mb-2 animate-in slide-in-from-right-4 duration-300">
+                {!isCollapsed && (
+                  <div className="px-3 mb-4">
+                    <button 
+                      onClick={() => window.location.href = "/dashboard/patients"}
+                      className="flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors uppercase tracking-wider mb-3"
+                    >
+                      <ChevronLeft className="w-3 h-3" />
+                      العودة للمرضى
+                    </button>
+                    <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                      <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm shrink-0">
+                        {patient.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-slate-900 truncate">{patient.name}</p>
+                        <p className="text-[10px] text-slate-500 font-medium">#{patient.id}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="flex flex-col gap-1">
+                  {patientLinks.map((item, idx) => (
+                    <SidebarItem 
+                      key={idx} 
+                      item={item} 
+                      isCollapsed={isCollapsed} 
+                    />
+                  ))}
+                </div>
+                
+                {!isCollapsed && <div className="mt-6 border-t border-slate-100 mx-3" />}
+              </div>
+            )}
+
+            {/* Main Navigation */}
             {navigationGroups.map((group, idx) => (
-              <div key={idx}>
+              <div key={idx} className={patient ? "opacity-60" : ""}>
                 {!isCollapsed && (
                   <h4 className="px-3 mb-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
                     {group.label}
