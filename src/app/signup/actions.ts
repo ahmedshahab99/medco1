@@ -39,6 +39,6 @@ export async function signup(formData: FormData) {
   }
 
   revalidatePath('/', 'layout')
-  
+
   return { success: true }
 }

@@ -5,12 +5,16 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { signup } from './actions'
-import { CheckCircle2, AlertCircle, Loader2, UserPlus, ArrowRight } from 'lucide-react'
+import { CheckCircle2, AlertCircle, Loader2, UserPlus, ArrowLeft, Eye, EyeOff } from 'lucide-react'
 import Link from 'next/link'
 
 const signUpSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address' }),
   password: z.string().min(8, { message: 'Password must be at least 8 characters' }),
+  confirmPassword: z.string().min(8, { message: 'Please confirm your password' }),
+}).refine(data => data.password === data.confirmPassword, {
+  message: 'كلمات المرور غير متطابقة',
+  path: ['confirmPassword'],
 })
 
 type SignUpFormValues = z.infer<typeof signUpSchema>
@@ -19,6 +23,8 @@ export default function SignUpPage() {
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   const {
     register,
@@ -26,7 +32,7 @@ export default function SignUpPage() {
     formState: { errors },
   } = useForm<SignUpFormValues>({
     resolver: zodResolver(signUpSchema),
-    defaultValues: { email: '', password: '' },
+    defaultValues: { email: '', password: '', confirmPassword: '' },
   })
 
   const onSubmit = (data: SignUpFormValues) => {
@@ -37,9 +43,10 @@ export default function SignUpPage() {
       const formData = new FormData()
       formData.append('email', data.email)
       formData.append('password', data.password)
+      formData.append('confirmPassword', data.confirmPassword)
 
       const result = await signup(formData)
-      
+
       if (result?.error) {
         setError(result.error)
       } else if (result?.success) {
@@ -49,7 +56,11 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gray-50 relative overflow-hidden">
+    <div
+      className="min-h-screen w-full flex items-center justify-center bg-gray-50 relative overflow-hidden"
+      dir="rtl"
+      style={{ fontFamily: 'var(--font-almarai)' }}
+    >
       {/* Background design elements */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob" />
@@ -59,48 +70,51 @@ export default function SignUpPage() {
 
       <div className="w-full max-w-md p-8 md:p-10 bg-white/70 backdrop-blur-xl rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/50 z-10 relative">
         <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-blue-600/30">
+          <div className="inline-flex items-center gap-2 px-3 py-1 mb-3 text-xs font-bold tracking-wider uppercase bg-blue-50 text-blue-600 rounded-lg">
+            إنشاء حساب
+          </div>
+          <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center mb-3 shadow-lg shadow-blue-600/30">
             <UserPlus className="w-6 h-6 text-white" />
           </div>
-          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight mb-2">Join Medco</h1>
+          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight mb-2">انضم إلى ميدكو</h1>
           <p className="text-sm text-gray-500 text-center">
-            Create an account to manage your clinic with ease.
+            أنشئ حسابًا لإدارة عيادتك بسهولة.
           </p>
         </div>
 
         {success ? (
           <div className="bg-emerald-50 text-emerald-800 p-6 rounded-2xl flex flex-col items-center text-center animate-in fade-in zoom-in duration-300">
             <CheckCircle2 className="w-12 h-12 text-emerald-500 mb-3" />
-            <h3 className="font-semibold text-lg mb-2">Check your email</h3>
+            <h3 className="font-semibold text-lg mb-2">تحقق من بريدك الإلكتروني</h3>
             <p className="text-sm text-emerald-600 mb-6">
-              We've sent a confirmation link to your email address. Please click it to activate your account.
+              أرسلنا رابط تأكيد إلى عنوان بريدك الإلكتروني. يرجى النقر عليه لتفعيل حسابك.
             </p>
-            <Link 
-              href="/login" 
+            <Link
+              href="/login"
               className="inline-flex items-center justify-center w-full px-4 py-2.5 text-sm font-medium text-emerald-700 bg-emerald-100 hover:bg-emerald-200 rounded-xl transition-colors"
             >
-              Back to Sign In
+              العودة لتسجيل الدخول
             </Link>
           </div>
         ) : (
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             {error && (
               <div className="bg-red-50 text-red-600 p-4 rounded-xl flex items-start text-sm border border-red-100 animate-in fade-in slide-in-from-top-2 duration-300">
-                <AlertCircle className="w-5 h-5 mr-3 flex-shrink-0 mt-0.5" />
+                <AlertCircle className="w-5 h-5 me-3 flex-shrink-0 mt-0.5" />
                 <p>{error}</p>
               </div>
             )}
 
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-gray-700">Email Address</label>
+                <label className="text-sm font-medium text-gray-700">البريد الإلكتروني</label>
                 <input
                   {...register('email')}
                   type="email"
                   placeholder="you@example.com"
-                  className={`w-full px-4 py-2.5 bg-white/50 border rounded-xl text-sm transition-all outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-gray-400 ${
-                    errors.email ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' : 'border-gray-200'
-                  }`}
+                  className={`w-full px-4 py-2.5 bg-white/50 border rounded-xl text-sm transition-all outline-none text-gray-800 focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600 placeholder:text-gray-400 ${errors.email ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' : 'border-gray-200'
+                    }`}
+                  style={{ textAlign: 'right', paddingRight: '16px' }}
                 />
                 {errors.email && (
                   <p className="text-xs text-red-500 px-1 animate-in slide-in-from-top-1">
@@ -110,18 +124,53 @@ export default function SignUpPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-gray-700">Password</label>
-                <input
-                  {...register('password')}
-                  type="password"
-                  placeholder="••••••••"
-                  className={`w-full px-4 py-2.5 bg-white/50 border rounded-xl text-sm transition-all outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-gray-400 ${
-                    errors.password ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' : 'border-gray-200'
-                  }`}
-                />
+                <label className="text-sm font-medium text-gray-700">كلمة المرور</label>
+                <div className="relative">
+                  <input
+                    {...register('password')}
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    className={`w-full px-4 py-2.5 bg-white/50 border rounded-xl text-sm transition-all outline-none text-gray-800 focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600 placeholder:text-gray-400 ${errors.password ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' : 'border-gray-200'
+                      }`}
+                    style={{ textAlign: 'right', paddingRight: '16px', paddingLeft: '44px' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
                 {errors.password && (
                   <p className="text-xs text-red-500 px-1 animate-in slide-in-from-top-1">
                     {errors.password.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-gray-700">تأكيد كلمة المرور</label>
+                <div className="relative">
+                  <input
+                    {...register('confirmPassword')}
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    className={`w-full px-4 py-2.5 bg-white/50 border rounded-xl text-sm transition-all outline-none text-gray-800 focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600 placeholder:text-gray-400 ${errors.confirmPassword ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' : 'border-gray-200'
+                      }`}
+                    style={{ textAlign: 'right', paddingRight: '16px', paddingLeft: '44px' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                {errors.confirmPassword && (
+                  <p className="text-xs text-red-500 px-1 animate-in slide-in-from-top-1">
+                    {errors.confirmPassword.message}
                   </p>
                 )}
               </div>
@@ -134,21 +183,21 @@ export default function SignUpPage() {
             >
               {isPending ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Creating account...
+                  <Loader2 className="w-4 h-4 me-2 animate-spin" />
+                  جارٍ إنشاء الحساب...
                 </>
               ) : (
                 <>
-                  Sign Up
-                  <ArrowRight className="w-4 h-4 ml-2 opacity-70 group-hover:translate-x-1 transition-transform" />
+                  إنشاء حساب
+                  <ArrowLeft className="w-4 h-4 ms-2 opacity-70 group-hover:-translate-x-1 transition-transform" />
                 </>
               )}
             </button>
 
             <p className="text-center text-sm text-gray-500 mt-6 font-medium">
-              Already have an account?{' '}
+              لديك حساب بالفعل؟{' '}
               <Link href="/login" className="text-blue-600 hover:text-blue-700 hover:underline transition-all">
-                Sign in
+                تسجيل الدخول
               </Link>
             </p>
           </form>

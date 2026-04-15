@@ -18,6 +18,9 @@
     --foreground: #ededed;
   }
 }
+button{
+  cursor: pointer;
+}
 
 body {
   background: var(--background);

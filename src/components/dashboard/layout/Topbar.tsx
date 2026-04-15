@@ -1,8 +1,9 @@
 "use client";
 
 import React from "react";
-import { Search, Bell, Menu, User } from "lucide-react";
+import { Search, Bell, Menu, User, LogOut } from "lucide-react";
 import { Button } from "../../ui/Button";
+import { logout } from "@/app/auth/logout/action";
 
 interface TopbarProps {
   onOpenMobileSidebar: () => void;
@@ -39,6 +40,14 @@ export function Topbar({ onOpenMobileSidebar }: TopbarProps) {
           <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-rose-500 border border-white"></span>
         </Button>
         
+        <button 
+          onClick={() => logout()}
+          className="p-2 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-full transition-all group"
+          title="تسجيل الخروج"
+        >
+          <LogOut className="w-5 h-5 group-hover:scale-110 transition-transform" />
+        </button>
+
         <div className="h-8 w-px bg-slate-200 hidden sm:block"></div>
         
         <button className="flex items-center gap-3 p-1 rounded-full hover:bg-slate-50 transition-colors text-start focus:ring-2 focus:ring-blue-500 outline-none">

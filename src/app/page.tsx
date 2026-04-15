@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 
 // ─── TYPES ──────────────────────────────────────────────────────────────────
 type Lang = "ar" | "en";
@@ -560,12 +561,12 @@ export default function DigitalClinicLanding() {
 
           {/* Actions */}
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-            <button onClick={() => nav("contact")} style={{ background: "transparent", border: `1px solid ${C.border}`, color: C.text, padding: "9px 18px", borderRadius: 50, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "'Cairo','Syne',sans-serif" }}>
+            <Link href="/login" style={{ background: "transparent", border: `1px solid ${C.border}`, color: C.text, padding: "9px 18px", borderRadius: 50, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "'Cairo','Syne',sans-serif" }}>
               {t.nav.login}
-            </button>
-            <button className="btn-shine" onClick={() => nav("pricing")} style={{ ...btnPrimary, padding: "9px 20px", fontSize: 14 }}>
+            </Link>
+            <Link className="btn-shine" href="/signup" style={{ ...btnPrimary, padding: "9px 20px", fontSize: 14 }}>
               {t.nav.signup}
-            </button>
+            </Link>
             <button onClick={() => setMobileOpen(!mobileOpen)} style={{ background: "none", border: `1px solid ${C.border}`, color: C.text, padding: "8px", borderRadius: 10, fontSize: 18, cursor: "pointer", display: "none" }} className="mobile-menu-btn">
               ☰
             </button>
@@ -619,9 +620,9 @@ export default function DigitalClinicLanding() {
 
                   {/* CTAs */}
                   <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 48 }}>
-                    <button className="btn-shine" onClick={() => nav("pricing")} style={btnPrimary}>
+                    <Link className="btn-shine" href="/signup" style={btnPrimary}>
                       {t.hero.cta1}
-                    </button>
+                    </Link>
                     <button onClick={() => nav("features")} style={btnGhost}>
                       {t.hero.cta2} {isRtl ? "←" : "→"}
                     </button>
