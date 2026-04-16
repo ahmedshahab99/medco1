@@ -4,13 +4,20 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
-  
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Tenant {
   id        String    @id @default(uuid())
   name      String
   slug      String    @unique
+  phone     String?
+  bio       String?
+  logo      String?
+  address   String?
+  latitude  Float?
+  longitude Float?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 

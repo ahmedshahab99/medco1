@@ -38,3 +38,18 @@ CREATE POLICY "Tenant isolation for MedicalNotes" ON "MedicalNote"
 -- PatientFile Policies
 CREATE POLICY "Tenant isolation for PatientFiles" ON "PatientFile"
   FOR ALL USING (tenantId = auth.get_tenant_id()) WITH CHECK (tenantId = auth.get_tenant_id());
+
+-- Storage Policies for clinic-assets bucket
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('clinic-assets', 'clinic-assets', true)
+ON CONFLICT (id) DO NOTHING;
+
+CREATE POLICY ""Public Access clinic-assets"" 
+ON storage.objects FOR SELECT 
+TO public 
+USING (bucket_id = 'clinic-assets');
+
+CREATE POLICY ""Authenticated Insert clinic-assets"" 
+ON storage.objects FOR INSERT 
+TO authenticated 
+WITH CHECK (bucket_id = 'clinic-assets');
