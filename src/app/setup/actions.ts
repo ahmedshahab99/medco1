@@ -4,9 +4,16 @@ import { createClient } from "@/utils/supabase/server";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { redirect } from "next/navigation";
+import { isReservedSlug } from "@/lib/reserved-slugs";
+import { SLUG_REGEX } from "@/lib/slug-utils";
 
 const setupSchema = z.object({
   name: z.string().min(2, "اسم العيادة يجب أن يحتوي على حرفين الأقل"),
+  slug: z
+    .string()
+    .min(3, "الرابط يجب أن يكون 3 أحرف على الأقل")
+    .max(30, "الرابط يجب ألا يتجاوز 30 حرف")
+    .regex(SLUG_REGEX, "الرابط يجب أن يحتوي على أحرف إنجليزية صغيرة، أرقام، وشرطات فقط"),
   phone: z.string().min(9, "رقم الهاتف غير صحيح").optional().or(z.literal('')),
   bio: z.string().max(500).optional(),
   logo: z.string().url("رابط الشعار غير صحيح").optional().or(z.literal('')),
@@ -14,6 +21,38 @@ const setupSchema = z.object({
   latitude: z.number().optional(),
   longitude: z.number().optional(),
 });
+
+export async function checkSlugAvailability(slug: string) {
+  if (!slug || slug.length === 0) {
+    return { available: false, error: "الرابط مطلوب" };
+  }
+
+  if (slug.length < 3) {
+    return { available: false, error: "الرابط يجب أن يكون 3 أحرف على الأقل" };
+  }
+
+  if (slug.length > 30) {
+    return { available: false, error: "الرابط يجب ألا يتجاوز 30 حرف" };
+  }
+
+  if (!SLUG_REGEX.test(slug)) {
+    return { available: false, error: "الرابط يجب أن يحتوي على أحرف إنجليزية صغيرة، أرقام، وشرطات فقط" };
+  }
+
+  if (isReservedSlug(slug)) {
+    return { available: false, error: "هذا الرابط محجوز" };
+  }
+
+  const existingTenant = await prisma.tenant.findUnique({
+    where: { slug },
+  });
+
+  if (existingTenant) {
+    return { available: false, error: "هذا الرابط مستخدم بالفعل" };
+  }
+
+  return { available: true };
+}
 
 export async function submitSetupWizard(formData: FormData) {
   const supabase = await createClient();
@@ -25,6 +64,7 @@ export async function submitSetupWizard(formData: FormData) {
 
   const rawData = {
     name: formData.get("name")?.toString() || "",
+    slug: formData.get("slug")?.toString() || "",
     phone: formData.get("phone")?.toString() || "",
     bio: formData.get("bio")?.toString() || "",
     logo: formData.get("logo")?.toString() || "",
@@ -39,7 +79,7 @@ export async function submitSetupWizard(formData: FormData) {
     return { error: validation.error.message };
   }
 
-  const { name, phone, bio, logo, address, latitude, longitude } = validation.data;
+  const { name, slug, phone, bio, logo, address, latitude, longitude } = validation.data;
 
   const MAX_RETRIES = 3;
   const RETRY_DELAY_MS = 1000;
@@ -87,10 +127,16 @@ export async function submitSetupWizard(formData: FormData) {
           throw new Error("لقد قمت بإعداد العيادة مسبقاً.");
         }
 
-        // Generate a simple slug
-        const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "") + "-" + Math.random().toString(36).substring(2, 6);
+        // Check slug uniqueness one more time
+        const existingTenant = await tx.tenant.findUnique({
+          where: { slug },
+        });
 
-        // Create new tenant
+        if (existingTenant) {
+          throw new Error("هذا الرابط مستخدم بالفعل. يرجى اختيار رابط آخر.");
+        }
+
+        // Create new tenant with user-provided slug
         const newTenant = await tx.tenant.create({
           data: {
             name,
