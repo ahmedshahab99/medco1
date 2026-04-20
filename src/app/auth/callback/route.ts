@@ -20,7 +20,7 @@ function getRedirectUrl(request: Request, origin: string, path: string): string 
 
 export async function GET(request: Request): Promise<NextResponse> {
   const { searchParams, origin } = new URL(request.url)
-  const next = searchParams.get('next') ?? '/setup'
+  const next = searchParams.get('next') ?? '/dashboard'
 
   // --- Strategy 1: PKCE code exchange (same-browser confirmation) ---
   const code = searchParams.get('code')

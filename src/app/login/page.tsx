@@ -5,12 +5,11 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { login } from './actions'
-import { AlertCircle, Loader2, LogIn, ArrowLeft, Eye, EyeOff } from 'lucide-react'
+import { AlertCircle, Loader2, LogIn, ArrowLeft, Eye, EyeOff, CheckCircle2 } from 'lucide-react'
 import Link from 'next/link'
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'يرجى إدخال بريد إلكتروني صحيح' }),
-  password: z.string().min(1, { message: 'كلمة المرور مطلوبة' }),
 })
 
 type LoginFormValues = z.infer<typeof loginSchema>
@@ -18,7 +17,7 @@ type LoginFormValues = z.infer<typeof loginSchema>
 export default function LoginPage() {
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
-  const [showPassword, setShowPassword] = useState(false)
+  const [success, setSuccess] = useState(false)
 
   const {
     register,
@@ -26,7 +25,7 @@ export default function LoginPage() {
     formState: { errors },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: '', password: '' },
+    defaultValues: { email: '' },
   })
 
   const onSubmit = (data: LoginFormValues) => {
@@ -35,13 +34,16 @@ export default function LoginPage() {
     startTransition(async () => {
       const formData = new FormData()
       formData.append('email', data.email)
-      formData.append('password', data.password)
 
       const result = await login(formData)
 
       if (result?.error) {
         setError(result.error)
+        
+      }else if (result?.success){
+        setSuccess(true)
       }
+
     })
   }
 
@@ -71,25 +73,37 @@ export default function LoginPage() {
             سجل دخولك للوصول إلى لوحة التحكم الخاصة بك.
           </p>
         </div>
+ {success ? (
+          <div className="bg-emerald-50 text-emerald-800 p-6 rounded-2xl flex flex-col items-center text-center animate-in fade-in zoom-in duration-300">
+            <CheckCircle2 className="w-12 h-12 text-emerald-500 mb-3" />
+            <h3 className="font-semibold text-lg mb-2">تحقق من بريدك الإلكتروني</h3>
+            <p className="text-sm text-emerald-600 mb-6">
+              أرسلنا رابط تسجيل الدخول إلى عنوان بريدك الإلكتروني. يرجى النقر عليه للمتابعة.
+            </p>
+            <button
+              onClick={() => setSuccess(false)}
+              className="inline-flex items-center justify-center w-full px-4 py-2.5 text-sm font-medium text-emerald-700 bg-emerald-100 hover:bg-emerald-200 rounded-xl transition-colors"
+            >
+              إرسال رابط مرة أخرى
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            {error && (
+              <div className="bg-red-50 text-red-600 p-4 rounded-xl flex items-start text-sm border border-red-100 animate-in fade-in slide-in-from-top-2 duration-300">
+                <AlertCircle className="w-5 h-5 me-3 flex-shrink-0 mt-0.5" />
+                <p>{error}</p>
+              </div>
+            )}
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-          {error && (
-            <div className="bg-red-50 text-red-600 p-4 rounded-xl flex items-start text-sm border border-red-100 animate-in fade-in slide-in-from-top-2 duration-300">
-              <AlertCircle className="w-5 h-5 me-3 flex-shrink-0 mt-0.5" />
-              <p>{error}</p>
-            </div>
-          )}
-
-          <div className="space-y-4">
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-gray-700">البريد الإلكتروني</label>
               <input
                 {...register('email')}
                 type="email"
                 placeholder="you@example.com"
-                className={`w-full px-4 py-2.5 bg-white/50 border rounded-xl text-sm transition-all outline-none text-gray-800 focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600 placeholder:text-gray-400 ${
-                  errors.email ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' : 'border-gray-200'
-                }`}
+                className={`w-full px-4 py-2.5 bg-white/50 border rounded-xl text-sm transition-all outline-none text-gray-800 focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600 placeholder:text-gray-400 ${errors.email ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' : 'border-gray-200'
+                  }`}
                 style={{ textAlign: 'right', paddingRight: '16px' }}
               />
               {errors.email && (
@@ -99,62 +113,32 @@ export default function LoginPage() {
               )}
             </div>
 
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-gray-700">كلمة المرور</label>
-                {/* Optional: Add Forgot Password link here later */}
-              </div>
-              <div className="relative">
-                <input
-                  {...register('password')}
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="••••••••"
-                  className={`w-full px-4 py-2.5 bg-white/50 border rounded-xl text-sm transition-all outline-none text-gray-800 focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600 placeholder:text-gray-400 ${
-                    errors.password ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' : 'border-gray-200'
-                  }`}
-                  style={{ textAlign: 'right', paddingRight: '16px', paddingLeft: '44px' }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              {errors.password && (
-                <p className="text-xs text-red-500 px-1 animate-in slide-in-from-top-1">
-                  {errors.password.message}
-                </p>
+            <button
+              type="submit"
+              disabled={isPending}
+              className="w-full flex items-center justify-center px-4 py-3 bg-gray-900 hover:bg-gray-800 text-white font-medium rounded-xl text-sm transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed group"
+            >
+              {isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 me-2 animate-spin" />
+                  جارٍ إرسال الرابط...
+                </>
+              ) : (
+                <>
+                  إرسال رابط الدخول
+                  <ArrowLeft className="w-4 h-4 ms-2 opacity-70 group-hover:-translate-x-1 transition-transform" />
+                </>
               )}
-            </div>
-          </div>
+            </button>
 
-          <button
-            type="submit"
-            disabled={isPending}
-            className="w-full flex items-center justify-center px-4 py-3 bg-gray-900 hover:bg-gray-800 text-white font-medium rounded-xl text-sm transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed group"
-          >
-            {isPending ? (
-              <>
-                <Loader2 className="w-4 h-4 me-2 animate-spin" />
-                جارٍ تسجيل الدخول...
-              </>
-            ) : (
-              <>
-                تسجيل الدخول
-                <ArrowLeft className="w-4 h-4 ms-2 opacity-70 group-hover:-translate-x-1 transition-transform" />
-              </>
-            )}
-          </button>
-
-          <p className="text-center text-sm text-gray-500 mt-6 font-medium">
-            ليس لديك حساب بعد؟{' '}
-            <Link href="/signup" className="text-blue-600 hover:text-blue-700 hover:underline transition-all">
-              إنشاء حساب جديد
-            </Link>
-          </p>
-        </form>
+            <p className="text-center text-sm text-gray-500 mt-6 font-medium">
+              ليس لديك حساب بعد؟{' '}
+              <Link href="/signup" className="text-blue-600 hover:text-blue-700 hover:underline transition-all">
+                إنشاء حساب جديد
+              </Link>
+            </p>
+          </form>
+        )}
       </div>
     </div>
   )
