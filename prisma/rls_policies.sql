@@ -6,15 +6,23 @@ ALTER TABLE "Appointment" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "MedicalNote" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "PatientFile" ENABLE ROW LEVEL SECURITY;
 
--- Helper function to get the current user's tenant_id from JWT metadata
+-- Helper function to get the current user's tenant_id from JWT claims
+-- The tenant_id is injected by the Custom Access Token Hook
 CREATE OR REPLACE FUNCTION auth.get_tenant_id() 
-RETURNS uuid AS $$
-  SELECT ((auth.jwt() -> 'app_metadata' ->> 'tenant_id')::uuid);
+RETURNS text AS $$
+  SELECT (auth.jwt() ->> 'tenant_id');
+$$ LANGUAGE sql STABLE;
+
+-- Helper function to get the current user's role from JWT claims
+-- The user_role is injected by the Custom Access Token Hook
+CREATE OR REPLACE FUNCTION auth.get_user_role() 
+RETURNS text AS $$
+  SELECT (auth.jwt() ->> 'user_role');
 $$ LANGUAGE sql STABLE;
 
 -- Tenant Policies
 CREATE POLICY "Users can view their own tenant" ON "Tenant"
-  FOR SELECT USING (id = auth.get_tenant_id());
+  FOR SELECT USING (id = auth.get_tenant_id()::uuid);
 
 -- Profile Policies
 CREATE POLICY "Users can view profiles in their tenant" ON "Profile"
@@ -53,3 +61,29 @@ CREATE POLICY ""Authenticated Insert clinic-assets""
 ON storage.objects FOR INSERT 
 TO authenticated 
 WITH CHECK (bucket_id = 'clinic-assets');
+
+-- ============================================================
+-- Role-Based Policies (RBAC)
+-- These supplement the tenant-isolation policies above
+-- ============================================================
+
+-- Only ADMINs can delete patients within their tenant
+CREATE POLICY "Only admins can delete patients" ON "Patient"
+  FOR DELETE USING (
+    "tenantId" = auth.get_tenant_id()
+    AND auth.get_user_role() = 'ADMIN'
+  );
+
+-- Only ADMINs can insert new profiles into their tenant (team invitation)
+CREATE POLICY "Only admins can insert profiles" ON "Profile"
+  FOR INSERT WITH CHECK (
+    "tenantId" = auth.get_tenant_id()
+    AND auth.get_user_role() = 'ADMIN'
+  );
+
+-- Only ADMINs can delete profiles within their tenant
+CREATE POLICY "Only admins can delete profiles" ON "Profile"
+  FOR DELETE USING (
+    "tenantId" = auth.get_tenant_id()
+    AND auth.get_user_role() = 'ADMIN'
+  );

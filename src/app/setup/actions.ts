@@ -163,6 +163,10 @@ export async function submitSetupWizard(formData: FormData) {
     return { error: message };
   }
 
+  // Refresh session so the JWT picks up the new user_role and tenant_id claims
+  // injected by the Custom Access Token Hook
+  await supabase.auth.refreshSession();
+
   // Redirect on success
   redirect("/dashboard");
 }

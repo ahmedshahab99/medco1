@@ -3,15 +3,21 @@
 import React, { useState } from "react";
 import { Sidebar } from "@/components/dashboard/layout/Sidebar";
 import { Topbar } from "@/components/dashboard/layout/Topbar";
+import type { AuthProfile } from "@/lib/types/auth";
+    
+interface DashboardShellProps {
+  children: React.ReactNode;
+  userProfile: AuthProfile;
+}
 
-export default function DashboardShell({ children }: { children: React.ReactNode }) {
+export default function DashboardShell({ children, userProfile }: DashboardShellProps) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   return (
     <div dir="rtl" className="min-h-screen bg-slate-50 flex text-slate-900 font-sans selection:bg-blue-100 selection:text-blue-900">
       <Sidebar 
-        isCollapsed={isSidebarCollapsed}
+        isCollapsed={isSidebarCollapsed}  
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
         isMobileOpen={isMobileSidebarOpen}
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
