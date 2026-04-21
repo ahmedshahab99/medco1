@@ -12,6 +12,7 @@ model Tenant {
   name      String
   slug      String    @unique
   phone     String?
+  specialty String?
   bio       String?
   logo      String?
   address   String?
