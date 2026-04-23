@@ -2,37 +2,29 @@ import React from "react";
 import DashboardShell from "./DashboardShell";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
-import prisma from "@/lib/prisma";
-import type { AuthProfile } from "@/lib/types/auth";
+
+function decodeJwtClaims(accessToken: string | undefined): { tenant_id: string | null } | null {
+  if (!accessToken) return null;
+  try {
+    const jwtParts = accessToken.split(".");
+    if (jwtParts.length !== 3) return null;
+    const payload = JSON.parse(Buffer.from(jwtParts[1], "base64").toString("utf-8"));
+    return {
+      tenant_id: payload.tenant_id ?? null,
+    };
+  } catch {
+    return null;
+  }
+}
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
   const { data: { session } } = await supabase.auth.getSession();
 
-  if (!user) {
-    redirect("/login");
-  }
-  console.log("Authenticated user:", session?.user.app_metadata.user_role);
+  if (!session?.access_token) redirect("/login");
 
-  // Fetch profile with role for RBAC-aware rendering
-  const profile = await prisma.profile.findUnique({
-    where: { id: user.id },
-    select: {
-      id: true,
-      email: true,
-      firstName: true,
-      lastName: true,
-      role: true,
-      tenantId: true,
-    },
-  });
+  const jwtClaims = decodeJwtClaims(session.access_token);
+  if (!jwtClaims?.tenant_id) redirect("/setup");
 
-
-  if (!profile || !profile.tenantId) {
-    redirect("/setup");
-  }
-
-  return <DashboardShell userProfile={profile as AuthProfile}>{children}</DashboardShell>;
+  return <DashboardShell>{children}</DashboardShell>;
 }
-

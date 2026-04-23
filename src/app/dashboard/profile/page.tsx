@@ -50,6 +50,7 @@ export default function ProfilePage() {
     }, 1000);
   };
 
+
   return (
     <div className="space-y-6 max-w-5xl">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -59,7 +60,7 @@ export default function ProfilePage() {
         </div>
         <Button onClick={handleSave} disabled={isSaving} className="gap-2 min-w-[160px]">
           {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-          حفظ التغييرات
+          حفظ التغييرات 
         </Button>
       </div>
 

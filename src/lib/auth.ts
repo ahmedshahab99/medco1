@@ -2,103 +2,63 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
-import prisma from "@/lib/prisma";
-import type { AuthProfile, UserRole } from "@/lib/types/auth";
+import type { AuthProfile, UserRole, JwtCustomClaims } from "@/lib/types/auth";
 import { isRoleAllowed } from "@/lib/types/auth";
 
-/**
- * Fetches the currently authenticated user's profile from the database.
- * Returns null if no user is authenticated or if no profile exists.
- *
- * Uses Supabase getUser() (server-validated, not JWT-only) for security,
- * then fetches the full profile from Prisma.
- */
-export async function getCurrentProfile(): Promise<AuthProfile | null> {
+function decodeJwtClaims(accessToken: string | undefined): JwtCustomClaims | null {
+  if (!accessToken) return null;
+  try {
+    const jwtParts = accessToken.split(".");
+    if (jwtParts.length !== 3) return null;
+    const payload = JSON.parse(Buffer.from(jwtParts[1], "base64").toString("utf-8"));
+    return {
+      user_role: payload.user_role ?? null,
+      tenant_id: payload.tenant_id ?? null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function deriveNameFromEmail(email: string): string {
+  return email.split("@")[0];
+}
+
+export async function getAuthState(): Promise<AuthProfile | null> {
   const supabase = await createClient();
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
 
-  if (error || !user) {
-    return null;
-  }
+  if (!session?.access_token) return null;
 
-  const profile = await prisma.profile.findUnique({
-    where: { id: user.id },
-    select: {
-      id: true,
-      email: true,
-      firstName: true,
-      lastName: true,
-      role: true,
-      tenantId: true,
-    },
-  });
+  const jwtClaims = decodeJwtClaims(session.access_token);
+  if (!jwtClaims?.user_role || !jwtClaims?.tenant_id) return null;
 
-  if (!profile) {
-    return null;
-  }
+  const email = session.user.email ?? "";
 
-  return profile as AuthProfile;
+  return {
+    id: session.user.id,
+    email,
+    firstName: deriveNameFromEmail(email),
+    lastName: null,
+    role: jwtClaims.user_role,
+    tenantId: jwtClaims.tenant_id,
+  };
 }
 
-/**
- * Ensures the current user is authenticated.
- * Redirects to /login if not authenticated.
- *
- * @returns The authenticated user's profile
- */
 export async function requireAuth(): Promise<AuthProfile> {
-  const profile = await getCurrentProfile();
-
-  if (!profile) {
-    redirect("/login");
-  }
-
+  const profile = await getAuthState();
+  if (!profile) redirect("/login");
   return profile;
 }
 
-/**
- * Ensures the current user has one of the specified roles.
- * Redirects to /login if not authenticated, or /unauthorized if role doesn't match.
- *
- * Use this in Server Components and Server Actions to guard access:
- * ```ts
- * const profile = await requireRole(["ADMIN"]);
- * // Only ADMINs reach this point
- * ```
- *
- * @param allowedRoles - Array of roles that are permitted to access the resource
- * @returns The authenticated user's profile (guaranteed to have an allowed role)
- */
-export async function requireRole(
-  allowedRoles: UserRole[]
-): Promise<AuthProfile> {
+export async function requireRole(allowedRoles: UserRole[]): Promise<AuthProfile> {
   const profile = await requireAuth();
-
-  if (!isRoleAllowed(profile.role, allowedRoles)) {
-    redirect("/unauthorized");
-  }
-
+  if (!isRoleAllowed(profile.role, allowedRoles)) redirect("/unauthorized");
   return profile;
 }
 
-/**
- * Non-redirecting role check — useful for conditional rendering in Server Components.
- * Returns the profile if authenticated and authorized, null otherwise.
- *
- * @param allowedRoles - Array of roles that are permitted
- * @returns The profile if authorized, null otherwise
- */
-export async function checkRole(
-  allowedRoles: UserRole[]
-): Promise<AuthProfile | null> {
-  const profile = await getCurrentProfile();
-
-  if (!profile || !isRoleAllowed(profile.role, allowedRoles)) {
-    return null;
-  }
-
+export async function checkRole(allowedRoles: UserRole[]): Promise<AuthProfile | null> {
+  const profile = await getAuthState();
+  if (!profile || !isRoleAllowed(profile.role, allowedRoles)) return null;
   return profile;
 }
