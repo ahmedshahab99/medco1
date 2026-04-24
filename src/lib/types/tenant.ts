@@ -4,6 +4,7 @@ export interface TenantProfile {
   id: string;
   name: string;
   slug: string;
+  qrCode: string | null;
   phone: string | null;
   specialty: string | null;
   bio: string | null;

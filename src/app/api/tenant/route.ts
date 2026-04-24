@@ -9,6 +9,7 @@ function serializeTenant(tenant: any): TenantProfile {
     id: tenant.id,
     name: tenant.name,
     slug: tenant.slug,
+    qrCode: tenant.qrCode,
     phone: tenant.phone,
     specialty: tenant.specialty,
     bio: tenant.bio,
@@ -123,6 +124,9 @@ export async function PATCH(request: Request) {
       where: { id: tenant.id },
       include: { socialLinks: true },
     });
+  }, {
+    maxWait: 10000, // 10 seconds max wait for connection
+    timeout: 20000, // 20 seconds max transaction duration
   });
 
   if (!updatedTenant) {
