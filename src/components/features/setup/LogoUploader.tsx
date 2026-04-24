@@ -7,9 +7,10 @@ import { createClient } from "@/utils/supabase/client";
 interface LogoUploaderProps {
   onUpload: (url: string) => void;
   defaultImage?: string;
+  disabled?: boolean;
 }
 
-export function LogoUploader({ onUpload, defaultImage }: LogoUploaderProps) {
+export function LogoUploader({ onUpload, defaultImage, disabled }: LogoUploaderProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [previewURL, setPreviewURL] = useState<string | null>(defaultImage || null);
   const [error, setError] = useState<string | null>(null);
@@ -62,6 +63,26 @@ export function LogoUploader({ onUpload, defaultImage }: LogoUploaderProps) {
     setPreviewURL(null);
     onUpload("");
   };
+
+  if (disabled) {
+    return (
+      <div className="w-full flex flex-col items-center">
+        {previewURL ? (
+          <div className="w-32 h-32 rounded-lg border-2 border-slate-200 overflow-hidden bg-white flex items-center justify-center">
+            <img
+              src={previewURL}
+              alt="Clinic Logo"
+              className="w-full h-full object-cover"
+            />
+          </div>
+        ) : (
+          <div className="w-32 h-32 rounded-lg border-2 border-slate-200 bg-slate-100 flex items-center justify-center">
+            <span className="text-slate-400 text-xs">لا يوجد شعار</span>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="w-full">
