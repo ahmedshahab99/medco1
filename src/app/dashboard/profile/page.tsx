@@ -9,6 +9,7 @@ function serializeTenant(tenant: any): TenantProfile {
     id: tenant.id,
     name: tenant.name,
     slug: tenant.slug,
+    qrCode: tenant.qrCode,
     phone: tenant.phone,
     specialty: tenant.specialty,
     bio: tenant.bio,

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -18,6 +18,10 @@ import {
   Save,
   Loader2,
   MapPin,
+  QrCode,
+  Copy,
+  Check,
+  Download,
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -49,6 +53,26 @@ export default function ProfileForm({ initialData, isAdmin }: ProfileFormProps) 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [baseUrl, setBaseUrl] = useState<string>("");
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setBaseUrl(window.location.origin);
+    }
+  }, []);
+
+  const clinicUrl = `${baseUrl}/${initialData.slug}`;
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(clinicUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setSubmitError("فشل نسخ الرابط");
+    }
+  };
 
   const {
     register,
@@ -246,6 +270,62 @@ export default function ProfileForm({ initialData, isAdmin }: ProfileFormProps) 
                   rows={4}
                 />
               </div>
+            </div>
+          </Card>
+
+          {/* QR Code & Public Link */}
+          <Card className="p-6 md:p-8">
+            <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+              <QrCode className="w-5 h-5 text-blue-600" />
+              رابط العيادة
+            </h3>
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700">
+                  رابط العيادة العام
+                </label>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 font-mono text-sm overflow-x-auto" dir="ltr">
+                    {clinicUrl}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={handleCopyLink}
+                    className={copied ? "text-green-600 border-green-600 hover:text-green-700 hover:border-green-700" : ""}
+                    title={copied ? "تم النسخ" : "نسخ الرابط"}
+                  >
+                    {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                  </Button>
+                </div>
+                <p className="text-xs text-slate-500">
+                  شارك هذا الرابط مع المرضى للحجز السريع
+                </p>
+              </div>
+
+              {initialData.qrCode && (
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700">
+                    رمز QR للحجز
+                  </label>
+                  <div className="flex items-center gap-6 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                    <img
+                      src={initialData.qrCode}
+                      alt="QR Code"
+                      className="w-32 h-32 object-contain bg-white rounded-lg"
+                    />
+                    <a
+                      href={initialData.qrCode}
+                      download={`${initialData.slug}-qrcode.png`}
+                      className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors"
+                    >
+                      <Download className="w-5 h-5" />
+                      تحميل رمز QR
+                    </a>
+                  </div>
+                </div>
+              )}
             </div>
           </Card>
 

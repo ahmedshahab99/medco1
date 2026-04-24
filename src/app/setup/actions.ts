@@ -6,6 +6,7 @@ import prisma from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { isReservedSlug } from "@/lib/reserved-slugs";
 import { SLUG_REGEX } from "@/lib/slug-utils";
+import QRCode from "qrcode";
 
 const setupSchema = z.object({
   name: z.string().min(2, "اسم العيادة يجب أن يحتوي على حرفين الأقل"),
@@ -81,6 +82,38 @@ export async function submitSetupWizard(formData: FormData) {
 
   const { name, slug, phone, bio, logo, address, latitude, longitude } = validation.data;
 
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const clinicUrl = `${baseUrl}/${slug}`;
+
+  const qrCodeDataUrl = await QRCode.toDataURL(clinicUrl, {
+    width: 300,
+    margin: 2,
+    color: {
+      dark: "#000000",
+      light: "#ffffff"
+    }
+  });
+
+  const qrCodeBuffer = Buffer.from(qrCodeDataUrl.split(",")[1], "base64");
+
+  const qrCodeFileName = `qrcodes/${slug}.png`;
+  const { error: uploadError } = await supabase.storage
+    .from("clinic-assets")
+    .upload(qrCodeFileName, qrCodeBuffer, {
+      contentType: "image/png",
+      upsert: true
+    });
+
+  if (uploadError) {
+    return { error: `فشل في رفع رمز QR: ${uploadError.message}` };
+  }
+
+  const { data: urlData } = supabase.storage
+    .from("clinic-assets")
+    .getPublicUrl(qrCodeFileName);
+
+  const qrCodeUrl = urlData.publicUrl;
+
   const MAX_RETRIES = 3;
   const RETRY_DELAY_MS = 1000;
 
@@ -147,14 +180,17 @@ export async function submitSetupWizard(formData: FormData) {
             address: address || null,
             latitude: latitude || null,
             longitude: longitude || null,
+            qrCode: qrCodeUrl,
           }
         });
 
-        // Update profile with tenantId
         await tx.profile.update({
           where: { id: user.id },
           data: { tenantId: newTenant.id, role: "ADMIN" }
         });
+      }, {
+        maxWait: 10000, // 10 seconds max wait for connection
+        timeout: 20000, // 20 seconds max transaction duration
       });
     });
   } catch (err: unknown) {

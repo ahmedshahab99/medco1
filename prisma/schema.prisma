@@ -15,6 +15,7 @@ model Tenant {
   specialty String?
   bio       String?
   logo      String?
+  qrCode    String?
   address   String?
   latitude  Float?
   longitude Float?
