@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import Link from "next/link";
 
 // ─── TYPES ──────────────────────────────────────────────────────────────────
 type Lang = "ar" | "en";
@@ -10,7 +9,7 @@ type Page = "home" | "features" | "pricing" | "contact" | "faq";
 // ─── TRANSLATIONS ────────────────────────────────────────────────────────────
 const T = {
   ar: {
-    dir: "rtl" as any,
+    dir: "rtl" as const,
     topbar: { email: "info@digitalclinic.iq", phone: "+964 770 281 4484", location: "العراق، بغداد" },
     nav: { home: "الرئيسية", features: "المميزات", pricing: "الباقات", contact: "الدعم", faq: "الأسئلة", login: "تسجيل الدخول", signup: "إنشاء حساب" },
     hero: {
@@ -146,7 +145,7 @@ const T = {
     }
   },
   en: {
-    dir: "ltr" as any,
+    dir: "ltr" as const,
     topbar: { email: "info@digitalclinic.iq", phone: "+964 770 281 4484", location: "Baghdad, Iraq" },
     nav: { home: "Home", features: "Features", pricing: "Pricing", contact: "Support", faq: "FAQ", login: "Login", signup: "Get Started" },
     hero: {
@@ -376,7 +375,6 @@ function AnimatedCounter({ target, suffix = "" }: { target: number; suffix?: str
 
 // ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
 export default function DigitalClinicLanding() {
-  const router = useRouter();
   const [lang, setLang] = useState<Lang>("ar");
   const [page, setPage] = useState<Page>("home");
   const [billingYearly, setBillingYearly] = useState(false);
@@ -531,21 +529,19 @@ export default function DigitalClinicLanding() {
       }}>
         <div style={{ ...container, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px", gap: 20 }}>
           {/* Logo */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div onClick={() => router.push("/admin/login")} style={{ width: 44, height: 44, borderRadius: 12, background: `linear-gradient(135deg, ${C.blue}, ${C.teal})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, boxShadow: "0 4px 16px rgba(26,111,186,0.5)", animation: "glow 3s ease-in-out infinite", cursor: "pointer" }}>
+          <button onClick={() => nav("home")} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: `linear-gradient(135deg, ${C.blue}, ${C.teal})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, boxShadow: "0 4px 16px rgba(26,111,186,0.5)", animation: "glow 3s ease-in-out infinite" }}>
               🏥
             </div>
-            <Link href="/" style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
-              <div style={{ textAlign: isRtl ? "right" : "left" }}>
-                <div style={{ fontSize: 18, fontWeight: 900, color: C.white, lineHeight: 1.1 }}>
-                  {lang === "ar" ? <>العيادة <span style={{ color: C.blueBright }}>الرقمية</span></> : <>Digital <span style={{ color: C.blueBright }}>Clinic</span></>}
-                </div>
-                <div style={{ fontSize: 10, color: C.muted, fontWeight: 500 }}>
-                  {lang === "ar" ? "منصة إدارة العيادات" : "Clinic Management Platform"}
-                </div>
+            <div style={{ textAlign: isRtl ? "right" : "left" }}>
+              <div style={{ fontSize: 18, fontWeight: 900, color: C.white, lineHeight: 1.1 }}>
+                {lang === "ar" ? <>العيادة <span style={{ color: C.blueBright }}>الرقمية</span></> : <>Digital <span style={{ color: C.blueBright }}>Clinic</span></>}
               </div>
-            </Link>
-          </div>
+              <div style={{ fontSize: 10, color: C.muted, fontWeight: 500 }}>
+                {lang === "ar" ? "منصة إدارة العيادات" : "Clinic Management Platform"}
+              </div>
+            </div>
+          </button>
 
           {/* Nav links */}
           <div className="nav-links-wrap" style={{ display: "flex", gap: 4, alignItems: "center" }}>
@@ -564,12 +560,12 @@ export default function DigitalClinicLanding() {
 
           {/* Actions */}
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-            <Link href="/login" style={{ background: "transparent", border: `1px solid ${C.border}`, color: C.text, padding: "9px 18px", borderRadius: 50, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "'Cairo','Syne',sans-serif" }}>
+            <button onClick={() => nav("contact")} style={{ background: "transparent", border: `1px solid ${C.border}`, color: C.text, padding: "9px 18px", borderRadius: 50, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "'Cairo','Syne',sans-serif" }}>
               {t.nav.login}
-            </Link>
-            <Link className="btn-shine" href="/signup" style={{ ...btnPrimary, padding: "9px 20px", fontSize: 14 }}>
+            </button>
+            <button className="btn-shine" onClick={() => nav("pricing")} style={{ ...btnPrimary, padding: "9px 20px", fontSize: 14 }}>
               {t.nav.signup}
-            </Link>
+            </button>
             <button onClick={() => setMobileOpen(!mobileOpen)} style={{ background: "none", border: `1px solid ${C.border}`, color: C.text, padding: "8px", borderRadius: 10, fontSize: 18, cursor: "pointer", display: "none" }} className="mobile-menu-btn">
               ☰
             </button>
@@ -623,9 +619,9 @@ export default function DigitalClinicLanding() {
 
                   {/* CTAs */}
                   <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 48 }}>
-                    <Link className="btn-shine" href="/signup" style={btnPrimary}>
+                    <button className="btn-shine" onClick={() => nav("pricing")} style={btnPrimary}>
                       {t.hero.cta1}
-                    </Link>
+                    </button>
                     <button onClick={() => nav("features")} style={btnGhost}>
                       {t.hero.cta2} {isRtl ? "←" : "→"}
                     </button>
@@ -896,7 +892,7 @@ export default function DigitalClinicLanding() {
               </div>
             </div>
           </section>
-          <CtaSection lang={lang} t={t as any} router={router} btnPrimary={btnPrimary} btnGhost={btnGhost} container={container} C={C} />
+          <CtaSection lang={lang} t={t} nav={nav} btnPrimary={btnPrimary} btnGhost={btnGhost} container={container} C={C} />
         </>
       )}
 
@@ -956,7 +952,7 @@ export default function DigitalClinicLanding() {
               </p>
             </div>
           </section>
-          <CtaSection lang={lang} t={t as any} router={router} btnPrimary={btnPrimary} btnGhost={btnGhost} container={container} C={C} />
+          <CtaSection lang={lang} t={t} nav={nav} btnPrimary={btnPrimary} btnGhost={btnGhost} container={container} C={C} />
         </>
       )}
 
@@ -1092,7 +1088,7 @@ export default function DigitalClinicLanding() {
               ))}
             </div>
           </section>
-          <CtaSection lang={lang} t={t as any} router={router} btnPrimary={btnPrimary} btnGhost={btnGhost} container={container} C={C} />
+          <CtaSection lang={lang} t={t} nav={nav} btnPrimary={btnPrimary} btnGhost={btnGhost} container={container} C={C} />
         </>
       )}
 
@@ -1170,8 +1166,8 @@ export default function DigitalClinicLanding() {
 }
 
 // ─── SHARED CTA SECTION COMPONENT ────────────────────────────────────────────
-function CtaSection({ lang, t, router, btnPrimary, btnGhost, container, C }: {
-  lang: Lang; t: any; router: any;
+function CtaSection({ lang, t, nav, btnPrimary, btnGhost, container, C }: {
+  lang: Lang; t: typeof T["ar"]; nav: (p: Page) => void;
   btnPrimary: React.CSSProperties; btnGhost: React.CSSProperties;
   container: React.CSSProperties; C: Record<string, string>;
 }) {
@@ -1183,13 +1179,13 @@ function CtaSection({ lang, t, router, btnPrimary, btnGhost, container, C }: {
         <h2 style={{ fontSize: 44, fontWeight: 900, color: "#fff", marginBottom: 16 }}>{t.cta.title}</h2>
         <p style={{ fontSize: 17, color: "rgba(255,255,255,0.8)", maxWidth: 560, margin: "0 auto 40px", lineHeight: 1.7 }}>{t.cta.sub}</p>
         <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", marginBottom: 32 }}>
-          <Link href="/signup" style={{ ...btnPrimary, background: "#fff", color: C.blue, boxShadow: "0 8px 32px rgba(0,0,0,0.2)", textDecoration: "none" }}>
+          <button onClick={() => nav("pricing")} style={{ ...btnPrimary, background: "#fff", color: C.blue, boxShadow: "0 8px 32px rgba(0,0,0,0.2)" }}>
             {t.cta.btn1}
-          </Link>
-          <button onClick={() => router.push("/pricing")} style={btnGhost}>{t.cta.btn2}</button>
+          </button>
+          <button onClick={() => nav("pricing")} style={btnGhost}>{t.cta.btn2}</button>
         </div>
         <div style={{ display: "flex", gap: 28, justifyContent: "center", flexWrap: "wrap" }}>
-          {t.cta.badges.map((b: string, i: number) => (
+          {t.cta.badges.map((b, i) => (
             <span key={i} style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", display: "flex", alignItems: "center", gap: 6 }}>{b}</span>
           ))}
         </div>
