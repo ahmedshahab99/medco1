@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 
 const i18n = {
   en: {
@@ -103,7 +102,6 @@ const lightVars = {
 };
 
 export default function AdminLogin() {
-  const router = useRouter();
   const [lang, setLang] = useState<"en" | "ar">("en");
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [email, setEmail] = useState("");
@@ -130,7 +128,7 @@ export default function AdminLogin() {
       setLoading(false);
       return;
     }
-    router.push("/admin");
+    // router.push("/admin/dashboard");
     setLoading(false);
   };
 
