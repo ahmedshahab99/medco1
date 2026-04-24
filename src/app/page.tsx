@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 // ─── TYPES ──────────────────────────────────────────────────────────────────
@@ -565,10 +564,10 @@ export default function DigitalClinicLanding() {
 
           {/* Actions */}
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-            <Link href="/login" style={{ background: "transparent", border: `1px solid ${C.border}`, color: C.text, padding: "9px 18px", borderRadius: 50, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "'Cairo','Syne',sans-serif", textDecoration: "none" }}>
+            <Link href="/login" style={{ background: "transparent", border: `1px solid ${C.border}`, color: C.text, padding: "9px 18px", borderRadius: 50, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "'Cairo','Syne',sans-serif" }}>
               {t.nav.login}
             </Link>
-            <Link href="/signup" className="btn-shine" style={{ ...btnPrimary, padding: "9px 20px", fontSize: 14, textDecoration: "none" }}>
+            <Link className="btn-shine" href="/signup" style={{ ...btnPrimary, padding: "9px 20px", fontSize: 14 }}>
               {t.nav.signup}
             </Link>
             <button onClick={() => setMobileOpen(!mobileOpen)} style={{ background: "none", border: `1px solid ${C.border}`, color: C.text, padding: "8px", borderRadius: 10, fontSize: 18, cursor: "pointer", display: "none" }} className="mobile-menu-btn">
@@ -624,7 +623,7 @@ export default function DigitalClinicLanding() {
 
                   {/* CTAs */}
                   <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 48 }}>
-                    <Link href="/signup" className="btn-shine" style={{ ...btnPrimary, textDecoration: "none" }}>
+                    <Link className="btn-shine" href="/signup" style={btnPrimary}>
                       {t.hero.cta1}
                     </Link>
                     <button onClick={() => nav("features")} style={btnGhost}>

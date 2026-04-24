@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Patient } from "../../../../lib/types/dashboard";
-import { Calendar, CalendarCheck, Activity, DollarSign, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { Calendar, CalendarCheck, Activity, DollarSign, Clock, CheckCircle, User, Phone, Mail, MapPin, Globe } from "lucide-react";
 
 interface OverviewTabProps {
   patient: Patient;
@@ -57,6 +57,89 @@ export function OverviewTab({ patient }: OverviewTabProps) {
         </div>
       </div>
 
+      {/* Contact Information */}
+      <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+            <User className="w-4 h-4 text-blue-600" />
+          </div>
+          <h4 className="font-bold text-slate-800">بيانات التواصل</h4>
+        </div>
+
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">الاسم الأول</p>
+              <p className="text-sm font-semibold text-slate-700">{patient.firstName || patient.name.split(" ")[0]}</p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">اسم العائلة</p>
+              <p className="text-sm font-semibold text-slate-700">{patient.lastName || patient.name.split(" ").slice(-1)[0]}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-50">
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">تاريخ الميلاد</p>
+              <div className="flex items-center gap-1.5 text-slate-700">
+                <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                <p className="text-sm font-semibold">{formatDate(patient.dateOfBirth)}</p>
+              </div>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">الجنس</p>
+              <p className="text-sm font-semibold text-slate-700">
+                {patient.gender === "male" ? "ذكر" : patient.gender === "female" ? "أنثى" : "—"}
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-3 pt-4 border-t border-slate-50">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">رقم الهاتف</p>
+                <p className="text-sm font-semibold text-slate-700" dir="ltr">{patient.phone}</p>
+              </div>
+              <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center">
+                <Phone className="w-3.5 h-3.5 text-slate-400" />
+              </div>
+            </div>
+            {patient.email && (
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">البريد الإلكتروني</p>
+                  <p className="text-sm font-semibold text-slate-700">{patient.email}</p>
+                </div>
+                <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center">
+                  <Mail className="w-3.5 h-3.5 text-slate-400" />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="pt-4 border-t border-slate-50">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">العنوان</p>
+            <div className="flex gap-3">
+              <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center shrink-0">
+                <MapPin className="w-3.5 h-3.5 text-slate-400" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md flex items-center gap-1">
+                    <Globe className="w-3 h-3" />
+                    {patient.country || "السعودية"}
+                  </span>
+                  <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
+                    {patient.city || "الرياض"}
+                  </span>
+                </div>
+                <p className="text-sm text-slate-500">{patient.streetAddress || patient.address || "—"}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Recent Visits */}
       <div>
         <h4 className="text-sm font-bold text-slate-700 mb-3">آخر الزيارات</h4>
@@ -84,13 +167,26 @@ export function OverviewTab({ patient }: OverviewTabProps) {
 
       {/* Quick Actions */}
       {patient.nextAppointment && (
-        <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-4 text-white">
-          <div className="flex items-center gap-2 mb-1">
-            <Clock className="w-4 h-4 text-blue-200" />
-            <p className="text-xs font-bold text-blue-200 uppercase tracking-wide">الموعد القادم</p>
+        <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-3xl p-6 text-white shadow-lg shadow-blue-200">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                <Clock className="w-4 h-4 text-white" />
+              </div>
+              <p className="text-xs font-bold text-blue-100 uppercase tracking-wide">الموعد القادم</p>
+            </div>
           </div>
-          <p className="font-bold text-lg">{formatDate(patient.nextAppointment)}</p>
-          <p className="text-blue-200 text-sm mt-0.5">{patient.doctor}</p>
+          <p className="font-bold text-2xl mb-1">{formatDate(patient.nextAppointment)}</p>
+          <p className="text-blue-100 text-sm opacity-90">{patient.doctor}</p>
+          
+          <div className="mt-8 pt-6 border-t border-white/10 flex items-center justify-between">
+            <div className="flex -space-x-2 rtl:space-x-reverse">
+              <div className="w-8 h-8 rounded-full border-2 border-blue-600 bg-blue-400 flex items-center justify-center text-[10px] font-bold">DR</div>
+            </div>
+            <button className="text-xs font-bold bg-white text-blue-700 px-4 py-2 rounded-xl hover:bg-blue-50 transition-colors">
+              تعديل الموعد
+            </button>
+          </div>
         </div>
       )}
     </div>

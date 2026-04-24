@@ -1,0 +1,172 @@
+"use server";
+
+import { createClient } from "@/utils/supabase/server";
+import { z } from "zod";
+import prisma from "@/lib/prisma";
+import { redirect } from "next/navigation";
+import { isReservedSlug } from "@/lib/reserved-slugs";
+import { SLUG_REGEX } from "@/lib/slug-utils";
+
+const setupSchema = z.object({
+  name: z.string().min(2, "اسم العيادة يجب أن يحتوي على حرفين الأقل"),
+  slug: z
+    .string()
+    .min(3, "الرابط يجب أن يكون 3 أحرف على الأقل")
+    .max(30, "الرابط يجب ألا يتجاوز 30 حرف")
+    .regex(SLUG_REGEX, "الرابط يجب أن يحتوي على أحرف إنجليزية صغيرة، أرقام، وشرطات فقط"),
+  phone: z.string().min(9, "رقم الهاتف غير صحيح").optional().or(z.literal('')),
+  bio: z.string().max(500).optional(),
+  logo: z.string().url("رابط الشعار غير صحيح").optional().or(z.literal('')),
+  address: z.string().optional(),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
+});
+
+export async function checkSlugAvailability(slug: string) {
+  if (!slug || slug.length === 0) {
+    return { available: false, error: "الرابط مطلوب" };
+  }
+
+  if (slug.length < 3) {
+    return { available: false, error: "الرابط يجب أن يكون 3 أحرف على الأقل" };
+  }
+
+  if (slug.length > 30) {
+    return { available: false, error: "الرابط يجب ألا يتجاوز 30 حرف" };
+  }
+
+  if (!SLUG_REGEX.test(slug)) {
+    return { available: false, error: "الرابط يجب أن يحتوي على أحرف إنجليزية صغيرة، أرقام، وشرطات فقط" };
+  }
+
+  if (isReservedSlug(slug)) {
+    return { available: false, error: "هذا الرابط محجوز" };
+  }
+
+  const existingTenant = await prisma.tenant.findUnique({
+    where: { slug },
+  });
+
+  if (existingTenant) {
+    return { available: false, error: "هذا الرابط مستخدم بالفعل" };
+  }
+
+  return { available: true };
+}
+
+export async function submitSetupWizard(formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return { error: "يرجى تسجيل الدخول أولاً." };
+  }
+
+  const rawData = {
+    name: formData.get("name")?.toString() || "",
+    slug: formData.get("slug")?.toString() || "",
+    phone: formData.get("phone")?.toString() || "",
+    bio: formData.get("bio")?.toString() || "",
+    logo: formData.get("logo")?.toString() || "",
+    address: formData.get("address")?.toString() || "",
+    latitude: formData.get("latitude") ? parseFloat(formData.get("latitude") as string) : undefined,
+    longitude: formData.get("longitude") ? parseFloat(formData.get("longitude") as string) : undefined,
+  };
+
+  const validation = setupSchema.safeParse(rawData);
+
+  if (!validation.success) {
+    return { error: validation.error.message };
+  }
+
+  const { name, slug, phone, bio, logo, address, latitude, longitude } = validation.data;
+
+  const MAX_RETRIES = 3;
+  const RETRY_DELAY_MS = 1000;
+
+  async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
+    let lastError: Error | null = null;
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        return await fn();
+      } catch (error: unknown) {
+        lastError = error as Error;
+        const isRetryable =
+          lastError.message?.includes("Unable to start a transaction") ||
+          lastError.message?.includes("transaction") ||
+          "code" in lastError && (lastError as { code?: string }).code === "P2024";
+        if (!isRetryable || attempt === MAX_RETRIES) {
+          throw error;
+        }
+        console.log(`Transaction attempt ${attempt} failed, retrying in ${RETRY_DELAY_MS}ms...`);
+        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+      }
+    }
+    throw lastError;
+  }
+
+  try {
+    await withRetry(async () => {
+      await prisma.$transaction(async (tx) => {
+        // Check if profile exists; create if it somehow doesn't
+        let profile = await tx.profile.findUnique({
+          where: { id: user.id }
+        });
+
+        if (!profile) {
+          profile = await tx.profile.create({
+            data: {
+              id: user.id,
+              email: user.email!,
+              role: "ADMIN"
+            }
+          });
+        }
+
+        if (profile.tenantId) {
+          throw new Error("لقد قمت بإعداد العيادة مسبقاً.");
+        }
+
+        // Check slug uniqueness one more time
+        const existingTenant = await tx.tenant.findUnique({
+          where: { slug },
+        });
+
+        if (existingTenant) {
+          throw new Error("هذا الرابط مستخدم بالفعل. يرجى اختيار رابط آخر.");
+        }
+
+        // Create new tenant with user-provided slug
+        const newTenant = await tx.tenant.create({
+          data: {
+            name,
+            slug,
+            phone: phone || null,
+            bio: bio || null,
+            logo: logo || null,
+            address: address || null,
+            latitude: latitude || null,
+            longitude: longitude || null,
+          }
+        });
+
+        // Update profile with tenantId
+        await tx.profile.update({
+          where: { id: user.id },
+          data: { tenantId: newTenant.id, role: "ADMIN" }
+        });
+      });
+    });
+  } catch (err: unknown) {
+    console.error("Setup error:", err);
+    const message = err instanceof Error ? err.message : "حدث خطأ أثناء إعداد العيادة.";
+    return { error: message };
+  }
+
+  // Refresh session so the JWT picks up the new user_role and tenant_id claims
+  // injected by the Custom Access Token Hook
+  await supabase.auth.refreshSession();
+
+  // Redirect on success
+  redirect("/dashboard");
+}

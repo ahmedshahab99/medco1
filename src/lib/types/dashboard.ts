@@ -87,6 +87,11 @@ export type Patient = {
   notes: MedicalNote[];
   files: PatientFile[];
   communications: CommunicationLog[];
+  firstName?: string;
+  lastName?: string;
+  country?: string;
+  city?: string;
+  streetAddress?: string;
   address?: string;
 };
 

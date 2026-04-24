@@ -13,12 +13,12 @@ export async function generateStaticParams() {
   }));
 }
 
-export default function DoctorLayout({
+export default async function DoctorLayout({
   children,
   params,
 }: {
   children: React.ReactNode;
-  params: Promise<{ doctor: string }>;
+  params: Promise<any>;
 }) {
   const { doctor } = await params;
   
