@@ -1,97 +1,141 @@
-"use client";
+﻿// Services page with React Query and optimistic UI
+"use client"
 
-import React, { useState } from "react";
-import { Plus, Edit2, Trash2, Clock, Activity, Power, MoreVertical, Stethoscope } from "lucide-react";
-import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Textarea } from "@/components/ui/Textarea";
-import { Modal } from "@/components/ui/Modal";
+import React, { useState } from "react"
+import { Plus, Edit2, Trash2, Clock, Activity, Power, Stethoscope } from "lucide-react"
+import { Card } from "@/components/ui/Card"
+import { Button } from "@/components/ui/Button"
+import { Input } from "@/components/ui/Input"
+import { Textarea } from "@/components/ui/Textarea"
+import { Modal } from "@/components/ui/Modal"
+import { Toast, useToast, type ToastType } from "@/components/ui/Toast"
+import { ConfirmDialog, useConfirmDialog } from "@/components/ui/ConfirmDialog"
+import { useServices, useCreateService, useUpdateService, useDeleteService, type Service } from "@/hooks/use-services"
 
-interface Service {
-  id: string;
-  name: string;
-  description: string;
-  duration: number;
-  isActive: boolean;
+const COLORS = [
+  "#3B82F6", "#10B981", "#F59E0B", "#EF4444",
+  "#8B5CF6", "#EC4899", "#06B6D4", "#84CC16"
+]
+
+interface FormData {
+  name: string
+  description: string
+  duration: number
+  color: string
+  isActive: boolean
 }
 
-const INITIAL_SERVICES: Service[] = [
-  {
-    id: "s1",
-    name: "استشارة طبية عامة",
-    description: "فحص طبي شامل يتضمن مراجعة التاريخ الطبي ومناقشة الأعراض الحالية لتحديد خطة العلاج المناسبة.",
-    duration: 30,
-    isActive: true,
-  },
-  {
-    id: "s2",
-    name: "مراجعة نتائج التحاليل",
-    description: "جلسة مخصصة لمناقشة نتائج التحاليل المخبرية والأشعة وتوضيح مسار التعافي وتعديل الأدوية.",
-    duration: 15,
-    isActive: true,
-  },
-  {
-    id: "s3",
-    name: "استشارة عن بعد",
-    description: "جلسة فيديو قصيرة لتقييم الحالات غير الطارئة أو المتابعة الطبية الروتينية.",
-    duration: 20,
-    isActive: false,
-  }
-];
+const INITIAL_FORM: FormData = {
+  name: "",
+  description: "",
+  duration: 30,
+  color: COLORS[0],
+  isActive: true,
+}
 
 export default function ServicesPage() {
-  const [services, setServices] = useState<Service[]>(INITIAL_SERVICES);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingService, setEditingService] = useState<Service | null>(null);
+  const { data: services, isLoading, error } = useServices()
+  const createMutation = useCreateService()
+  const updateMutation = useUpdateService()
+  const deleteMutation = useDeleteService()
 
-  const [formData, setFormData] = useState<Partial<Service>>({});
+  const { toast, showToast, hideToast } = useToast()
+  const { confirmState, confirm, closeConfirm } = useConfirmDialog()
+
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingService, setEditingService] = useState<Service | null>(null)
+  const [formData, setFormData] = useState<FormData>(INITIAL_FORM)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [updatingId, setUpdatingId] = useState<string | null>(null)
 
   const handleOpenModal = (service?: Service) => {
     if (service) {
-      setEditingService(service);
-      setFormData(service);
-    } else {
-      setEditingService(null);
+      setEditingService(service)
       setFormData({
-        isActive: true,
-        duration: 30,
-      });
+        name: service.name,
+        description: service.description || "",
+        duration: service.duration,
+        color: service.color,
+        isActive: service.isActive,
+      })
+    } else {
+      setEditingService(null)
+      setFormData({
+        ...INITIAL_FORM,
+        color: COLORS[Math.floor(Math.random() * COLORS.length)],
+      })
     }
-    setIsModalOpen(true);
-  };
+    setIsModalOpen(true)
+  }
 
   const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setEditingService(null);
-    setFormData({});
-  };
+    setIsModalOpen(false)
+    setEditingService(null)
+    setFormData(INITIAL_FORM)
+  }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.name || !formData.duration) {
-      alert("الرجاء ملء الحقول الأساسية: الاسم والمدة");
-      return;
+      showToast("الرجاء ملء الحقول الأساسية: الاسم والمدة", "warning")
+      return
     }
 
-    if (editingService) {
-      setServices(services.map(s => s.id === editingService.id ? { ...s, ...formData } as Service : s));
-    } else {
-      setServices([...services, {
-        id: Math.random().toString(),
-        name: formData.name,
-        description: formData.description || "",
-        duration: formData.duration,
-        isActive: formData.isActive ?? true,
-      }]);
+    try {
+      if (editingService) {
+        setUpdatingId(editingService.id)
+        await updateMutation.mutateAsync({
+          id: editingService.id,
+          data: {
+            name: formData.name,
+            description: formData.description || null,
+            duration: formData.duration,
+            color: formData.color,
+            isActive: formData.isActive,
+          },
+        })
+        showToast("تم تحديث الخدمة بنجاح", "success")
+      } else {
+        await createMutation.mutateAsync({
+          name: formData.name,
+          description: formData.description || null,
+          duration: formData.duration,
+          color: formData.color,
+          isActive: formData.isActive,
+        })
+        showToast("تمت إضافة الخدمة بنجاح", "success")
+      }
+      handleCloseModal()
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "حدث خطأ"
+      showToast(message, "error")
+    } finally {
+      setUpdatingId(null)
     }
-    handleCloseModal();
-  };
+  }
 
-  const handleDelete = (id: string, name: string) => {
-    if (confirm(`هل أنت متأكد من حذف خدمة "${name}"؟ لا يمكن التراجع عن هذا الإجراء.`)) {
-      setServices(services.filter(s => s.id !== id));
+  const handleDeleteClick = (id: string, name: string) => {
+    confirm({
+      title: "حذف الخدمة",
+      message: `هل أنت متأكد من حذف خدمة "${name}"؟ لا يمكن التراجع عن هذا الإجراء.`,
+      onConfirm: () => handleDelete(id),
+    })
+  }
+
+  const handleDelete = async () => {
+    const id = deletingId
+    if (!id) return
+
+    closeConfirm()
+    try {
+      await deleteMutation.mutateAsync(id)
+      showToast("تم حذف الخدمة بنجاح", "success")
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "حدث خطأ"
+      showToast(message, "error")
+    } finally {
+      setDeletingId(null)
     }
-  };
+  }
 
   return (
     <div className="space-y-6 max-w-6xl">
@@ -106,7 +150,18 @@ export default function ServicesPage() {
         </Button>
       </div>
 
-      {services.length === 0 ? (
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="p-6 h-48 animate-pulse" />
+          ))}
+        </div>
+      ) : error ? (
+        <Card className="flex flex-col items-center justify-center py-16 text-center border-red-200 bg-red-50/50">
+          <h3 className="text-lg font-bold text-red-800 mb-1">خطأ في تحميل الخدمات</h3>
+          <p className="text-red-600">{(error as Error).message}</p>
+        </Card>
+      ) : !services || services.length === 0 ? (
         <Card className="flex flex-col items-center justify-center py-16 text-center border-dashed border-2 bg-slate-50/50">
           <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
             <Stethoscope className="w-8 h-8 text-blue-300" />
@@ -116,52 +171,69 @@ export default function ServicesPage() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {services.map((service) => (
-            <Card key={service.id} className="p-6 flex flex-col hover:shadow-md transition-shadow relative overflow-hidden group">
-              {/* Status Indicator Bar */}
-              <div className={`absolute top-0 right-0 w-full h-1 ${service.isActive ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-              
-              <div className="flex justify-between items-start mb-4">
-                <div className={`px-2.5 py-1 text-xs font-semibold rounded-full flex items-center gap-1.5 ${service.isActive ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'}`}>
-                  {service.isActive ? <Activity className="w-3.5 h-3.5" /> : <Power className="w-3.5 h-3.5" />}
-                  {service.isActive ? "نشـط" : "غير نشط"}
-                </div>
-                
-                <div className="flex items-center gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                  <button 
-                    onClick={() => handleOpenModal(service)}
-                    className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                  <button 
-                    onClick={() => handleDelete(service.id, service.name)}
-                    className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
+          {services.map((service) => {
+            const isDeleting = deletingId === service.id
+            const isUpdating = updatingId === service.id
+            const isPending = isDeleting || isUpdating
 
-              <h3 className="text-xl font-bold text-slate-900 mb-2">{service.name}</h3>
-              <p className="text-sm text-slate-500 line-clamp-2 leading-relaxed flex-1">
-                {service.description || "لا يوجد وصف للخدمة."}
-              </p>
-
-              <div className="mt-5 pt-5 border-t border-slate-100 flex items-center justify-between text-sm font-medium">
-                <div className="flex items-center gap-2 text-slate-600">
-                  <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
-                    <Clock className="w-4 h-4" />
+            return (
+              <Card 
+                key={service.id} 
+                className={`p-6 flex flex-col hover:shadow-md transition-shadow relative overflow-hidden group ${isPending ? 'opacity-50' : ''}`}
+              >
+                {(isDeleting || isUpdating) && (
+                  <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-10">
+                    <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
                   </div>
-                  <span>{service.duration} دقيقة</span>
+                )}
+                <div className={`absolute top-0 right-0 w-full h-1 ${service.isActive ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                
+                <div className="flex justify-between items-start mb-4">
+                  <div className={`px-2.5 py-1 text-xs font-semibold rounded-full flex items-center gap-1.5 ${service.isActive ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'}`}>
+                    {service.isActive ? <Activity className="w-3.5 h-3.5" /> : <Power className="w-3.5 h-3.5" />}
+                    {service.isActive ? "نشـط" : "غير نشط"}
+                  </div>
+                  
+                  <div className="flex items-center gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                    <button 
+                      onClick={() => handleOpenModal(service)}
+                      disabled={isPending}
+                      className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setDeletingId(service.id)
+                        handleDeleteClick(service.id, service.name)
+                      }}
+                      disabled={isPending}
+                      className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </Card>
-          ))}
+
+                <h3 className="text-xl font-bold text-slate-900 mb-2">{service.name}</h3>
+                <p className="text-sm text-slate-500 line-clamp-2 leading-relaxed flex-1">
+                  {service.description || "لا يوجد وصف للخدمة."}
+                </p>
+
+                <div className="mt-5 pt-5 border-t border-slate-100 flex items-center justify-between text-sm font-medium">
+                  <div className="flex items-center gap-2 text-slate-600">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: service.color + "20", color: service.color }}>
+                      <Clock className="w-4 h-4" />
+                    </div>
+                    <span>{service.duration} دقيقة</span>
+                  </div>
+                </div>
+              </Card>
+            )
+          })}
         </div>
       )}
 
-      {/* Modal Add/Edit */}
       <Modal 
         isOpen={isModalOpen} 
         onClose={handleCloseModal} 
@@ -172,8 +244,8 @@ export default function ServicesPage() {
             <label className="text-sm font-semibold text-slate-700">اسم الخدمة <span className="text-red-500">*</span></label>
             <Input 
               placeholder="مثال: استشارة عن بعد" 
-              value={formData.name || ""} 
-              onChange={e => setFormData({ ...formData, name: e.target.value })}
+              value={formData.name} 
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             />
           </div>
 
@@ -181,8 +253,8 @@ export default function ServicesPage() {
             <label className="text-sm font-semibold text-slate-700">وصف الخدمة</label>
             <Textarea 
               placeholder="وصف تفصيلي يشرح للمريض ما تتضمنه الخدمة..." 
-              value={formData.description || ""} 
-              onChange={e => setFormData({ ...formData, description: e.target.value })}
+              value={formData.description} 
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             />
           </div>
 
@@ -198,8 +270,8 @@ export default function ServicesPage() {
                   min="5" 
                   step="5"
                   className="pr-4 pl-12"
-                  value={formData.duration || ""} 
-                  onChange={e => setFormData({ ...formData, duration: Number(e.target.value) })}
+                  value={formData.duration} 
+                  onChange={(e) => setFormData({ ...formData, duration: Number(e.target.value) })}
                 />
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-slate-400">
                   دقيقة
@@ -225,17 +297,50 @@ export default function ServicesPage() {
               </div>
             </div>
           </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-semibold text-slate-700">لون الخدمة</label>
+            <div className="flex flex-wrap gap-2">
+              {COLORS.map((color) => (
+                <button
+                  key={color}
+                  type="button"
+                  onClick={() => setFormData({ ...formData, color })}
+                  className={`w-8 h-8 rounded-full transition-all ${formData.color === color ? 'ring-2 ring-offset-2 ring-slate-400 scale-110' : 'hover:scale-105'}`}
+                  style={{ backgroundColor: color }}
+                />
+              ))}
+            </div>
+          </div>
           
           <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
             <Button variant="outline" onClick={handleCloseModal}>
               إلغاء
             </Button>
-            <Button onClick={handleSave}>
-              {editingService ? "حفظ التعديلات" : "إضافة الخدمة"}
+            <Button onClick={handleSave} disabled={createMutation.isPending || updateMutation.isPending}>
+              {createMutation.isPending || updateMutation.isPending ? "جاري الحفظ..." : editingService ? "حفظ التعديلات" : "إضافة الخدمة"}
             </Button>
           </div>
         </div>
       </Modal>
+
+      <Toast 
+        message={toast.message} 
+        type={toast.type as ToastType} 
+        isVisible={toast.visible} 
+        onClose={hideToast} 
+      />
+
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmLabel="حذف"
+        cancelLabel="إلغاء"
+        onConfirm={handleDelete}
+        onCancel={closeConfirm}
+        type="danger"
+      />
     </div>
-  );
+  )
 }
