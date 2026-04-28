@@ -29,6 +29,7 @@ model Tenant {
   patientFiles PatientFile[]
   socialLinks  SocialLink[]
   services     Service[]
+  invitations  Invitation[]
 }
 
 model SocialLink {
@@ -61,7 +62,9 @@ model Profile {
   tenantId String?
   tenant   Tenant? @relation(fields: [tenantId], references: [id])
 
-  appointments Appointment[] @relation("DoctorAppointments")
+  appointments     Appointment[]  @relation("DoctorAppointments")
+  sentInvitations  Invitation[]   @relation("SentInvitations")
+  acceptedInvitations Invitation[] @relation("AcceptedInvitations")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -170,4 +173,28 @@ model PatientFile {
   size          String
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
+}
+
+model Invitation {
+  id         String           @id @default(uuid())
+  tenantId   String
+  tenant     Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  email      String
+  role       UserRole
+  status     InvitationStatus @default(PENDING)
+  invitedBy  String
+  inviter    Profile          @relation("SentInvitations", fields: [invitedBy], references: [id])
+  acceptedBy String?
+  acceptedProfile Profile?    @relation("AcceptedInvitations", fields: [acceptedBy], references: [id])
+  expiresAt  DateTime
+  createdAt  DateTime         @default(now())
+
+  @@index([email, status])
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  CANCELLED
 }

@@ -47,7 +47,6 @@ export default function LoginPage() {
     })
   }
 
-export default function LoginPage() {
   return (
     <div
       className="min-h-screen w-full flex items-center justify-center bg-gray-50 relative overflow-hidden"
