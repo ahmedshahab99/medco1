@@ -55,5 +55,10 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // Invitation pages are always public
+  if (request.nextUrl.pathname.startsWith('/invite/')) {
+    return supabaseResponse
+  }
+
   return supabaseResponse
 }

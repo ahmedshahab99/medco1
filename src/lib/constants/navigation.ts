@@ -21,7 +21,8 @@ import {
   Palette,
   ShieldCheck,
   Receipt,
-  Briefcase
+  Briefcase,
+  UserPlus
 } from "lucide-react";
 import { NavGroup } from "../types/dashboard";
 
@@ -75,6 +76,7 @@ export const navigationGroups: NavGroup[] = [
     items: [
       { title: "المخزون", href: "/dashboard/inventory", icon: PackageSearch },
       { title: "طاقم العمل", href: "/dashboard/staff", icon: Briefcase },
+      { title: "الدعوات", href: "/dashboard/invite", icon: UserPlus },
       { title: "الحضور والرواتب", href: "/dashboard/payroll", icon: Calculator },
     ],
   },
