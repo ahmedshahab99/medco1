@@ -22,7 +22,8 @@ import {
   ShieldCheck,
   Receipt,
   Briefcase,
-  UserPlus
+  UserPlus,
+  User
 } from "lucide-react";
 import { NavGroup } from "../types/dashboard";
 
@@ -91,6 +92,7 @@ export const navigationGroups: NavGroup[] = [
   {
     label: "الإعدادات",
     items: [
+      { title: "حسابي", href: "/dashboard/account", icon: User },
       { title: "الملف الشخصي والهوية", href: "/dashboard/settings/branding", icon: Palette },
       { title: "المستخدمين والصلاحيات", href: "/dashboard/settings/users", icon: ShieldCheck },
       { title: "الاشتراك والفواتير", href: "/dashboard/settings/billing", icon: Receipt },
