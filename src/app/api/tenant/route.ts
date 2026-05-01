@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAuthState } from "@/lib/auth";
+import { createClient } from "@/utils/supabase/server";
 import prisma from "@/lib/prisma";
 import { tenantUpdateSchema } from "@/lib/schemas/tenant";
 import type { TenantProfile } from "@/lib/types/tenant";
@@ -26,13 +26,26 @@ function serializeTenant(tenant: any): TenantProfile {
 }
 
 export async function GET() {
-  const profile = await getAuthState();
-  if (!profile?.tenantId) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const actor = await prisma.profile.findUnique({
+    where: { id: user.id },
+  });
+
+  if (!actor?.tenantId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const tenant = await prisma.tenant.findUnique({
-    where: { id: profile.tenantId },
+    where: { id: actor.tenantId },
     include: { socialLinks: true },
   });
 
@@ -44,12 +57,26 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
-  const profile = await getAuthState();
-  if (!profile?.tenantId) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (profile.role !== "ADMIN") {
+  // Re-query Profile from DB for authorization
+  const actor = await prisma.profile.findUnique({
+    where: { id: user.id },
+  });
+
+  if (!actor?.tenantId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (actor.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -72,7 +99,7 @@ export async function PATCH(request: Request) {
 
   const updatedTenant = await prisma.$transaction(async (tx) => {
     const tenant = await tx.tenant.update({
-      where: { id: profile.tenantId! },
+      where: { id: actor.tenantId! },
       data: {
         name: data.name,
         specialty: data.specialty,
@@ -125,8 +152,8 @@ export async function PATCH(request: Request) {
       include: { socialLinks: true },
     });
   }, {
-    maxWait: 10000, // 10 seconds max wait for connection
-    timeout: 20000, // 20 seconds max transaction duration
+    maxWait: 10000,
+    timeout: 20000,
   });
 
   if (!updatedTenant) {

@@ -1,12 +1,29 @@
 "use server";
 
-import { requireAuth } from "@/lib/auth";
+import { createClient } from "@/utils/supabase/server";
 import prisma from "@/lib/prisma";
 import { profileUpdateSchema } from "@/lib/schemas/profile";
 import { revalidatePath } from "next/cache";
 
 export async function updateProfile(formData: FormData) {
-  const authProfile = await requireAuth();
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return { error: "يرجى تسجيل الدخول أولاً." };
+  }
+
+  // Re-query Profile from DB for authorization
+  const actor = await prisma.profile.findUnique({
+    where: { id: user.id },
+  });
+
+  if (!actor) {
+    return { error: "لم يتم العثور على الملف الشخصي." };
+  }
 
   const rawData = {
     firstName: formData.get("firstName")?.toString() ?? "",
@@ -22,7 +39,7 @@ export async function updateProfile(formData: FormData) {
 
   try {
     await prisma.profile.update({
-      where: { id: authProfile.id },
+      where: { id: actor.id },
       data: { firstName, lastName },
     });
 

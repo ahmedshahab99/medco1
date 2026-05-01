@@ -1,18 +1,30 @@
 import { NextResponse } from "next/server";
-import { getAuthState } from "@/lib/auth";
+import { createClient } from "@/utils/supabase/server";
 import prisma from "@/lib/prisma";
 import { serviceCreateSchema } from "@/lib/schemas/service";
 
 export async function GET() {
-  const profile = await getAuthState();
-  if (!profile?.tenantId) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const actor = await prisma.profile.findUnique({
+    where: { id: user.id },
+  });
+
+  if (!actor?.tenantId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const services = await prisma.service.findMany({
     where: {
-      tenantId: profile.tenantId,
-      
+      tenantId: actor.tenantId,
     },
     orderBy: { name: "asc" },
   });
@@ -21,12 +33,26 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const profile = await getAuthState();
-  if (!profile?.tenantId) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (profile.role !== "ADMIN") {
+  // Re-query Profile from DB for authorization
+  const actor = await prisma.profile.findUnique({
+    where: { id: user.id },
+  });
+
+  if (!actor?.tenantId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (actor.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -49,7 +75,7 @@ export async function POST(request: Request) {
 
   const service = await prisma.service.create({
     data: {
-      tenantId: profile.tenantId,
+      tenantId: actor.tenantId,
       name: data.name,
       description: data.description,
       duration: data.duration,
