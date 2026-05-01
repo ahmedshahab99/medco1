@@ -52,6 +52,48 @@
 - ♻️ Cache/Revalidation: Use Next.js `revalidatePath` / `revalidateTag` or TanStack Query `invalidateQueries`
 - 🔒 Security: Sanitize inputs, validate server-side, use parameterized queries, enforce RLS if using Supabase/Postgres
 
+## 🔐 Auth & Authorization Boundary Rules (Mandatory)
+> **JWT is the frontend guard. The `Profile` DB is the backend guard.**
+
+### Frontend (Client-side)
+- ✅ UI guards, conditional rendering, route access, and client state **must** rely on JWT claims (`user_role`, `tenant_id`) from `getAuthState()` / the auth store / middleware.
+- ✅ The JWT is considered the source of truth for **read-only** frontend decisions (what to show, where to route).
+- ⚠️ The JWT can be stale (e.g., role was changed by another admin). Never use it as the sole authority for backend writes.
+
+### Backend (Server Actions & Route Handlers)
+- ✅ **Every write operation** must re-query the `Profile` table from the database to verify the actor's `role` and `tenantId` before proceeding.
+- ✅ The JWT is **not trusted** for write authorization. Always perform a fresh `prisma.profile.findUnique` (or equivalent) in the server action/handler.
+- ✅ **Cross-tenant protection**: Always verify the queried profile's `tenantId` matches the target resource's `tenantId`.
+- ✅ **Reads** may use the JWT `tenant_id` for the `WHERE` clause (it is safe for filtering data the user is allowed to see).
+
+### Correct Pattern (Server Action)
+```ts
+"use server";
+export async function someMutation(formData: FormData) {
+  // 1. Get the user identity from Supabase (who they claim to be)
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Unauthorized" };
+
+  // 2. Re-query the Profile from DB — this is the authorization step
+  const actor = await prisma.profile.findUnique({ where: { id: user.id } });
+  if (!actor || actor.role !== "ADMIN" || !actor.tenantId) {
+    return { error: "Forbidden" };
+  }
+
+  // 3. Proceed with mutation, scoped to actor.tenantId
+  // ...
+}
+```
+
+### Incorrect Pattern (Never Do This)
+```ts
+// NEVER use JWT claims to authorize a write
+const authProfile = await getAuthState(); // reads from JWT
+if (authProfile.role !== "ADMIN") { ... } // ❌ Stale / untrusted for writes
+await prisma.profile.update({ ... });
+```
+
 ## 🤖 AI Agent Rules & Constraints
 1. **Ask before adding dependencies**. Prefer native APIs or existing project libs.
 2. **Keep it modular**: One file = one responsibility. Extract repeated UI to `components/ui/` or `components/features/`

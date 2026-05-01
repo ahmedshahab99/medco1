@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAuthState } from "@/lib/auth";
+import { createClient } from "@/utils/supabase/server";
 import prisma from "@/lib/prisma";
 import { serviceUpdateSchema } from "@/lib/schemas/service";
 
@@ -7,9 +7,25 @@ interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
+async function getActor() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) return null;
+
+  const actor = await prisma.profile.findUnique({
+    where: { id: user.id },
+  });
+
+  return actor;
+}
+
 export async function GET(request: Request, { params }: RouteParams) {
-  const profile = await getAuthState();
-  if (!profile?.tenantId) {
+  const actor = await getActor();
+  if (!actor?.tenantId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -18,7 +34,7 @@ export async function GET(request: Request, { params }: RouteParams) {
   const service = await prisma.service.findFirst({
     where: {
       id,
-      tenantId: profile.tenantId,
+      tenantId: actor.tenantId,
     },
   });
 
@@ -30,12 +46,12 @@ export async function GET(request: Request, { params }: RouteParams) {
 }
 
 export async function PUT(request: Request, { params }: RouteParams) {
-  const profile = await getAuthState();
-  if (!profile?.tenantId) {
+  const actor = await getActor();
+  if (!actor?.tenantId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (profile.role !== "ADMIN") {
+  if (actor.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -44,7 +60,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
   const existing = await prisma.service.findFirst({
     where: {
       id,
-      tenantId: profile.tenantId,
+      tenantId: actor.tenantId,
     },
   });
 
@@ -85,12 +101,12 @@ export async function PUT(request: Request, { params }: RouteParams) {
 }
 
 export async function DELETE(request: Request, { params }: RouteParams) {
-  const profile = await getAuthState();
-  if (!profile?.tenantId) {
+  const actor = await getActor();
+  if (!actor?.tenantId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (profile.role !== "ADMIN") {
+  if (actor.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -99,7 +115,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
   const existing = await prisma.service.findFirst({
     where: {
       id,
-      tenantId: profile.tenantId,
+      tenantId: actor.tenantId,
     },
   });
 
