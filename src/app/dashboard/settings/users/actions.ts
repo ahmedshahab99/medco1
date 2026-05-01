@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { createClient } from "@/utils/supabase/server";
-import { serviceRoleClient } from "@/utils/supabase/service-role";
+import { revokeUserSessions } from "@/lib/session-revocation";
 
 const updateRoleSchema = z.object({
   userId: z.string().uuid(),
@@ -92,8 +92,8 @@ export async function updateUserRole(formData: FormData) {
       data: { role },
     });
 
-    // Revoke all sessions for the affected user so they must re-login
-    await serviceRoleClient.auth.admin.signOut(userId, "global");
+    // Revoke all sessions and blacklist current JWT
+    await revokeUserSessions(userId);
 
     revalidatePath("/dashboard/settings/users");
     return { success: true };
@@ -136,8 +136,8 @@ export async function deleteUser(formData: FormData) {
       where: { id: userId },
     });
 
-    // Revoke all sessions for the deleted user
-    await serviceRoleClient.auth.admin.signOut(userId, "global");
+    // Revoke all sessions and blacklist current JWT
+    await revokeUserSessions(userId);
 
     revalidatePath("/dashboard/settings/users");
     return { success: true };
