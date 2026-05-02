@@ -4,6 +4,8 @@ import React, { useEffect } from "react";
 import { Sidebar } from "@/components/dashboard/layout/Sidebar";
 import { Topbar } from "@/components/dashboard/layout/Topbar";
 import { useAuth } from "@/hooks/use-auth";
+import { useSessionWatch } from "@/hooks/use-session-watch";
+import { Toast } from "@/components/ui/Toast";
 
 interface DashboardShellProps {
   children: React.ReactNode;
@@ -18,6 +20,8 @@ export default function DashboardShell({ children }: DashboardShellProps) {
     setSidebarCollapsed,
     setMobileSidebarOpen,
   } = useAuth();
+
+  const { toast, hideToast } = useSessionWatch();
 
   useEffect(() => {
     initialize();
@@ -45,6 +49,13 @@ export default function DashboardShell({ children }: DashboardShellProps) {
           {children}
         </main>
       </div>
+
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.visible}
+        onClose={hideToast}
+      />
     </div>
   );
 }
