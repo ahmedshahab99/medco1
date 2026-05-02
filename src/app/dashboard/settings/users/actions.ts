@@ -141,7 +141,9 @@ export async function deleteUser(formData: FormData) {
 
     revalidatePath("/dashboard/settings/users");
     return { success: true };
-  } catch {
+  } catch(error) {
+    console.error("Error deleting user:", error);
     return { error: "حدث خطأ أثناء حذف المستخدم." };
+
   }
 }

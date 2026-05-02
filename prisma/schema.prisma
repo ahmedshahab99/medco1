@@ -183,7 +183,7 @@ model Invitation {
   role       UserRole
   status     InvitationStatus @default(PENDING)
   invitedBy  String
-  inviter    Profile          @relation("SentInvitations", fields: [invitedBy], references: [id])
+  inviter    Profile          @relation("SentInvitations", fields: [invitedBy], references: [id], onDelete: Cascade)
   acceptedBy String?
   acceptedProfile Profile?    @relation("AcceptedInvitations", fields: [acceptedBy], references: [id])
   expiresAt  DateTime
