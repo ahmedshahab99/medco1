@@ -1,4 +1,4 @@
-// Toast component with hook for easy usage
+﻿// Toast component with hook for easy usage
 "use client"
 
 import { CheckCircle2, XCircle, AlertTriangle, Info, X } from "lucide-react"

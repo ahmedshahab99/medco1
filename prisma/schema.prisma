@@ -24,12 +24,14 @@ model Tenant {
 
   profiles     Profile[]
   patients     Patient[]
-  appointments Appointment[]
+  appointments     Appointment[]
   medicalNotes MedicalNote[]
   patientFiles PatientFile[]
   socialLinks  SocialLink[]
   services     Service[]
   invitations  Invitation[]
+  cases        Case[]
+  waitlist     Waitlist[]
 }
 
 model SocialLink {
@@ -92,9 +94,13 @@ model Patient {
   appointments Appointment[]
   medicalNotes MedicalNote[]
   patientFiles PatientFile[]
+  cases        Case[]
+  waitlist     Waitlist[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([firstName, lastName])
 }
 
 enum Gender {
@@ -129,6 +135,8 @@ model Appointment {
   doctor    Profile           @relation("DoctorAppointments", fields: [doctorId], references: [id])
   serviceId String
   service   Service           @relation(fields: [serviceId], references: [id])
+  caseId    String?
+  case      Case?             @relation(fields: [caseId], references: [id])
   startTime DateTime
   endTime   DateTime
   status    AppointmentStatus @default(SCHEDULED)
@@ -142,6 +150,8 @@ model Appointment {
 
 enum AppointmentStatus {
   SCHEDULED
+  CONFIRMED
+  ARRIVED
   COMPLETED
   CANCELLED
   NO_SHOW
@@ -197,4 +207,29 @@ enum InvitationStatus {
   ACCEPTED
   EXPIRED
   CANCELLED
+}
+
+model Case {
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patientId   String
+  patient     Patient  @relation(fields: [patientId], references: [id])
+  title       String
+  description String?
+  appointments Appointment[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Waitlist {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patientId String
+  patient   Patient  @relation(fields: [patientId], references: [id])
+  notes     String?
+  status    String   @default("waiting")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

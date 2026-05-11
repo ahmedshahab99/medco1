@@ -4,6 +4,8 @@ import React, { useState } from "react";
 import { Modal } from "../../ui/Modal";
 import { Input } from "../../ui/Input";
 import { Button } from "../../ui/Button";
+import { Label } from "../../ui/Label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/Select";
 import { User, Phone, Mail, CalendarDays, UserCircle2, Tag, X } from "lucide-react";
 import { ALL_TAGS, DOCTORS } from "../../../lib/mock/patients";
 
@@ -42,11 +44,12 @@ export function NewPatientModal({ isOpen, onClose }: NewPatientModalProps) {
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Name */}
         <div className="space-y-1.5">
-          <label className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+          <Label htmlFor="name">
             <User className="w-4 h-4 text-slate-400" />
             الاسم الكامل <span className="text-red-500">*</span>
-          </label>
+          </Label>
           <Input
+            id="name"
             required
             placeholder="مثال: محمد أحمد الزهراني"
             value={form.name}
@@ -56,11 +59,12 @@ export function NewPatientModal({ isOpen, onClose }: NewPatientModalProps) {
 
         {/* Phone */}
         <div className="space-y-1.5">
-          <label className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+          <Label htmlFor="phone">
             <Phone className="w-4 h-4 text-slate-400" />
             رقم الجوال <span className="text-red-500">*</span>
-          </label>
+          </Label>
           <Input
+            id="phone"
             required
             placeholder="05xxxxxxxx"
             dir="ltr"
@@ -72,11 +76,12 @@ export function NewPatientModal({ isOpen, onClose }: NewPatientModalProps) {
 
         {/* Email */}
         <div className="space-y-1.5">
-          <label className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+          <Label htmlFor="email">
             <Mail className="w-4 h-4 text-slate-400" />
             البريد الإلكتروني
-          </label>
+          </Label>
           <Input
+            id="email"
             placeholder="example@email.com"
             dir="ltr"
             type="email"
@@ -88,54 +93,64 @@ export function NewPatientModal({ isOpen, onClose }: NewPatientModalProps) {
         {/* DOB + Gender */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+            <Label htmlFor="dob">
               <CalendarDays className="w-4 h-4 text-slate-400" />
               تاريخ الميلاد
-            </label>
+            </Label>
             <Input
+              id="dob"
               type="date"
               value={form.dob}
               onChange={(e) => setForm({ ...form, dob: e.target.value })}
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+            <Label htmlFor="gender">
               <UserCircle2 className="w-4 h-4 text-slate-400" />
               الجنس
-            </label>
-            <select
-              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none transition-all focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            </Label>
+            <Select
               value={form.gender}
-              onChange={(e) => setForm({ ...form, gender: e.target.value })}
+              onValueChange={(value) => setForm({ ...form, gender: value })}
             >
-              <option value="">اختر...</option>
-              <option value="male">ذكر</option>
-              <option value="female">أنثى</option>
-            </select>
+              <SelectTrigger id="gender" className="w-full">
+                <SelectValue placeholder="اختر..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="male">ذكر</SelectItem>
+                <SelectItem value="female">أنثى</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
         {/* Doctor */}
         <div className="space-y-1.5">
-          <label className="text-sm font-semibold text-slate-700">الطبيب المعالج</label>
-          <select
-            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none transition-all focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          <Label htmlFor="doctor">
+            <UserCircle2 className="w-4 h-4 text-slate-400" />
+            الطبيب المعالج
+          </Label>
+          <Select
             value={form.doctor}
-            onChange={(e) => setForm({ ...form, doctor: e.target.value })}
+            onValueChange={(value) => setForm({ ...form, doctor: value })}
           >
-            <option value="">اختر الطبيب...</option>
-            {DOCTORS.map((d) => (
-              <option key={d} value={d}>{d}</option>
-            ))}
-          </select>
+            <SelectTrigger id="doctor" className="w-full">
+              <SelectValue placeholder="اختر الطبيب..." />
+            </SelectTrigger>
+            <SelectContent>
+              {DOCTORS.map((d) => (
+                <SelectItem key={d} value={d}>{d}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Tags */}
         <div className="space-y-2">
-          <label className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+          <Label htmlFor="tags">
             <Tag className="w-4 h-4 text-slate-400" />
             التصنيفات
-          </label>
+          </Label>
           <div className="flex flex-wrap gap-2">
             {ALL_TAGS.map((tag) => {
               const active = selectedTags.includes(tag);

@@ -14,7 +14,7 @@ function formatDate(dateStr?: string) {
 }
 
 export function OverviewTab({ patient }: OverviewTabProps) {
-  const upcomingVisits = patient.visitHistory.filter((v) => v.status === "completed").slice(0, 3);
+  const upcomingVisits = patient.visitHistory.filter((v) => v.status === "COMPLETED").slice(0, 3);
 
   return (
     <div className="space-y-6">

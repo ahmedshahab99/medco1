@@ -63,7 +63,7 @@ export type VisitRecord = {
   service: string;
   doctor: string;
   doctorAvatar?: string;
-  status: "completed" | "no_show" | "cancelled" | "confirmed";
+  status: "SCHEDULED" | "CONFIRMED" | "ARRIVED" | "COMPLETED" | "CANCELLED" | "NO_SHOW";
   noteIds?: string[];
   fileIds?: string[];
 };
@@ -103,7 +103,7 @@ export type Appointment = {
   date: string;
   time: string;
   type: "consultation" | "follow-up" | "treatment";
-  status: "scheduled" | "completed" | "cancelled" | "no-show";
+  status: "SCHEDULED" | "CONFIRMED" | "ARRIVED" | "COMPLETED" | "CANCELLED" | "NO_SHOW";
   doctor: string;
 };
 
