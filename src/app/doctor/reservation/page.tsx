@@ -4,26 +4,30 @@ import { useState } from "react";
 export default function ReservationPage({ params }: { params: Promise<{ doctor: string }> }) {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [reservations, setReservations] = useState([
-    { id: 1, patient: "أحمد محمد", date: "2025-03-25", time: "09:00", type: "استشارة أولى", status: "confirmed" },
-    { id: 2, patient: "فاطمة علي", date: "2025-03-25", time: "10:30", type: "متابعة", status: "pending" },
-    { id: 3, patient: "حسن كريم", date: "2025-03-25", time: "14:00", type: "استشارة طارئة", status: "confirmed" },
-    { id: 4, patient: "نور الدين", date: "2025-03-26", time: "11:00", type: "استشارة أولى", status: "cancelled" },
+    { id: 1, patient: "أحمد محمد", date: "2025-03-25", time: "09:00", type: "استشارة أولى", status: "CONFIRMED" },
+    { id: 2, patient: "فاطمة علي", date: "2025-03-25", time: "10:30", type: "متابعة", status: "SCHEDULED" },
+    { id: 3, patient: "حسن كريم", date: "2025-03-25", time: "14:00", type: "استشارة طارئة", status: "CONFIRMED" },
+    { id: 4, patient: "نور الدين", date: "2025-03-26", time: "11:00", type: "استشارة أولى", status: "CANCELLED" },
   ]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "confirmed": return "bg-green-100 text-green-800";
-      case "pending": return "bg-yellow-100 text-yellow-800";
-      case "cancelled": return "bg-red-100 text-red-800";
+      case "CONFIRMED": return "bg-green-100 text-green-800";
+      case "ARRIVED": return "bg-emerald-100 text-emerald-800";
+      case "SCHEDULED": return "bg-yellow-100 text-yellow-800";
+      case "CANCELLED": return "bg-red-100 text-red-800";
+      case "NO_SHOW": return "bg-red-100 text-red-800";
       default: return "bg-gray-100 text-gray-800";
     }
   };
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case "confirmed": return "مؤكد";
-      case "pending": return "قيد الانتظار";
-      case "cancelled": return "ملغي";
+      case "CONFIRMED": return "مؤكد";
+      case "ARRIVED": return "تم الوصول";
+      case "SCHEDULED": return "قيد الانتظار";
+      case "CANCELLED": return "ملغي";
+      case "NO_SHOW": return "لم يحضر";
       default: return status;
     }
   };
@@ -58,22 +62,22 @@ export default function ReservationPage({ params }: { params: Promise<{ doctor: 
           <div className="text-sm text-gray-600">إجمالي الحجوزات</div>
           <div className="text-2xl font-bold text-gray-900 mt-1">{reservations.length}</div>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow-sm border">
+          <div className="bg-white p-4 rounded-lg shadow-sm border">
           <div className="text-sm text-gray-600">مؤكدة</div>
           <div className="text-2xl font-bold text-green-600 mt-1">
-            {reservations.filter(r => r.status === "confirmed").length}
+            {reservations.filter(r => r.status === "CONFIRMED").length}
           </div>
         </div>
         <div className="bg-white p-4 rounded-lg shadow-sm border">
           <div className="text-sm text-gray-600">قيد الانتظار</div>
           <div className="text-2xl font-bold text-yellow-600 mt-1">
-            {reservations.filter(r => r.status === "pending").length}
+            {reservations.filter(r => r.status === "SCHEDULED").length}
           </div>
         </div>
         <div className="bg-white p-4 rounded-lg shadow-sm border">
           <div className="text-sm text-gray-600">ملغاة</div>
           <div className="text-2xl font-bold text-red-600 mt-1">
-            {reservations.filter(r => r.status === "cancelled").length}
+            {reservations.filter(r => r.status === "CANCELLED").length}
           </div>
         </div>
       </div>
@@ -118,7 +122,7 @@ export default function ReservationPage({ params }: { params: Promise<{ doctor: 
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     <button className="text-teal-600 hover:text-teal-900 ml-3">عرض</button>
                     <button className="text-blue-600 hover:text-blue-900 ml-3">تعديل</button>
-                    {reservation.status !== "cancelled" && (
+                    {reservation.status !== "CANCELLED" && (
                       <button className="text-red-600 hover:text-red-900">إلغاء</button>
                     )}
                   </td>

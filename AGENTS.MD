@@ -10,14 +10,15 @@
 ## 🛠 Tech Stack & Versions
 - **Framework**: Next.js 
 - **Language**: TypeScript (`strict: true`)
-- **Styling**: Tailwind 
+- **Styling**: Tailwind v4 + CSS variables
+- **UI Components**: shadcn/ui (radix-nova style, RTL enabled)
 - **State**: Server Components for data, Zustand/Context for UI state, React Hook Form + Zod for forms
 - **Data Fetching**: Native `fetch` with Next.js caching/revalidation, or TanStack Query if client-heavy
 - **Validation**: Zod
 - **Icons**: `lucide-react`
 - **Lint/Format**: ESLint + Prettier (project defaults)
 - **Database/ORM**: Prisma
-- **Auth**: Subabase
+- **Auth**: Supabase
 
 
 ## 📝 Coding Standards & Conventions
@@ -31,8 +32,43 @@
   - Types: `PascalCase` or `I` prefix optional (prefer descriptive names)
 - ✅ **Props**: Always define interfaces. Use `React.ComponentProps<"button">` for HTML element forwarding
 - ✅ **Styling**: Tailwind only. No inline `style={}`. Use CSS variables for theme tokens
+- ✅ **shadcn-first**: Use existing `src/components/ui/` shadcn components before writing custom HTML. Compose with Card, Table, Dialog, etc.
 - ✅ **Error/Loading States**: Every data-fetching route/component must include `loading.tsx`, `error.tsx`, and skeleton UI
 - ✅ **Env Validation**: Validate `env` at startup using `zod` or `@t3-oss/env-nextjs`
+
+## 🎨 shadcn/ui Components Guide
+
+### Installation & Setup
+- Components live in `src/components/ui/` (lowercase filenames, e.g. `button.tsx`)
+- Utility `cn()` in `src/lib/utils.ts` for conditional class merging
+- `components.json` at root configures aliases and theme
+- Add new components via: `npx shadcn@latest add <component>`
+
+### Usage Conventions
+- ✅ **Use existing components first** — check `src/components/ui/` before writing custom HTML
+- ✅ **Use semantic colors** — `bg-primary`, `text-muted-foreground`, `border-border` — never raw colors like `bg-blue-500`
+- ✅ **Use built-in variants** — `variant="outline"`, `size="sm"`, etc.
+- ✅ **Use `cn()` for conditional classes** — never manual template literal ternaries in className
+- ✅ **Use `gap-*` for spacing** — never `space-x-*` or `space-y-*`
+- ✅ **Use `size-*` for equal dimensions** — `size-10` not `w-10 h-10`
+- ✅ **Use `truncate` shorthand** — not `overflow-hidden text-ellipsis whitespace-nowrap`
+- ✅ **No manual `dark:` overrides** — semantic tokens handle dark mode
+- ✅ **No inline `style={}`** — Tailwind classes only
+
+### Composition Patterns
+- **Card**: Use `CardHeader` + `CardTitle` + `CardDescription` + `CardContent` + `CardFooter`
+- **Table**: Always use `TableHeader`/`TableBody`/`TableRow`/`TableHead`/`TableCell`
+- **Dialog/Sheet/Drawer**: Always include `Title` for accessibility (`className="sr-only"` if visually hidden)
+- **Tabs**: `TabsTrigger` must be inside `TabsList`
+- **Form fields**: Use shadcn `Input`/`Select`/`Checkbox`/`Switch` with `Label`; validated via `react-hook-form` + Zod
+- **Toast notifications**: Use `sonner` (`toast()` from `sonner`)
+- **Empty/Loading**: `Skeleton` for loading states, compose for empty states
+- **Navigation**: `DropdownMenu`, `Breadcrumb`, `Tabs`, sidebar via custom layout
+
+### Override & Theming
+- Customize colors in `src/app/globals.css` via CSS variables (e.g. `--primary`, `--background`)
+- Use `@theme inline` in globals.css for Tailwind v4 theme tokens
+- **Never modify shadcn component source files** — extend via wrappers or compose instead
 
 ## 🌐 Arabic & RTL Guidelines
 - ✅ Set `<html lang="ar" dir="rtl">` in root layout
@@ -111,10 +147,11 @@ await prisma.profile.update({ ... });
 - [ ] Forms validated with Zod
 - [ ] Accessible (labels, roles, focus, contrast)
 - [ ] Tailwind classes follow project order (`clsx`/`cva` for variants)
+- [ ] shadcn components preferred over custom HTML primitives
 - [ ] Server/Client boundary respected
 - [ ] Environment variables validated
 - [ ] Commit message follows `feat(scope): description`
 
 ---
 💡 **Usage Tip**: When prompting the AI, reference this file explicitly:  
-`"Follow agents.md strictly. Implement X using modular components, RTL-safe Tailwind, and TypeScript. Ask if unsure."`
+`"Follow agents.md strictly. Implement X using modular components, RTL-safe Tailwind, shadcn/ui, and TypeScript. Ask if unsure."`

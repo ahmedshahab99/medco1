@@ -6,6 +6,8 @@ import { Topbar } from "@/components/dashboard/layout/Topbar";
 import { useAuth } from "@/hooks/use-auth";
 import { useSessionWatch } from "@/hooks/use-session-watch";
 import { Toast } from "@/components/ui/Toast";
+import { Toaster } from "sonner";
+import { MutationIndicator } from "@/components/ui/MutationIndicator";
 
 interface DashboardShellProps {
   children: React.ReactNode;
@@ -22,6 +24,7 @@ export default function DashboardShell({ children }: DashboardShellProps) {
   } = useAuth();
 
   const { toast, hideToast } = useSessionWatch();
+  
 
   useEffect(() => {
     initialize();
@@ -56,6 +59,8 @@ export default function DashboardShell({ children }: DashboardShellProps) {
         isVisible={toast.visible}
         onClose={hideToast}
       />
+      <Toaster position="top-center" />
+      <MutationIndicator />
     </div>
   );
 }

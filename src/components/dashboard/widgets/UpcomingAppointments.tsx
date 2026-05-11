@@ -7,28 +7,32 @@ import { Appointment } from "../../../lib/types/dashboard";
 import { MoreHorizontal } from "lucide-react";
 
 const mockAppointments: Appointment[] = [
-  { id: "1", patientName: "سارة محمد", date: "اليوم", time: "10:00 ص", type: "consultation", status: "scheduled", doctor: "د. أحمد" },
-  { id: "2", patientName: "خالد عبد الله", date: "اليوم", time: "11:30 ص", type: "follow-up", status: "completed", doctor: "د. أحمد" },
-  { id: "3", patientName: "نورة فهد", date: "اليوم", time: "01:00 م", type: "treatment", status: "scheduled", doctor: "د. أحمد" },
-  { id: "4", patientName: "يوسف علي", date: "اليوم", time: "02:15 م", type: "consultation", status: "cancelled", doctor: "د. أحمد" },
+  { id: "1", patientName: "سارة محمد", date: "اليوم", time: "10:00 ص", type: "consultation", status: "SCHEDULED", doctor: "د. أحمد" },
+  { id: "2", patientName: "خالد عبد الله", date: "اليوم", time: "11:30 ص", type: "follow-up", status: "COMPLETED", doctor: "د. أحمد" },
+  { id: "3", patientName: "نورة فهد", date: "اليوم", time: "01:00 م", type: "treatment", status: "SCHEDULED", doctor: "د. أحمد" },
+  { id: "4", patientName: "يوسف علي", date: "اليوم", time: "02:15 م", type: "consultation", status: "CANCELLED", doctor: "د. أحمد" },
 ];
 
 export function UpcomingAppointments() {
   const getBadgeVariant = (status: Appointment['status']) => {
     switch (status) {
-      case "completed": return "success";
-      case "scheduled": return "warning"; // amber represents upcoming/pending well enough
-      case "cancelled": case "no-show": return "danger";
+      case "COMPLETED": return "success";
+      case "ARRIVED": return "success";
+      case "CONFIRMED": return "default";
+      case "SCHEDULED": return "warning";
+      case "CANCELLED": case "NO_SHOW": return "danger";
       default: return "default";
     }
   };
 
   const getStatusLabel = (status: Appointment['status']) => {
     switch (status) {
-      case "completed": return "مكتمل";
-      case "scheduled": return "مجدول";
-      case "cancelled": return "ملغي";
-      case "no-show": return "لم يحضر";
+      case "COMPLETED": return "مكتمل";
+      case "ARRIVED": return "تم الوصول";
+      case "CONFIRMED": return "مؤكد";
+      case "SCHEDULED": return "مجدول";
+      case "CANCELLED": return "ملغي";
+      case "NO_SHOW": return "لم يحضر";
       default: return status;
     }
   };

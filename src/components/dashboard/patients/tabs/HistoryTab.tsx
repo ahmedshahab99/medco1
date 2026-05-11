@@ -9,9 +9,12 @@ interface HistoryTabProps {
 }
 
 const STATUS_CONFIG: Record<VisitRecord["status"], { label: string; icon: React.ElementType; cls: string }> = {
-  completed: { label: "مكتمل", icon: CheckCircle, cls: "bg-emerald-100 text-emerald-700" },
-  no_show: { label: "لم يحضر", icon: AlertCircle, cls: "bg-slate-100 text-slate-600" },
-  cancelled: { label: "ملغي", icon: XCircle, cls: "bg-red-100 text-red-600" },
+  SCHEDULED: { label: "قيد الانتظار", icon: AlertCircle, cls: "bg-amber-100 text-amber-700" },
+  CONFIRMED: { label: "مؤكد", icon: CheckCircle, cls: "bg-blue-100 text-blue-700" },
+  ARRIVED: { label: "تم الوصول", icon: CheckCircle, cls: "bg-emerald-100 text-emerald-700" },
+  COMPLETED: { label: "مكتمل", icon: CheckCircle, cls: "bg-emerald-100 text-emerald-700" },
+  NO_SHOW: { label: "لم يحضر", icon: AlertCircle, cls: "bg-slate-100 text-slate-600" },
+  CANCELLED: { label: "ملغي", icon: XCircle, cls: "bg-red-100 text-red-600" },
 };
 
 function formatDate(dateStr: string) {

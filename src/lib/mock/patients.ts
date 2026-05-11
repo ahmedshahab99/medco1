@@ -22,10 +22,10 @@ export const MOCK_PATIENTS: Patient[] = [
     streetAddress: "حي النخيل",
     address: "الرياض، حي النخيل",
     visitHistory: [
-      { id: "V001", date: "2026-03-20", time: "10:30 AM", service: "استشارة قلبية", doctor: "د. سارة الخالد", status: "completed", noteIds: ["N001"], fileIds: ["F001"] },
-      { id: "V002", date: "2026-02-14", time: "02:00 PM", service: "مراجعة تحاليل", doctor: "د. سارة الخالد", status: "completed", noteIds: ["N002"], fileIds: ["F002"] },
-      { id: "V003", date: "2026-01-10", time: "11:15 AM", service: "فحص دوري", doctor: "د. سارة الخالد", status: "completed" },
-      { id: "V004", date: "2025-12-05", time: "09:00 AM", service: "استشارة طارئة", doctor: "د. محمد العمري", status: "completed", noteIds: ["N003"], fileIds: ["F003"] },
+      { id: "V001", date: "2026-03-20", time: "10:30 AM", service: "استشارة قلبية", doctor: "د. سارة الخالد", status: "COMPLETED", noteIds: ["N001"], fileIds: ["F001"] },
+      { id: "V002", date: "2026-02-14", time: "02:00 PM", service: "مراجعة تحاليل", doctor: "د. سارة الخالد", status: "COMPLETED", noteIds: ["N002"], fileIds: ["F002"] },
+      { id: "V003", date: "2026-01-10", time: "11:15 AM", service: "فحص دوري", doctor: "د. سارة الخالد", status: "COMPLETED" },
+      { id: "V004", date: "2025-12-05", time: "09:00 AM", service: "استشارة طارئة", doctor: "د. محمد العمري", status: "COMPLETED", noteIds: ["N003"], fileIds: ["F003"] },
     ],
     notes: [
       { id: "N001", appointmentId: "V001", content: "المريض يعاني من ضيق في التنفس عند الجهد، تم رفع جرعة الدواء. يُوصى بإجراء تخطيط قلب كل شهر.", createdAt: "2026-03-20", doctorName: "د. سارة الخالد" },
@@ -63,9 +63,9 @@ export const MOCK_PATIENTS: Patient[] = [
     streetAddress: "حي الملقا",
     address: "الرياض، حي الملقا",
     visitHistory: [
-      { id: "V010", date: "2026-03-25", time: "04:30 PM", service: "فحص عام", doctor: "د. سارة الخالد", status: "completed", noteIds: ["N010"] },
-      { id: "V011", date: "2026-02-28", time: "11:00 AM", service: "استشارة أولى", doctor: "د. سارة الخالد", status: "completed" },
-      { id: "V012", date: "2026-01-15", time: "10:00 AM", service: "تطعيم", doctor: "د. فيصل المطيري", status: "completed" },
+      { id: "V010", date: "2026-03-25", time: "04:30 PM", service: "فحص عام", doctor: "د. سارة الخالد", status: "COMPLETED", noteIds: ["N010"] },
+      { id: "V011", date: "2026-02-28", time: "11:00 AM", service: "استشارة أولى", doctor: "د. سارة الخالد", status: "COMPLETED" },
+      { id: "V012", date: "2026-01-15", time: "10:00 AM", service: "تطعيم", doctor: "د. فيصل المطيري", status: "COMPLETED" },
     ],
     notes: [
       { id: "N010", appointmentId: "V010", content: "مريضة جديدة، تشكو من صداع مزمن. تم وصف مسكنات وطلب أشعة MRI.", createdAt: "2026-03-25", doctorName: "د. سارة الخالد" },
@@ -92,9 +92,9 @@ export const MOCK_PATIENTS: Patient[] = [
     totalVisits: 41,
     totalSpent: 9200,
     visitHistory: [
-      { id: "V020", date: "2026-03-18", time: "09:30 AM", service: "ضبط الأدوية", doctor: "د. محمد العمري", status: "completed", noteIds: ["N020"], fileIds: ["F020", "F021"] },
-      { id: "V021", date: "2026-02-22", time: "10:30 AM", service: "متابعة سكري", doctor: "د. محمد العمري", status: "completed", noteIds: ["N021"] },
-      { id: "V022", date: "2026-01-30", time: "02:00 PM", service: "فحص قدم سكري", doctor: "د. محمد العمري", status: "no_show" },
+      { id: "V020", date: "2026-03-18", time: "09:30 AM", service: "ضبط الأدوية", doctor: "د. محمد العمري", status: "COMPLETED", noteIds: ["N020"], fileIds: ["F020", "F021"] },
+      { id: "V021", date: "2026-02-22", time: "10:30 AM", service: "متابعة سكري", doctor: "د. محمد العمري", status: "COMPLETED", noteIds: ["N021"] },
+      { id: "V022", date: "2026-01-30", time: "02:00 PM", service: "فحص قدم سكري", doctor: "د. محمد العمري", status: "NO_SHOW" },
     ],
     notes: [
       { id: "N020", appointmentId: "V020", content: "مستوى السكر التراوكلي 8.2، لا يزال مرتفعاً. تم تعديل جرعة الأنسولين.", createdAt: "2026-03-18", doctorName: "د. محمد العمري" },
@@ -123,8 +123,8 @@ export const MOCK_PATIENTS: Patient[] = [
     totalVisits: 8,
     totalSpent: 1600,
     visitHistory: [
-      { id: "V030", date: "2026-03-10", time: "11:00 AM", service: "متابعة ضغط الدم", doctor: "د. سارة الخالد", status: "completed", noteIds: ["N030"] },
-      { id: "V031", date: "2026-02-08", time: "01:30 PM", service: "استشارة", doctor: "د. سارة الخالد", status: "cancelled" },
+      { id: "V030", date: "2026-03-10", time: "11:00 AM", service: "متابعة ضغط الدم", doctor: "د. سارة الخالد", status: "COMPLETED", noteIds: ["N030"] },
+      { id: "V031", date: "2026-02-08", time: "01:30 PM", service: "استشارة", doctor: "د. سارة الخالد", status: "CANCELLED" },
     ],
     notes: [
       { id: "N030", appointmentId: "V030", content: "الضغط مستقر على 130/85. نواصل نفس العلاج.", createdAt: "2026-03-10", doctorName: "د. سارة الخالد" },
@@ -148,9 +148,9 @@ export const MOCK_PATIENTS: Patient[] = [
     totalVisits: 55,
     totalSpent: 14500,
     visitHistory: [
-      { id: "V040", date: "2026-03-22", time: "10:00 AM", service: "فحص شامل", doctor: "د. محمد العمري", status: "completed", noteIds: ["N040"], fileIds: ["F040"] },
-      { id: "V041", date: "2026-02-18", time: "11:30 AM", service: "فحص قلب", doctor: "د. محمد العمري", status: "completed", fileIds: ["F041"] },
-      { id: "V042", date: "2025-12-12", time: "09:00 AM", service: "فحص سنوي", doctor: "د. محمد العمري", status: "completed", fileIds: ["F042"] },
+      { id: "V040", date: "2026-03-22", time: "10:00 AM", service: "فحص شامل", doctor: "د. محمد العمري", status: "COMPLETED", noteIds: ["N040"], fileIds: ["F040"] },
+      { id: "V041", date: "2026-02-18", time: "11:30 AM", service: "فحص قلب", doctor: "د. محمد العمري", status: "COMPLETED", fileIds: ["F041"] },
+      { id: "V042", date: "2025-12-12", time: "09:00 AM", service: "فحص سنوي", doctor: "د. محمد العمري", status: "COMPLETED", fileIds: ["F042"] },
     ],
     notes: [
       { id: "N040", appointmentId: "V040", content: "الحالة العامة جيدة. الفحص السنوي الشامل سليم. يُنصح بالنشاط البدني.", createdAt: "2026-03-22", doctorName: "د. محمد العمري" },
@@ -176,7 +176,7 @@ export const MOCK_PATIENTS: Patient[] = [
     totalVisits: 2,
     totalSpent: 300,
     visitHistory: [
-      { id: "V050", date: "2026-03-28", time: "12:00 PM", service: "علاج حساسية", doctor: "د. فيصل المطيري", status: "completed", noteIds: ["N050"] },
+      { id: "V050", date: "2026-03-28", time: "12:00 PM", service: "علاج حساسية", doctor: "د. فيصل المطيري", status: "COMPLETED", noteIds: ["N050"] },
     ],
     notes: [
       { id: "N050", appointmentId: "V050", content: "حساسية موسمية. تم إعطاء مضاد هيستامين وبخاخ أنف.", createdAt: "2026-03-28", doctorName: "د. فيصل المطيري" },
@@ -200,8 +200,8 @@ export const MOCK_PATIENTS: Patient[] = [
     totalVisits: 19,
     totalSpent: 3800,
     visitHistory: [
-      { id: "V060", date: "2025-10-05", time: "10:30 AM", service: "متابعة قلب", doctor: "د. محمد العمري", status: "completed" },
-      { id: "V061", date: "2025-08-20", time: "09:00 AM", service: "تحاليل دم", doctor: "د. محمد العمري", status: "completed", fileIds: ["F060"] },
+      { id: "V060", date: "2025-10-05", time: "10:30 AM", service: "متابعة قلب", doctor: "د. محمد العمري", status: "COMPLETED" },
+      { id: "V061", date: "2025-08-20", time: "09:00 AM", service: "تحاليل دم", doctor: "د. محمد العمري", status: "COMPLETED", fileIds: ["F060"] },
     ],
     notes: [],
     files: [
@@ -226,8 +226,8 @@ export const MOCK_PATIENTS: Patient[] = [
     totalVisits: 13,
     totalSpent: 3100,
     visitHistory: [
-      { id: "V070", date: "2026-03-15", time: "11:00 AM", service: "استشارة نسائية", doctor: "د. سارة الخالد", status: "completed", noteIds: ["N070"], fileIds: ["F070"] },
-      { id: "V071", date: "2026-01-22", time: "10:00 AM", service: "متابعة", doctor: "د. سارة الخالد", status: "completed" },
+      { id: "V070", date: "2026-03-15", time: "11:00 AM", service: "استشارة نسائية", doctor: "د. سارة الخالد", status: "COMPLETED", noteIds: ["N070"], fileIds: ["F070"] },
+      { id: "V071", date: "2026-01-22", time: "10:00 AM", service: "متابعة", doctor: "د. سارة الخالد", status: "COMPLETED" },
     ],
     notes: [
       { id: "N070", appointmentId: "V070", content: "متابعة روتينية. تم طلب تحاليل هرمونات.", createdAt: "2026-03-15", doctorName: "د. سارة الخالد" },
@@ -253,9 +253,9 @@ export const MOCK_PATIENTS: Patient[] = [
     totalVisits: 78,
     totalSpent: 22000,
     visitHistory: [
-      { id: "V080", date: "2026-03-26", time: "08:00 AM", service: "قسطرة متابعة", doctor: "د. محمد العمري", status: "completed", noteIds: ["N080"], fileIds: ["F080"] },
-      { id: "V081", date: "2026-02-25", time: "11:30 AM", service: "فحص قلب", doctor: "د. محمد العمري", status: "completed" },
-      { id: "V082", date: "2026-01-05", time: "09:30 AM", service: "ضبط أدوية", doctor: "د. محمد العمري", status: "completed", noteIds: ["N081"], fileIds: ["F081"] },
+      { id: "V080", date: "2026-03-26", time: "08:00 AM", service: "قسطرة متابعة", doctor: "د. محمد العمري", status: "COMPLETED", noteIds: ["N080"], fileIds: ["F080"] },
+      { id: "V081", date: "2026-02-25", time: "11:30 AM", service: "فحص قلب", doctor: "د. محمد العمري", status: "COMPLETED" },
+      { id: "V082", date: "2026-01-05", time: "09:30 AM", service: "ضبط أدوية", doctor: "د. محمد العمري", status: "COMPLETED", noteIds: ["N081"], fileIds: ["F081"] },
     ],
     notes: [
       { id: "N080", appointmentId: "V080", content: "الشرايين واضحة. لا توجد انسداد جديدة. جيد جداً. مواصلة العلاج الحالي.", createdAt: "2026-03-26", doctorName: "د. محمد العمري" },
@@ -285,7 +285,7 @@ export const MOCK_PATIENTS: Patient[] = [
     totalVisits: 1,
     totalSpent: 150,
     visitHistory: [
-      { id: "V090", date: "2026-03-27", time: "10:00 AM", service: "كشف أول", doctor: "د. فيصل المطيري", status: "completed", noteIds: ["N090"] },
+      { id: "V090", date: "2026-03-27", time: "10:00 AM", service: "كشف أول", doctor: "د. فيصل المطيري", status: "COMPLETED", noteIds: ["N090"] },
     ],
     notes: [
       { id: "N090", appointmentId: "V090", content: "زيارة أولى. مريضة شابة بصحة جيدة. تحاليل روتينية طبيعية.", createdAt: "2026-03-27", doctorName: "د. فيصل المطيري" },
@@ -309,9 +309,9 @@ export const MOCK_PATIENTS: Patient[] = [
     totalVisits: 9,
     totalSpent: 1800,
     visitHistory: [
-      { id: "V100", date: "2026-03-05", time: "11:00 AM", service: "حساسية تنفسية", doctor: "د. فيصل المطيري", status: "completed", noteIds: ["N100"] },
-      { id: "V101", date: "2026-01-18", time: "09:30 AM", service: "متابعة ربو", doctor: "د. فيصل المطيري", status: "completed" },
-      { id: "V102", date: "2025-11-10", time: "01:00 PM", service: "استشارة", doctor: "د. فيصل المطيري", status: "no_show" },
+      { id: "V100", date: "2026-03-05", time: "11:00 AM", service: "حساسية تنفسية", doctor: "د. فيصل المطيري", status: "COMPLETED", noteIds: ["N100"] },
+      { id: "V101", date: "2026-01-18", time: "09:30 AM", service: "متابعة ربو", doctor: "د. فيصل المطيري", status: "COMPLETED" },
+      { id: "V102", date: "2025-11-10", time: "01:00 PM", service: "استشارة", doctor: "د. فيصل المطيري", status: "NO_SHOW" },
     ],
     notes: [
       { id: "N100", appointmentId: "V100", content: "الربو مستقر. تم تجديد وصفة البخاخ. يُنصح بتجنب الغبار.", createdAt: "2026-03-05", doctorName: "د. فيصل المطيري" },
@@ -336,8 +336,8 @@ export const MOCK_PATIENTS: Patient[] = [
     totalVisits: 4,
     totalSpent: 600,
     visitHistory: [
-      { id: "V110", date: "2026-03-12", time: "10:30 AM", service: "فحص غدة درقية", doctor: "د. سارة الخالد", status: "completed", noteIds: ["N110"], fileIds: ["F110"] },
-      { id: "V111", date: "2026-02-01", time: "11:00 AM", service: "استشارة أولى", doctor: "د. سارة الخالد", status: "completed" },
+      { id: "V110", date: "2026-03-12", time: "10:30 AM", service: "فحص غدة درقية", doctor: "د. سارة الخالد", status: "COMPLETED", noteIds: ["N110"], fileIds: ["F110"] },
+      { id: "V111", date: "2026-02-01", time: "11:00 AM", service: "استشارة أولى", doctor: "د. سارة الخالد", status: "COMPLETED" },
     ],
     notes: [
       { id: "N110", appointmentId: "V110", content: "خمول الغدة الدرقية. تم بدء العلاج بـ levothyroxine.", createdAt: "2026-03-12", doctorName: "د. سارة الخالد" },
