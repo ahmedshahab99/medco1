@@ -94,6 +94,7 @@ export function useServices() {
   return useQuery({
     queryKey: ["services"],
     queryFn: fetchServices,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   })
 }
 
@@ -102,6 +103,7 @@ export function useService(id: string) {
     queryKey: ["services", id],
     queryFn: () => fetchService(id),
     enabled: !!id,
+    
   })
 }
 

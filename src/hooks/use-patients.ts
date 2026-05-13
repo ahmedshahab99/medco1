@@ -38,5 +38,6 @@ export function usePatients(search?: string) {
     queryFn: () => fetchPatients(search),
     // Always fetch; empty search returns all patients (up to 100)
     enabled: true,
+    
   });
 }
