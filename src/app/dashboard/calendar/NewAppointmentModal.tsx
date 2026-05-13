@@ -75,6 +75,7 @@ export default function NewAppointmentModal({
   const formValues = useMemo<AppointmentFormValues>(
     () => {
       if (editingAppointment) {
+        console.log("Editing appointment, pre-filling form with:", editingAppointment)
         return {
           doctorId: editingAppointment.doctorId,
           serviceId: editingAppointment.serviceId,
@@ -225,7 +226,7 @@ export default function NewAppointmentModal({
           onSubmit={handleSubmit(onSubmit)}
           className="space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar px-1"
         >
-          <AppointmentServiceFields doctors={doctors} hasCustomEndTime={!!initialEnd && !editingAppointment} />
+          <AppointmentServiceFields doctors={doctors} hasCustomEndTime={!!initialEnd || !!editingAppointment} />
 
           <div className="border-t border-slate-100 pt-5" />
 

@@ -155,9 +155,10 @@ export function useCreateAppointment(from: Date, to: Date) {
       }
     },
     onSettled: (_data, _error, _args, context) => {
-      if (context) {
-        queryClient.invalidateQueries({ queryKey: context.queryKey });
-      }
+      
+        
+      queryClient.invalidateQueries({ queryKey: getQueryKey(from, to) });
+    
       queryClient.invalidateQueries({ queryKey: ["waitlist"] });
     },
   });

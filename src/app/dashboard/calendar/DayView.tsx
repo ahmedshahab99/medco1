@@ -5,7 +5,7 @@ import { format, isSameDay } from "date-fns";
 import { arSA } from "date-fns/locale/ar-SA";
 import type { CalendarAppointment } from "@/hooks/use-appointments";
 import { START_HOUR, END_HOUR, HOUR_HEIGHT } from "./constants";
-import { STATUS_MAP, snapToQuarter, getTimeFromPointer } from "./utils";
+import { snapToQuarter, getTimeFromPointer } from "./utils";
 import type { InteractionState } from "./types";
 
 interface DayViewProps {
@@ -38,6 +38,105 @@ function getColorClass(color: string): string {
   return color;
 }
 
+type ApptWithLayout = ReturnType<typeof parseApptDates> & {
+  columnIndex: number;
+  totalColumns: number;
+  colorClass: string;
+  colorStyle: React.CSSProperties;
+};
+
+interface CalendarAppointmentCardProps {
+  appt: ApptWithLayout;
+  isInteracting: boolean;
+  interactionStartTs: number;
+  interactionEndTs: number;
+  onInteractionStart: (
+    e: React.PointerEvent,
+    appt: ReturnType<typeof parseApptDates>,
+    type: InteractionState["type"]
+  ) => void;
+  onSelect: (apptId: string) => void;
+}
+
+const CalendarAppointmentCard = React.memo(function CalendarAppointmentCard({
+  appt,
+  isInteracting,
+  interactionStartTs,
+  interactionEndTs,
+  onInteractionStart,
+  onSelect,
+}: CalendarAppointmentCardProps) {
+  const displayStart = isInteracting ? new Date(interactionStartTs) : appt.startTime;
+  const displayEnd = isInteracting ? new Date(interactionEndTs) : appt.endTime;
+
+  const startH = displayStart.getHours() + displayStart.getMinutes() / 60;
+  const endH = displayEnd.getHours() + displayEnd.getMinutes() / 60;
+
+  if (startH < START_HOUR || startH > END_HOUR) return null;
+
+  const topOffset = (startH - START_HOUR) * HOUR_HEIGHT;
+  const height = (endH - startH) * HOUR_HEIGHT;
+
+  const widthPercent = isInteracting ? 96 : 100 / appt.totalColumns;
+  const rightPercent = isInteracting ? 2 : appt.columnIndex * widthPercent;
+
+  return (
+    <div
+      className={`absolute rounded-xl border flex flex-col overflow-hidden transition-all hover:shadow-md cursor-grab active:cursor-grabbing shadow-sm text-white ${
+        isInteracting ? "opacity-40 z-50 scale-[0.98]" : "hover:z-20"
+      } ${appt.colorClass}`}
+      style={{
+        top: `${topOffset}px`,
+        height: `${height}px`,
+        width: `calc(${widthPercent}% - ${appt.totalColumns > 1 ? "4px" : "8px"})`,
+        right: `calc(${rightPercent}% + ${appt.totalColumns > 1 ? "2px" : "4px"})`,
+        ...appt.colorStyle,
+      }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelect(appt.id);
+      }}
+      onPointerDown={(e) => onInteractionStart(e, appt, "drag")}
+    >
+      <div
+        className={`flex ${
+          height < 45
+            ? "flex-row items-center gap-2 p-0.5"
+            : "flex-col justify-between p-1.5 md:p-3"
+        } h-full w-full select-none overflow-hidden relative group/card`}
+      >
+        <div className="flex-1 min-w-0">
+          <h4 className="font-bold text-[10px] md:text-sm truncate">
+            {appt.patientName}
+          </h4>
+        </div>
+        <div
+          className={`flex items-center gap-1 opacity-90 shrink-0 ${
+            height < 45 ? "bg-white/20 px-1 rounded" : ""
+          }`}
+        >
+          <span
+            className="text-[9px] md:text-xs font-bold whitespace-nowrap"
+            dir="ltr"
+          >
+            {format(displayStart, "HH:mm")} -{" "}
+            {format(displayEnd, "HH:mm")}
+          </span>
+        </div>
+      </div>
+
+      {appt.status !== "CANCELLED" && (
+        <div
+          className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize hover:bg-black/5 flex items-center justify-center group"
+          onPointerDown={(e) => onInteractionStart(e, appt, "resize")}
+        >
+          <div className="w-8 h-1 bg-current opacity-20 rounded-full group-hover:opacity-40" />
+        </div>
+      )}
+    </div>
+  );
+});
+
 export default function DayView({ appointments, currentDate, onSelectAppt, onUpdateTime, onSlotSelect }: DayViewProps) {
   const [interaction, setInteraction] = useState<InteractionState | null>(null);
   const [slotSelection, setSlotSelection] = useState<{ start: Date; end: Date } | null>(null);
@@ -49,12 +148,23 @@ export default function DayView({ appointments, currentDate, onSelectAppt, onUpd
   const slotStartYRef = useRef(0);
   const [currentTimeLine, setCurrentTimeLine] = useState<number | null>(null);
 
+  const interactionRef = useRef<InteractionState | null>(null);
+  const slotSelectionRef = useRef<{ start: Date; end: Date } | null>(null);
+  const onUpdateTimeRef = useRef(onUpdateTime);
+  const onSlotSelectRef = useRef(onSlotSelect);
+  const onSelectApptRef = useRef(onSelectAppt);
+
+  useEffect(() => {
+    onUpdateTimeRef.current = onUpdateTime;
+    onSlotSelectRef.current = onSlotSelect;
+    onSelectApptRef.current = onSelectAppt;
+  });
+
   const parsedAppointments = useMemo(
     () => appointments.map(parseApptDates),
     [appointments]
   );
 
-  // Filter and layout for current day
   const dailyAppointmentsWithLayout = useMemo(() => {
     const dayAppts = parsedAppointments.filter((appt) =>
       isSameDay(appt.startTime, currentDate)
@@ -69,13 +179,13 @@ export default function DayView({ appointments, currentDate, onSelectAppt, onUpd
       );
     });
 
-    type ApptWithLayout = ReturnType<typeof parseApptDates> & {
+    type LayoutResult = ReturnType<typeof parseApptDates> & {
       columnIndex: number;
       totalColumns: number;
     };
 
     const columns: ReturnType<typeof parseApptDates>[][] = [];
-    const results: ApptWithLayout[] = [];
+    const results: LayoutResult[] = [];
 
     sorted.forEach((appt) => {
       let placed = false;
@@ -118,7 +228,11 @@ export default function DayView({ appointments, currentDate, onSelectAppt, onUpd
       results[j].totalColumns = lastTotalCols;
     }
 
-    return results;
+    return results.map((a) => ({
+      ...a,
+      colorClass: getColorClass(a.serviceColor),
+      colorStyle: getColorStyle(a.serviceColor),
+    })) as ApptWithLayout[];
   }, [parsedAppointments, currentDate]);
 
   // Current time line
@@ -139,43 +253,49 @@ export default function DayView({ appointments, currentDate, onSelectAppt, onUpd
     return () => clearInterval(interval);
   }, [currentDate]);
 
-  const onInteractionStart = (
-    e: React.PointerEvent,
-    appt: ReturnType<typeof parseApptDates>,
-    type: InteractionState["type"]
-  ) => {
-    if (appt.status === "CANCELLED" || appt.status === "NO_SHOW") return;
-    e.stopPropagation();
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  const onInteractionStart = useCallback(
+    (
+      e: React.PointerEvent,
+      appt: ReturnType<typeof parseApptDates>,
+      type: InteractionState["type"]
+    ) => {
+      // if (appt.status === "CANCELLED" || appt.status === "NO_SHOW") return;
+      e.stopPropagation();
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
 
-    setInteraction({
-      apptId: appt.id,
-      type,
-      startPointerY: e.clientY,
-      startPointerX: e.clientX,
-      originalStartTime: new Date(appt.startTime),
-      originalEndTime: new Date(appt.endTime),
-      currentStartTime: new Date(appt.startTime),
-      currentEndTime: new Date(appt.endTime),
-    });
-  };
+      const state: InteractionState = {
+        apptId: appt.id,
+        type,
+        startPointerY: e.clientY,
+        startPointerX: e.clientX,
+        originalStartTime: new Date(appt.startTime),
+        originalEndTime: new Date(appt.endTime),
+        currentStartTime: new Date(appt.startTime),
+        currentEndTime: new Date(appt.endTime),
+      };
+      interactionRef.current = state;
+      setInteraction(state);
+    },
+    []
+  );
 
   const onInteractionMove = useCallback(
     (e: PointerEvent) => {
-      if (!interaction) return;
+      const current = interactionRef.current;
+      if (!current) return;
       if (!wasMovedRef.current) {
-        if (Math.abs(e.clientY - interaction.startPointerY) > 5) {
+        if (Math.abs(e.clientY - current.startPointerY) > 5) {
           wasMovedRef.current = true;
         }
       }
 
-      const deltaY = e.clientY - interaction.startPointerY;
+      const deltaY = e.clientY - current.startPointerY;
       const deltaH = deltaY / HOUR_HEIGHT;
       const deltaMs = deltaH * 60 * 60 * 1000;
 
-      if (interaction.type === "drag") {
-        const newStart = new Date(interaction.originalStartTime.getTime() + deltaMs);
-        const duration = interaction.originalEndTime.getTime() - interaction.originalStartTime.getTime();
+      if (current.type === "drag") {
+        const newStart = new Date(current.originalStartTime.getTime() + deltaMs);
+        const duration = current.originalEndTime.getTime() - current.originalStartTime.getTime();
         const snappedStart = snapToQuarter(newStart);
 
         let finalStart = snappedStart;
@@ -193,55 +313,51 @@ export default function DayView({ appointments, currentDate, onSelectAppt, onUpd
           finalStart = new Date(finalStart.getTime() - duration);
         }
 
-        setInteraction((prev) =>
-          prev
-            ? {
-                ...prev,
-                currentStartTime: finalStart,
-                currentEndTime: new Date(finalStart.getTime() + duration),
-              }
-            : null
-        );
-      } else if (interaction.type === "resize") {
-        const newEnd = new Date(interaction.originalEndTime.getTime() + deltaMs);
-        const minEnd = new Date(interaction.originalStartTime.getTime() + 15 * 60 * 1000);
+        const next = {
+          ...current,
+          currentStartTime: finalStart,
+          currentEndTime: new Date(finalStart.getTime() + duration),
+        };
+        interactionRef.current = next;
+        setInteraction(next);
+      } else if (current.type === "resize") {
+        const newEnd = new Date(current.originalEndTime.getTime() + deltaMs);
+        const minEnd = new Date(current.originalStartTime.getTime() + 15 * 60 * 1000);
         const snappedEnd = snapToQuarter(newEnd);
 
-        const gridEnd = new Date(interaction.originalStartTime);
+        const gridEnd = new Date(current.originalStartTime);
         gridEnd.setHours(END_HOUR, 0, 0, 0);
 
         let finalEnd = snappedEnd;
         if (finalEnd < minEnd) finalEnd = minEnd;
         if (finalEnd > gridEnd) finalEnd = gridEnd;
 
-        setInteraction((prev) =>
-          prev ? { ...prev, currentEndTime: finalEnd } : null
-        );
+        const next = { ...current, currentEndTime: finalEnd };
+        interactionRef.current = next;
+        setInteraction(next);
       }
     },
-    [interaction]
+    []
   );
 
   const onInteractionEnd = useCallback(
-    (e: PointerEvent) => {
-      if (!interaction) return;
+    () => {
+      const current = interactionRef.current;
+      if (!current) return;
       if (wasMovedRef.current) {
         blockClickRef.current = true;
-        onUpdateTime(
-          interaction.apptId,
-          interaction.currentStartTime,
-          interaction.currentEndTime
-        );
+        onUpdateTimeRef.current(current.apptId, current.currentStartTime, current.currentEndTime);
       }
+      interactionRef.current = null;
       setInteraction(null);
       wasMovedRef.current = false;
     },
-    [interaction, onUpdateTime]
+    []
   );
 
   const onSlotPointerDown = useCallback(
     (e: React.PointerEvent) => {
-      if (!onSlotSelect) return;
+      if (!onSlotSelectRef.current) return;
       const time = getTimeFromPointer(e, currentDate, gridRef);
       const snapped = snapToQuarter(time);
 
@@ -260,15 +376,18 @@ export default function DayView({ appointments, currentDate, onSelectAppt, onUpd
 
       slotMovedRef.current = false;
       slotStartYRef.current = e.clientY;
-      setSlotSelection({ start: clamped, end: clampedEnd });
+      const sel = { start: clamped, end: clampedEnd };
+      slotSelectionRef.current = sel;
+      setSlotSelection(sel);
       (e.target as HTMLElement).setPointerCapture(e.pointerId);
     },
-    [currentDate, onSlotSelect, gridRef]
+    [currentDate, gridRef]
   );
 
   const onSlotPointerMove = useCallback(
     (e: PointerEvent) => {
-      if (!slotSelection) return;
+      const sel = slotSelectionRef.current;
+      if (!sel) return;
       if (!slotMovedRef.current) {
         if (Math.abs(e.clientY - slotStartYRef.current) > 5) {
           slotMovedRef.current = true;
@@ -278,27 +397,43 @@ export default function DayView({ appointments, currentDate, onSelectAppt, onUpd
       const time = getTimeFromPointer(e, currentDate, gridRef);
       const snapped = snapToQuarter(time);
 
-      const minEnd = new Date(slotSelection.start.getTime() + 15 * 60 * 1000);
-      const gridEnd = new Date(slotSelection.start);
+      const minEnd = new Date(sel.start.getTime() + 15 * 60 * 1000);
+      const gridEnd = new Date(sel.start);
       gridEnd.setHours(END_HOUR, 0, 0, 0);
 
       let finalEnd = snapped;
       if (finalEnd < minEnd) finalEnd = minEnd;
       if (finalEnd > gridEnd) finalEnd = gridEnd;
 
-      setSlotSelection((prev) => (prev ? { ...prev, end: finalEnd } : null));
+      const next = { ...sel, end: finalEnd };
+      slotSelectionRef.current = next;
+      setSlotSelection(next);
     },
-    [slotSelection, currentDate, gridRef]
+    [currentDate, gridRef]
   );
 
   const onSlotPointerUp = useCallback(
     () => {
-      if (!slotSelection || !onSlotSelect) return;
+      const sel = slotSelectionRef.current;
+      if (!sel || !onSlotSelectRef.current) return;
       blockClickRef.current = true;
-      onSlotSelect(slotSelection.start, slotSelection.end);
+      onSlotSelectRef.current(sel.start, sel.end);
+      slotSelectionRef.current = null;
       setSlotSelection(null);
     },
-    [slotSelection, onSlotSelect]
+    []
+  );
+
+  const handleSelectAppt = useCallback(
+    (apptId: string) => {
+      if (blockClickRef.current) {
+        blockClickRef.current = false;
+        return;
+      }
+      const original = appointments.find((a) => a.id === apptId);
+      if (original) onSelectApptRef.current(original);
+    },
+    [appointments]
   );
 
   useEffect(() => {
@@ -410,91 +545,17 @@ export default function DayView({ appointments, currentDate, onSelectAppt, onUpd
             )}
 
             {/* Appointments */}
-            {dailyAppointmentsWithLayout.map((appt) => {
-              const isInteracting = interaction?.apptId === appt.id;
-              const displayStart = isInteracting
-                ? interaction.currentStartTime
-                : appt.startTime;
-              const displayEnd = isInteracting
-                ? interaction.currentEndTime
-                : appt.endTime;
-
-              const startH = displayStart.getHours() + displayStart.getMinutes() / 60;
-              const endH = displayEnd.getHours() + displayEnd.getMinutes() / 60;
-
-              if (startH < START_HOUR || startH > END_HOUR) return null;
-
-              const topOffset = (startH - START_HOUR) * HOUR_HEIGHT;
-              const height = (endH - startH) * HOUR_HEIGHT;
-
-              const widthPercent = isInteracting ? 96 : 100 / appt.totalColumns;
-              const rightPercent = isInteracting ? 2 : appt.columnIndex * widthPercent;
-
-              const colorClass = getColorClass(appt.serviceColor);
-              const colorStyle = getColorStyle(appt.serviceColor);
-
-              return (
-                <div
-                  key={appt.id}
-                  className={`absolute rounded-xl border flex flex-col overflow-hidden transition-all hover:shadow-md cursor-grab active:cursor-grabbing shadow-sm text-white ${
-                    isInteracting ? "opacity-40 z-50 scale-[0.98]" : "hover:z-20"
-                  } ${colorClass}`}
-                  style={{
-                    top: `${topOffset}px`,
-                    height: `${height}px`,
-                    width: `calc(${widthPercent}% - ${appt.totalColumns > 1 ? "4px" : "8px"})`,
-                    right: `calc(${rightPercent}% + ${appt.totalColumns > 1 ? "2px" : "4px"})`,
-                    ...colorStyle,
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (blockClickRef.current) {
-                      blockClickRef.current = false;
-                      return;
-                    }
-                    const original = appointments.find((a) => a.id === appt.id);
-                    if (original) onSelectAppt(original);
-                  }}
-                  onPointerDown={(e) => onInteractionStart(e, appt, "drag")}
-                >
-                  <div
-                    className={`flex ${
-                      height < 45
-                        ? "flex-row items-center gap-2 p-0.5"
-                        : "flex-col justify-between p-1.5 md:p-3"
-                    } h-full w-full select-none overflow-hidden relative group/card`}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-[10px] md:text-sm truncate">
-                        {appt.patientName}
-                      </h4>
-                    </div>
-                    <div
-                      className={`flex items-center gap-1 opacity-90 shrink-0 ${
-                        height < 45 ? "bg-white/20 px-1 rounded" : ""
-                      }`}
-                    >
-                      <span
-                        className="text-[9px] md:text-xs font-bold whitespace-nowrap"
-                        dir="ltr"
-                      >
-                        {format(displayStart, "HH:mm")} -{" "}
-                        {format(displayEnd, "HH:mm")}
-                      </span>
-                    </div>
-                  </div>
-
-                  {appt.status !== "CANCELLED" && (
-                    <div
-                      className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize hover:bg-black/5 flex items-center justify-center group"
-                      onPointerDown={(e) => onInteractionStart(e, appt, "resize")}
-                    >
-                      <div className="w-8 h-1 bg-current opacity-20 rounded-full group-hover:opacity-40" />
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+            {dailyAppointmentsWithLayout.map((appt) => (
+              <CalendarAppointmentCard
+                key={appt.id}
+                appt={appt}
+                isInteracting={interaction?.apptId === appt.id}
+                interactionStartTs={interaction?.currentStartTime.getTime() ?? 0}
+                interactionEndTs={interaction?.currentEndTime.getTime() ?? 0}
+                onInteractionStart={onInteractionStart}
+                onSelect={handleSelectAppt}
+              />
+            ))}
 
             {/* Ghost overlay for appointment drag/resize */}
             {interaction && isSameDay(interaction.currentStartTime, currentDate) && (

@@ -27,9 +27,9 @@ export function Modal({ isOpen, onClose, title, children, hideHeader, width = "m
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" dir="rtl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 will-change-transform" dir="rtl">
       <div 
-        className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" 
+        className="fixed inset-0 bg-slate-900/40 bg-slate-900/60 transition-opacity" 
         onClick={onClose} 
       />
       <div className={`bg-white rounded-2xl shadow-xl w-full ${width} z-50 flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200 overflow-hidden`}>
