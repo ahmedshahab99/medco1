@@ -32,6 +32,7 @@ model Tenant {
   invitations  Invitation[]
   cases        Case[]
   waitlist     Waitlist[]
+  clinicAvailability ClinicAvailability?
 }
 
 model SocialLink {
@@ -123,6 +124,17 @@ model Service {
 
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+}
+
+model ClinicAvailability {
+  id         String   @id @default(uuid())
+  tenantId   String   @unique
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+  schedule   Json
+  exceptions Json
+  settings   Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 model Appointment {
