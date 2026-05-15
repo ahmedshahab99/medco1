@@ -6,6 +6,7 @@ import { addDays, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, sta
 import { useAppointments, useCreateAppointment, useUpdateAppointment, useDeleteAppointment, useRescheduleAppointment } from "@/hooks/use-appointments";
 import { useWaitlist, useCreateWaitlistEntry, useUpdateWaitlistEntry, useDeleteWaitlistEntry } from "@/hooks/use-waitlist";
 import { useDoctors } from "@/hooks/use-doctors";
+import { useAvailability } from "@/hooks/use-availability";
 import type { CalendarAppointment } from "@/hooks/use-appointments";
 import type { AppointmentPatchInput } from "@/lib/schemas/appointment";
 import type { ViewMode } from "./types";
@@ -40,6 +41,35 @@ export default function CalendarShell() {
   const { data: appointments, isLoading: apptsLoading } = useAppointments(from, to);
   const { data: doctors } = useDoctors();
   const { data: waitlistData } = useWaitlist();
+  const { data: availability, isLoading: availabilityLoading } = useAvailability();
+
+  const { dynamicStartHour, dynamicEndHour } = useMemo(() => {
+    let minHour = 8;
+    let maxHour = 20;
+
+    if (availability?.schedule) {
+      let earliest = 24;
+      let latest = 0;
+
+      Object.values(availability.schedule as any).forEach((day: any) => {
+        if (day.enabled && day.segments && day.segments.length > 0) {
+          day.segments.forEach((seg: any) => {
+            const startH = parseInt(seg.start.split(":")[0], 10);
+            const endH = parseInt(seg.end.split(":")[0], 10) + (parseInt(seg.end.split(":")[1], 10) > 0 ? 1 : 0);
+            if (startH < earliest) earliest = startH;
+            if (endH > latest) latest = endH;
+          });
+        }
+      });
+
+      if (earliest < 24) {
+        minHour = Math.max(0, earliest - 1); // 1 hour padding
+        maxHour = Math.min(24, latest + 1);  // 1 hour padding
+      }
+    }
+
+    return { dynamicStartHour: minHour, dynamicEndHour: maxHour };
+  }, [availability]);
 
   const { mutate: createAppt } = useCreateAppointment(from, to);
   const { mutate: updateAppt, isPending: isUpdatingAppt } = useUpdateAppointment(from, to);
@@ -115,7 +145,7 @@ export default function CalendarShell() {
       />
 
       <div className="flex-1 bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col relative">
-        {apptsLoading && (
+        {(apptsLoading || availabilityLoading) && (
           <div className="absolute inset-0 z-50 bg-white/80 backdrop-blur-sm flex items-center justify-center">
             <div className="flex flex-col items-center gap-3">
               <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
@@ -128,6 +158,9 @@ export default function CalendarShell() {
           <DayView
             appointments={appointments ?? []}
             currentDate={currentDate}
+            startHour={dynamicStartHour}
+            endHour={dynamicEndHour}
+            schedule={availability?.schedule}
             onSelectAppt={setSelectedAppt}
             onUpdateTime={handleUpdateTime}
             onSlotSelect={(start, end) => {
@@ -142,6 +175,9 @@ export default function CalendarShell() {
           <WeekView
             appointments={appointments ?? []}
             currentDate={currentDate}
+            startHour={dynamicStartHour}
+            endHour={dynamicEndHour}
+            schedule={availability?.schedule}
             onSelectAppt={setSelectedAppt}
             onChangeDate={setCurrentDate}
             onNewAppointment={(date) => {

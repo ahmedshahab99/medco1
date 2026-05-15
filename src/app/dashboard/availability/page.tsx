@@ -1,19 +1,17 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Clock, CalendarOff, Settings2, Save, CheckCircle2, AlertCircle } from "lucide-react";
+import { Clock, Settings2, Save, CheckCircle2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { WeeklySchedule } from "@/components/features/availability/WeeklySchedule";
-import { ExceptionsTab } from "@/components/features/availability/ExceptionsTab";
 import { AdvancedSettingsTab } from "@/components/features/availability/AdvancedSettingsTab";
 import { CalendarPreview } from "@/components/features/availability/CalendarPreview";
 import { QuickSummary } from "@/components/features/availability/QuickSummary";
-import { ExceptionFormModal } from "@/components/features/availability/ExceptionFormModal";
 import { getClinicAvailability, saveClinicAvailability } from "./actions";
 import { uid } from "@/lib/date-utils";
-import type { Exception, ExceptionType, WeekSchedule, AdvancedSettings } from "@/components/features/availability/types";
+import type { WeekSchedule, AdvancedSettings } from "@/components/features/availability/types";
 
 const DEFAULT_SCHEDULE: WeekSchedule = {
   saturday:  { enabled: true,  segments: [{ id: "s1", start: "09:00", end: "17:00" }] },
@@ -25,7 +23,6 @@ const DEFAULT_SCHEDULE: WeekSchedule = {
   friday:    { enabled: false, segments: [{ id: "s7", start: "09:00", end: "17:00" }] },
 };
 
-const DEFAULT_EXCEPTIONS: Exception[] = [];
 const DEFAULT_ADVANCED: AdvancedSettings = {
   bufferBefore:  10,
   bufferAfter:   10,
@@ -36,15 +33,12 @@ const DEFAULT_ADVANCED: AdvancedSettings = {
 
 export default function AvailabilityPage() {
   const [schedule, setSchedule] = useState<WeekSchedule>(DEFAULT_SCHEDULE);
-  const [exceptions, setExceptions] = useState<Exception[]>(DEFAULT_EXCEPTIONS);
   const [advanced, setAdvanced] = useState<AdvancedSettings>(DEFAULT_ADVANCED);
   const [activeTab, setActiveTab] = useState("schedule");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [exModal, setExModal] = useState(false);
-  const [editingEx, setEditingEx] = useState<Exception | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -52,7 +46,6 @@ export default function AvailabilityPage() {
         const data = await getClinicAvailability();
         if (data) {
           setSchedule(data.schedule as WeekSchedule);
-          setExceptions(data.exceptions as Exception[]);
           setAdvanced(data.settings as AdvancedSettings);
         }
       } catch {
@@ -102,39 +95,10 @@ export default function AvailabilityPage() {
     }));
   };
 
-  const openAddEx = (type?: ExceptionType) => {
-    setEditingEx(type ? ({ id: "", date: "", type } as Exception) : null);
-    setExModal(true);
-  };
-
-  const openEditEx = (ex: Exception) => {
-    setEditingEx(ex);
-    setExModal(true);
-  };
-
-  const closeExModal = () => {
-    setExModal(false);
-    setEditingEx(null);
-  };
-
-  const saveException = (data: Exception) => {
-    setExceptions((prev) => {
-      const idx = prev.findIndex((e) => e.id === data.id);
-      return idx >= 0
-        ? prev.map((e) => (e.id === data.id ? data : e))
-        : [...prev, data];
-    });
-    closeExModal();
-  };
-
-  const deleteException = (id: string) => {
-    setExceptions((prev) => prev.filter((e) => e.id !== id));
-  };
-
   const handleSave = useCallback(async () => {
     setSaving(true);
     setError(null);
-    const result = await saveClinicAvailability({ schedule, exceptions, settings: advanced });
+    const result = await saveClinicAvailability({ schedule, settings: advanced });
     setSaving(false);
     if (result?.error) {
       setError(result.error);
@@ -142,7 +106,7 @@ export default function AvailabilityPage() {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     }
-  }, [schedule, exceptions, advanced]);
+  }, [schedule, advanced]);
 
   if (loading) {
     return (
@@ -164,7 +128,7 @@ export default function AvailabilityPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">أوقات العمل والتوفر</h1>
-          <p className="text-slate-500 mt-1">حدد ساعات عمل العيادة الأسبوعية وأضف استثناءات حسب الحاجة.</p>
+          <p className="text-slate-500 mt-1">حدد ساعات عمل العيادة الأسبوعية وإعدادات الحجز عبر الإنترنت.</p>
         </div>
         <Button onClick={handleSave} disabled={saving} className="gap-2 shrink-0">
           {saving ? (
@@ -192,13 +156,9 @@ export default function AvailabilityPage() {
                 <Clock className="w-4 h-4" />
                 <span className="hidden sm:inline">ساعات العمل الأسبوعية</span>
               </TabsTrigger>
-              <TabsTrigger value="exceptions" className="flex-1 gap-2">
-                <CalendarOff className="w-4 h-4" />
-                <span className="hidden sm:inline">الاستثناءات</span>
-              </TabsTrigger>
               <TabsTrigger value="advanced" className="flex-1 gap-2">
                 <Settings2 className="w-4 h-4" />
-                <span className="hidden sm:inline">إعدادات متقدمة</span>
+                <span className="hidden sm:inline">الحجز عبر الإنترنت</span>
               </TabsTrigger>
             </TabsList>
 
@@ -209,15 +169,6 @@ export default function AvailabilityPage() {
                 onUpdateSegment={updateSegment}
                 onAddSegment={addSegment}
                 onRemoveSegment={removeSegment}
-              />
-            </TabsContent>
-
-            <TabsContent value="exceptions" className="mt-4">
-              <ExceptionsTab
-                exceptions={exceptions}
-                onAdd={openAddEx}
-                onEdit={openEditEx}
-                onDelete={deleteException}
               />
             </TabsContent>
 
@@ -235,18 +186,12 @@ export default function AvailabilityPage() {
             <h2 className="text-sm font-bold text-slate-600 uppercase tracking-wider mb-3">
               معاينة التقويم
             </h2>
-            <CalendarPreview schedule={schedule} exceptions={exceptions} />
+            <CalendarPreview schedule={schedule} />
           </div>
           <QuickSummary schedule={schedule} />
         </div>
       </div>
 
-      <ExceptionFormModal
-        isOpen={exModal}
-        editingEx={editingEx}
-        onSave={saveException}
-        onClose={closeExModal}
-      />
     </div>
   );
 }

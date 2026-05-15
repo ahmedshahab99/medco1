@@ -3,14 +3,18 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { format, isSameDay } from "date-fns";
 import { arSA } from "date-fns/locale/ar-SA";
+import { enUS } from "date-fns/locale/en-US";
 import type { CalendarAppointment } from "@/hooks/use-appointments";
-import { START_HOUR, END_HOUR, HOUR_HEIGHT } from "./constants";
+import { HOUR_HEIGHT } from "./constants";
 import { snapToQuarter, getTimeFromPointer } from "./utils";
 import type { InteractionState } from "./types";
 
 interface DayViewProps {
   appointments: CalendarAppointment[];
   currentDate: Date;
+  startHour: number;
+  endHour: number;
+  schedule?: any;
   onSelectAppt: (appt: CalendarAppointment) => void;
   onUpdateTime: (id: string, start: Date, end: Date) => void;
   onSlotSelect?: (start: Date, end: Date) => void;
@@ -56,6 +60,8 @@ interface CalendarAppointmentCardProps {
     type: InteractionState["type"]
   ) => void;
   onSelect: (apptId: string) => void;
+  startHour: number;
+  endHour: number;
 }
 
 const CalendarAppointmentCard = React.memo(function CalendarAppointmentCard({
@@ -65,6 +71,8 @@ const CalendarAppointmentCard = React.memo(function CalendarAppointmentCard({
   interactionEndTs,
   onInteractionStart,
   onSelect,
+  startHour,
+  endHour,
 }: CalendarAppointmentCardProps) {
   const displayStart = isInteracting ? new Date(interactionStartTs) : appt.startTime;
   const displayEnd = isInteracting ? new Date(interactionEndTs) : appt.endTime;
@@ -72,9 +80,9 @@ const CalendarAppointmentCard = React.memo(function CalendarAppointmentCard({
   const startH = displayStart.getHours() + displayStart.getMinutes() / 60;
   const endH = displayEnd.getHours() + displayEnd.getMinutes() / 60;
 
-  if (startH < START_HOUR || startH > END_HOUR) return null;
+  if (startH < startHour || startH > endHour) return null;
 
-  const topOffset = (startH - START_HOUR) * HOUR_HEIGHT;
+  const topOffset = (startH - startHour) * HOUR_HEIGHT;
   const height = (endH - startH) * HOUR_HEIGHT;
 
   const widthPercent = isInteracting ? 96 : 100 / appt.totalColumns;
@@ -137,7 +145,33 @@ const CalendarAppointmentCard = React.memo(function CalendarAppointmentCard({
   );
 });
 
-export default function DayView({ appointments, currentDate, onSelectAppt, onUpdateTime, onSlotSelect }: DayViewProps) {
+function getUnavailableBlocks(daySettings: any, startHour: number, endHour: number) {
+  if (!daySettings || !daySettings.enabled) {
+    return [{ start: startHour, end: endHour }];
+  }
+  const blocks: { start: number; end: number }[] = [];
+  let current = startHour;
+  const segments = [...daySettings.segments].sort((a: any, b: any) => {
+    const aH = parseInt(a.start.split(":")[0]) + parseInt(a.start.split(":")[1])/60;
+    const bH = parseInt(b.start.split(":")[0]) + parseInt(b.start.split(":")[1])/60;
+    return aH - bH;
+  });
+
+  for (const seg of segments) {
+    const segStart = parseInt(seg.start.split(":")[0]) + parseInt(seg.start.split(":")[1])/60;
+    const segEnd = parseInt(seg.end.split(":")[0]) + parseInt(seg.end.split(":")[1])/60;
+    if (segStart > current) {
+      blocks.push({ start: current, end: Math.min(segStart, endHour) });
+    }
+    current = Math.max(current, segEnd);
+  }
+  if (current < endHour) {
+    blocks.push({ start: current, end: endHour });
+  }
+  return blocks;
+}
+
+export default function DayView({ appointments, currentDate, startHour, endHour, schedule, onSelectAppt, onUpdateTime, onSlotSelect }: DayViewProps) {
   const [interaction, setInteraction] = useState<InteractionState | null>(null);
   const [slotSelection, setSlotSelection] = useState<{ start: Date; end: Date } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -241,8 +275,8 @@ export default function DayView({ appointments, currentDate, onSelectAppt, onUpd
       const now = new Date();
       if (isSameDay(now, currentDate)) {
         const hours = now.getHours() + now.getMinutes() / 60;
-        if (hours >= START_HOUR && hours <= END_HOUR) {
-          setCurrentTimeLine((hours - START_HOUR) * HOUR_HEIGHT);
+        if (hours >= startHour && hours <= endHour) {
+          setCurrentTimeLine((hours - startHour) * HOUR_HEIGHT);
           return;
         }
       }
@@ -251,7 +285,14 @@ export default function DayView({ appointments, currentDate, onSelectAppt, onUpd
     updateTimeLine();
     const interval = setInterval(updateTimeLine, 60000);
     return () => clearInterval(interval);
-  }, [currentDate]);
+  }, [currentDate, startHour, endHour]);
+
+  const unavailableBlocks = useMemo(() => {
+    if (!schedule) return [];
+    // en-US locale ensures we get english day names that match the schedule keys (sunday, monday...)
+    const dayKey = format(currentDate, "EEEE", { locale: enUS }).toLowerCase();
+    return getUnavailableBlocks(schedule[dayKey], startHour, endHour);
+  }, [schedule, currentDate, startHour, endHour]);
 
   const onInteractionStart = useCallback(
     (
@@ -299,17 +340,17 @@ export default function DayView({ appointments, currentDate, onSelectAppt, onUpd
         const snappedStart = snapToQuarter(newStart);
 
         let finalStart = snappedStart;
-        if (finalStart.getHours() < START_HOUR) {
+        if (finalStart.getHours() < startHour) {
           finalStart = new Date(finalStart);
-          finalStart.setHours(START_HOUR, 0, 0, 0);
+          finalStart.setHours(startHour, 0, 0, 0);
         }
         const potentialEnd = new Date(finalStart.getTime() + duration);
         if (
-          potentialEnd.getHours() > END_HOUR ||
-          (potentialEnd.getHours() === END_HOUR && potentialEnd.getMinutes() > 0)
+          potentialEnd.getHours() > endHour ||
+          (potentialEnd.getHours() === endHour && potentialEnd.getMinutes() > 0)
         ) {
           finalStart = new Date(potentialEnd);
-          finalStart.setHours(END_HOUR, 0, 0, 0);
+          finalStart.setHours(endHour, 0, 0, 0);
           finalStart = new Date(finalStart.getTime() - duration);
         }
 
@@ -326,7 +367,7 @@ export default function DayView({ appointments, currentDate, onSelectAppt, onUpd
         const snappedEnd = snapToQuarter(newEnd);
 
         const gridEnd = new Date(current.originalStartTime);
-        gridEnd.setHours(END_HOUR, 0, 0, 0);
+        gridEnd.setHours(endHour, 0, 0, 0);
 
         let finalEnd = snappedEnd;
         if (finalEnd < minEnd) finalEnd = minEnd;
@@ -362,16 +403,16 @@ export default function DayView({ appointments, currentDate, onSelectAppt, onUpd
       const snapped = snapToQuarter(time);
 
       const clamped = new Date(snapped);
-      if (clamped.getHours() < START_HOUR) {
-        clamped.setHours(START_HOUR, 0, 0, 0);
+      if (clamped.getHours() < startHour) {
+        clamped.setHours(startHour, 0, 0, 0);
       }
-      if (clamped.getHours() >= END_HOUR) return;
+      if (clamped.getHours() >= endHour) return;
 
       const defaultEnd = new Date(clamped.getTime() + 30 * 60 * 1000);
       let clampedEnd = defaultEnd;
-      if (clampedEnd.getHours() > END_HOUR || (clampedEnd.getHours() === END_HOUR && clampedEnd.getMinutes() > 0)) {
+      if (clampedEnd.getHours() > endHour || (clampedEnd.getHours() === endHour && clampedEnd.getMinutes() > 0)) {
         clampedEnd = new Date(clamped);
-        clampedEnd.setHours(END_HOUR, 0, 0, 0);
+        clampedEnd.setHours(endHour, 0, 0, 0);
       }
 
       slotMovedRef.current = false;
@@ -399,7 +440,7 @@ export default function DayView({ appointments, currentDate, onSelectAppt, onUpd
 
       const minEnd = new Date(sel.start.getTime() + 15 * 60 * 1000);
       const gridEnd = new Date(sel.start);
-      gridEnd.setHours(END_HOUR, 0, 0, 0);
+      gridEnd.setHours(endHour, 0, 0, 0);
 
       let finalEnd = snapped;
       if (finalEnd < minEnd) finalEnd = minEnd;
@@ -465,8 +506,8 @@ export default function DayView({ appointments, currentDate, onSelectAppt, onUpd
   }, [slotSelection, onSlotPointerMove, onSlotPointerUp]);
 
   const hoursArray = Array.from(
-    { length: END_HOUR - START_HOUR + 1 },
-    (_, i) => START_HOUR + i
+    { length: endHour - startHour + 1 },
+    (_, i) => startHour + i
   );
 
   return (
@@ -493,7 +534,7 @@ export default function DayView({ appointments, currentDate, onSelectAppt, onUpd
         <div
           ref={gridRef}
           className="flex relative"
-          style={{ height: `${(END_HOUR - START_HOUR + 1) * HOUR_HEIGHT}px` }}
+          style={{ height: `${(endHour - startHour + 1) * HOUR_HEIGHT}px` }}
         >
           {/* Time labels */}
           <div className="w-16 md:w-24 shrink-0 border-l border-slate-100 relative bg-slate-50/30">
@@ -544,6 +585,19 @@ export default function DayView({ appointments, currentDate, onSelectAppt, onUpd
               </div>
             )}
 
+            {/* Unavailable blocks */}
+            {unavailableBlocks.map((block, i) => (
+              <div
+                key={`unavail-${i}`}
+                className="absolute w-full bg-slate-100/50 pointer-events-none z-0"
+                style={{
+                  top: `${(block.start - startHour) * HOUR_HEIGHT}px`,
+                  height: `${(block.end - block.start) * HOUR_HEIGHT}px`,
+                  backgroundImage: "repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.03) 10px, rgba(0,0,0,0.03) 20px)",
+                }}
+              />
+            ))}
+
             {/* Appointments */}
             {dailyAppointmentsWithLayout.map((appt) => (
               <CalendarAppointmentCard
@@ -554,6 +608,8 @@ export default function DayView({ appointments, currentDate, onSelectAppt, onUpd
                 interactionEndTs={interaction?.currentEndTime.getTime() ?? 0}
                 onInteractionStart={onInteractionStart}
                 onSelect={handleSelectAppt}
+                startHour={startHour}
+                endHour={endHour}
               />
             ))}
 
@@ -562,7 +618,7 @@ export default function DayView({ appointments, currentDate, onSelectAppt, onUpd
               <div
                 className="absolute rounded-xl border-2 border-dashed border-blue-400 bg-blue-50/20 pointer-events-none z-50 flex flex-col p-3"
                 style={{
-                  top: `${(interaction.currentStartTime.getHours() + interaction.currentStartTime.getMinutes() / 60 - START_HOUR) * HOUR_HEIGHT}px`,
+                  top: `${(interaction.currentStartTime.getHours() + interaction.currentStartTime.getMinutes() / 60 - startHour) * HOUR_HEIGHT}px`,
                   height: `${(interaction.currentEndTime.getTime() - interaction.currentStartTime.getTime()) / (1000 * 60 * 60) * HOUR_HEIGHT}px`,
                   width: "calc(100% - 16px)",
                   right: "8px",
@@ -584,7 +640,7 @@ export default function DayView({ appointments, currentDate, onSelectAppt, onUpd
               <div
                 className="absolute rounded-xl border-2 border-green-400 bg-emerald-500/10 pointer-events-none z-40 flex flex-col p-3"
                 style={{
-                  top: `${(slotSelection.start.getHours() + slotSelection.start.getMinutes() / 60 - START_HOUR) * HOUR_HEIGHT}px`,
+                  top: `${(slotSelection.start.getHours() + slotSelection.start.getMinutes() / 60 - startHour) * HOUR_HEIGHT}px`,
                   height: `${(slotSelection.end.getTime() - slotSelection.start.getTime()) / (1000 * 60 * 60) * HOUR_HEIGHT}px`,
                   width: "calc(100% - 16px)",
                   right: "8px",
