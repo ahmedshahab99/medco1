@@ -20,15 +20,6 @@ const dayScheduleSchema = z.object({
 
 const weekScheduleSchema = z.record(z.string(), dayScheduleSchema);
 
-const exceptionSchema = z.object({
-  id: z.string(),
-  date: z.string(),
-  type: z.enum(["off", "custom", "break"]),
-  startTime: z.string().optional(),
-  endTime: z.string().optional(),
-  label: z.string().optional(),
-});
-
 const advancedSettingsSchema = z.object({
   bufferBefore: z.number().min(0),
   bufferAfter: z.number().min(0),
@@ -39,7 +30,6 @@ const advancedSettingsSchema = z.object({
 
 const saveAvailabilitySchema = z.object({
   schedule: weekScheduleSchema,
-  exceptions: z.array(exceptionSchema),
   settings: advancedSettingsSchema,
 });
 
@@ -61,14 +51,12 @@ export async function getClinicAvailability() {
 
   return {
     schedule: availability.schedule as never,
-    exceptions: availability.exceptions as never,
     settings: availability.settings as never,
   };
 }
 
 export async function saveClinicAvailability(data: {
   schedule: unknown;
-  exceptions: unknown;
   settings: unknown;
 }) {
   const supabase = await createClient();
@@ -91,12 +79,10 @@ export async function saveClinicAvailability(data: {
       create: {
         tenantId: actor.tenantId,
         schedule: validation.data.schedule,
-        exceptions: validation.data.exceptions,
         settings: validation.data.settings,
       },
       update: {
         schedule: validation.data.schedule,
-        exceptions: validation.data.exceptions,
         settings: validation.data.settings,
       },
     });

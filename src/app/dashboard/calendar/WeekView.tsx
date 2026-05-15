@@ -3,13 +3,17 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { format, startOfWeek, addDays, isSameDay, endOfWeek } from "date-fns";
 import { arSA } from "date-fns/locale/ar-SA";
+import { enUS } from "date-fns/locale/en-US";
 import type { CalendarAppointment } from "@/hooks/use-appointments";
-import { START_HOUR, END_HOUR, HOUR_HEIGHT } from "./constants";
+import { HOUR_HEIGHT } from "./constants";
 import { STATUS_MAP } from "./utils";
 
 interface WeekViewProps {
   appointments: CalendarAppointment[];
   currentDate: Date;
+  startHour: number;
+  endHour: number;
+  schedule?: any;
   onSelectAppt: (appt: CalendarAppointment) => void;
   onChangeDate: (date: Date) => void;
   onNewAppointment: (date: Date) => void;
@@ -37,7 +41,33 @@ function getColorClass(color: string): string {
   return color;
 }
 
-export default function WeekView({ appointments, currentDate, onSelectAppt, onChangeDate, onNewAppointment }: WeekViewProps) {
+function getUnavailableBlocks(daySettings: any, startHour: number, endHour: number) {
+  if (!daySettings || !daySettings.enabled) {
+    return [{ start: startHour, end: endHour }];
+  }
+  const blocks: { start: number; end: number }[] = [];
+  let current = startHour;
+  const segments = [...daySettings.segments].sort((a: any, b: any) => {
+    const aH = parseInt(a.start.split(":")[0]) + parseInt(a.start.split(":")[1])/60;
+    const bH = parseInt(b.start.split(":")[0]) + parseInt(b.start.split(":")[1])/60;
+    return aH - bH;
+  });
+
+  for (const seg of segments) {
+    const segStart = parseInt(seg.start.split(":")[0]) + parseInt(seg.start.split(":")[1])/60;
+    const segEnd = parseInt(seg.end.split(":")[0]) + parseInt(seg.end.split(":")[1])/60;
+    if (segStart > current) {
+      blocks.push({ start: current, end: Math.min(segStart, endHour) });
+    }
+    current = Math.max(current, segEnd);
+  }
+  if (current < endHour) {
+    blocks.push({ start: current, end: endHour });
+  }
+  return blocks;
+}
+
+export default function WeekView({ appointments, currentDate, startHour, endHour, schedule, onSelectAppt, onChangeDate, onNewAppointment }: WeekViewProps) {
   const [currentTimeLine, setCurrentTimeLine] = useState<number | null>(null);
 
   const weekStart = useMemo(() => startOfWeek(currentDate, { weekStartsOn: 0 }), [currentDate]);
@@ -51,8 +81,8 @@ export default function WeekView({ appointments, currentDate, onSelectAppt, onCh
       const todayIndex = weekDays.findIndex((d) => isSameDay(d, now));
       if (todayIndex !== -1) {
         const hours = now.getHours() + now.getMinutes() / 60;
-        if (hours >= START_HOUR && hours <= END_HOUR) {
-          setCurrentTimeLine((hours - START_HOUR) * HOUR_HEIGHT);
+        if (hours >= startHour && hours <= endHour) {
+          setCurrentTimeLine((hours - startHour) * HOUR_HEIGHT);
           return;
         }
       }
@@ -61,9 +91,9 @@ export default function WeekView({ appointments, currentDate, onSelectAppt, onCh
     updateTimeLine();
     const interval = setInterval(updateTimeLine, 60000);
     return () => clearInterval(interval);
-  }, [weekDays]);
+  }, [weekDays, startHour, endHour]);
 
-  const hoursArray = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i);
+  const hoursArray = Array.from({ length: endHour - startHour + 1 }, (_, i) => startHour + i);
 
   return (
     <div className="flex-1 overflow-auto custom-scrollbar relative">
@@ -97,7 +127,7 @@ export default function WeekView({ appointments, currentDate, onSelectAppt, onCh
         </div>
 
         {/* Grid */}
-        <div className="flex relative" style={{ height: `${(END_HOUR - START_HOUR + 1) * HOUR_HEIGHT}px` }}>
+        <div className="flex relative" style={{ height: `${(endHour - startHour + 1) * HOUR_HEIGHT}px` }}>
           {/* Time labels */}
           <div className="w-14 md:w-20 shrink-0 border-l border-slate-100 relative bg-slate-50/30">
             {hoursArray.map((hour, index) => {
@@ -141,6 +171,9 @@ export default function WeekView({ appointments, currentDate, onSelectAppt, onCh
                 isSameDay(appt.startTime, day)
               );
               const isToday = isSameDay(day, new Date());
+              
+              const dayKey = format(day, "EEEE", { locale: enUS }).toLowerCase();
+              const unavailableBlocks = schedule ? getUnavailableBlocks(schedule[dayKey], startHour, endHour) : [];
 
               return (
                 <div
@@ -151,6 +184,19 @@ export default function WeekView({ appointments, currentDate, onSelectAppt, onCh
                     onNewAppointment(day);
                   }}
                 >
+                  {/* Unavailable blocks */}
+                  {unavailableBlocks.map((block, i) => (
+                    <div
+                      key={`unavail-${i}`}
+                      className="absolute w-full bg-slate-100/50 pointer-events-none z-0"
+                      style={{
+                        top: `${(block.start - startHour) * HOUR_HEIGHT}px`,
+                        height: `${(block.end - block.start) * HOUR_HEIGHT}px`,
+                        backgroundImage: "repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.03) 10px, rgba(0,0,0,0.03) 20px)",
+                      }}
+                    />
+                  ))}
+
                   {isToday && currentTimeLine !== null && (
                     <div
                       className="absolute right-0 left-0 z-20 pointer-events-none"
@@ -165,9 +211,9 @@ export default function WeekView({ appointments, currentDate, onSelectAppt, onCh
                     const startH = appt.startTime.getHours() + appt.startTime.getMinutes() / 60;
                     const endH = appt.endTime.getHours() + appt.endTime.getMinutes() / 60;
 
-                    if (startH < START_HOUR || startH > END_HOUR) return null;
+                    if (startH < startHour || startH > endHour) return null;
 
-                    const topOffset = (startH - START_HOUR) * HOUR_HEIGHT;
+                    const topOffset = (startH - startHour) * HOUR_HEIGHT;
                     const height = (endH - startH) * HOUR_HEIGHT;
                     const colorClass = getColorClass(appt.serviceColor);
                     const colorStyle = getColorStyle(appt.serviceColor);

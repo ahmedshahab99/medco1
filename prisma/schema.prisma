@@ -131,7 +131,6 @@ model ClinicAvailability {
   tenantId   String   @unique
   tenant     Tenant   @relation(fields: [tenantId], references: [id])
   schedule   Json
-  exceptions Json
   settings   Json
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
