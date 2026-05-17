@@ -16,6 +16,7 @@ export interface Patient {
   dateOfBirth: string | null;
   gender: string | null;
   status: string;
+  address: string | null;
   cases: PatientCase[];
   createdAt: string;
   updatedAt: string;
@@ -32,7 +33,8 @@ async function fetchPatients(search?: string): Promise<Patient[]> {
   return res.json();
 }
 
-export function usePatients(search?: string) {
+export function usePatients(search?: string, page?: number) {
+  
   return useQuery({
     queryKey: ["patients", search ?? ""],
     queryFn: () => fetchPatients(search),
