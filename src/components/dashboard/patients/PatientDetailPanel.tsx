@@ -1,46 +1,16 @@
 "use client";
 
-import React, { useState } from "react";
-import { Patient } from "../../../lib/types/dashboard";
+import React from "react";
+import { Patient } from "../../../hooks/use-patients";
 import {
-  X, Phone, Mail, CalendarDays, CalendarCheck, MessageSquare,
-  Edit2, ChevronLeft, Stethoscope,
+  X, Phone, Mail, CalendarDays, MapPin, Stethoscope, ChevronLeft,
 } from "lucide-react";
-import { Button } from "../../ui/Button";
-import { OverviewTab } from "./tabs/OverviewTab";
-import { HistoryTab } from "./tabs/HistoryTab";
-import { NotesTab } from "./tabs/NotesTab";
-import { FilesTab } from "./tabs/FilesTab";
-import { CommunicationsTab } from "./tabs/CommunicationsTab";
-import { TagsTab } from "./tabs/TagsTab";
 
 interface PatientDetailPanelProps {
   patient: Patient;
   onClose: () => void;
-  onBookAppointment: (patient: Patient) => void;
-  /** If true, renders as a full page (mobile). If false, renders as side panel. */
   fullPage?: boolean;
 }
-
-type TabKey = "overview" | "history" | "notes" | "files" | "comms" | "tags";
-
-const TABS: { key: TabKey; label: string }[] = [
-  { key: "overview", label: "نظرة عامة" },
-  { key: "history",  label: "التاريخ الطبي" },
-  { key: "notes",    label: "الملاحظات" },
-  { key: "files",    label: "الملفات" },
-  { key: "comms",    label: "التواصل" },
-  { key: "tags",     label: "التصنيفات" },
-];
-
-const TAG_COLORS: Record<string, string> = {
-  VIP:           "bg-amber-100 text-amber-700",
-  مزمن:         "bg-purple-100 text-purple-700",
-  جديد:         "bg-emerald-100 text-emerald-700",
-  متابعة:       "bg-blue-100 text-blue-700",
-  "خطر مرتفع": "bg-red-100 text-red-700",
-  حساسية:       "bg-orange-100 text-orange-700",
-};
 
 const AVATAR_COLORS = [
   "from-blue-400 to-blue-600",
@@ -61,19 +31,28 @@ function getInitials(name: string) {
   return parts.length >= 2 ? parts[0][0] + parts[1][0] : parts[0][0];
 }
 
-function calcAge(dob?: string) {
+function calcAge(dob?: string | null) {
   if (!dob) return null;
   const diff = Date.now() - new Date(dob).getTime();
   return Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
 }
 
+function formatGender(gender: string | null) {
+  if (gender === "MALE") return "ذكر";
+  if (gender === "FEMALE") return "أنثى";
+  return null;
+}
+
+function formatDate(iso: string | null) {
+  if (!iso) return null;
+  return new Date(iso).toLocaleDateString("ar-SA");
+}
+
 export function PatientDetailPanel({
   patient,
   onClose,
-  onBookAppointment,
   fullPage = false,
 }: PatientDetailPanelProps) {
-  const [activeTab, setActiveTab] = useState<TabKey>("overview");
   const age = calcAge(patient.dateOfBirth);
 
   return (
@@ -82,9 +61,7 @@ export function PatientDetailPanel({
         fullPage ? "w-full" : "w-full border-r border-slate-100 shadow-xl"
       }`}
     >
-      {/* ── HEADER ── */}
       <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-5 shrink-0">
-        {/* Top row: close + back */}
         <div className="flex items-center justify-between mb-4">
           {fullPage ? (
             <button
@@ -105,9 +82,7 @@ export function PatientDetailPanel({
           </button>
         </div>
 
-        {/* Patient info */}
         <div className="flex items-start gap-4">
-          {/* Avatar */}
           <div
             className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${getAvatarGradient(patient.id)} flex items-center justify-center font-bold text-white text-xl shrink-0 shadow-lg`}
           >
@@ -121,121 +96,72 @@ export function PatientDetailPanel({
               {age && (
                 <span className="text-slate-400 text-sm">{age} سنة</span>
               )}
-              {patient.gender && (
-                <span className="text-slate-400 text-sm">
-                  {patient.gender === "male" ? "ذكر" : "أنثى"}
-                </span>
+              {formatGender(patient.gender) && (
+                <span className="text-slate-400 text-sm">{formatGender(patient.gender)}</span>
               )}
-              <span className="text-slate-500 text-[11px]">#{patient.id}</span>
+              <span className="text-slate-500 text-[11px]">#{patient.id.slice(0, 8)}</span>
             </div>
 
-            {/* Contact */}
             <div className="flex flex-col gap-0.5 mt-2">
-              <a href={`tel:${patient.phone}`} className="text-slate-300 text-xs flex items-center gap-1.5 hover:text-white transition-colors" dir="ltr">
-                <Phone className="w-3 h-3 shrink-0" />
-                {patient.phone}
-              </a>
+              {patient.phone && (
+                <a href={`tel:${patient.phone}`} className="text-slate-300 text-xs flex items-center gap-1.5 hover:text-white transition-colors" dir="ltr">
+                  <Phone className="w-3 h-3 shrink-0" />
+                  {patient.phone}
+                </a>
+              )}
               {patient.email && (
                 <a href={`mailto:${patient.email}`} className="text-slate-300 text-xs flex items-center gap-1.5 hover:text-white transition-colors">
                   <Mail className="w-3 h-3 shrink-0" />
                   {patient.email}
                 </a>
               )}
-              {patient.doctor && (
-                <span className="text-slate-400 text-xs flex items-center gap-1.5">
-                  <Stethoscope className="w-3 h-3 shrink-0" />
-                  {patient.doctor}
-                </span>
-              )}
             </div>
+          </div>
+        </div>
+      </div>
 
-            {/* Tags */}
-            {patient.tags.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-3">
-                {patient.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${TAG_COLORS[tag] ?? "bg-slate-700 text-slate-300"}`}
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            )}
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-6">
+        <div>
+          <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">معلومات شخصية</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <InfoItem icon={<CalendarDays className="w-4 h-4" />} label="تاريخ الميلاد" value={formatDate(patient.dateOfBirth)} />
+            <InfoItem icon={<Stethoscope className="w-4 h-4" />} label="الجنس" value={formatGender(patient.gender)} />
+            <InfoItem icon={<MapPin className="w-4 h-4" />} label="العنوان" value={patient.address} />
+            <InfoItem icon={<CalendarDays className="w-4 h-4" />} label="الحالة" value={patient.status === "active" ? "نشط" : patient.status === "inactive" ? "غير نشط" : patient.status} />
           </div>
         </div>
 
-        {/* Quick actions */}
-        <div className="flex gap-2 mt-4">
-          <Button
-            size="sm"
-            className="flex-1 bg-blue-600 hover:bg-blue-700 gap-1.5 text-xs"
-            onClick={() => onBookAppointment(patient)}
-          >
-            <CalendarCheck className="w-3.5 h-3.5" />
-            حجز موعد
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="flex-1 text-white hover:bg-white/10 gap-1.5 text-xs border border-white/20"
-          >
-            <MessageSquare className="w-3.5 h-3.5" />
-            رسالة
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="text-white hover:bg-white/10 border border-white/20"
-          >
-            <Edit2 className="w-3.5 h-3.5" />
-          </Button>
+        {patient.cases.length > 0 && (
+          <div>
+            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">الحالات الطبية</h3>
+            <div className="space-y-2">
+              {patient.cases.map((c) => (
+                <div key={c.id} className="bg-slate-50 rounded-xl p-3">
+                  <p className="text-sm font-semibold text-slate-800">{c.title}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">{formatDate(c.createdAt)}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div>
+          <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">معلومات النظام</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <InfoItem icon={<CalendarDays className="w-4 h-4" />} label="تاريخ التسجيل" value={formatDate(patient.createdAt)} />
+            <InfoItem icon={<CalendarDays className="w-4 h-4" />} label="آخر تحديث" value={formatDate(patient.updatedAt)} />
+          </div>
         </div>
       </div>
+    </div>
+  );
+}
 
-      {/* ── TABS ── */}
-      <div className="border-b border-slate-100 shrink-0">
-        <div className="flex overflow-x-auto custom-scrollbar-x">
-          {TABS.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all ${
-                activeTab === tab.key
-                  ? "text-blue-600 border-blue-600"
-                  : "text-slate-500 border-transparent hover:text-slate-700 hover:border-slate-200"
-              }`}
-            >
-              {tab.label}
-              {tab.key === "notes" && patient.notes.length > 0 && (
-                <span className="mr-1.5 text-[10px] font-bold bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full">
-                  {patient.notes.length}
-                </span>
-              )}
-              {tab.key === "files" && patient.files.length > 0 && (
-                <span className="mr-1.5 text-[10px] font-bold bg-violet-100 text-violet-600 px-1.5 py-0.5 rounded-full">
-                  {patient.files.length}
-                </span>
-              )}
-              {tab.key === "comms" && patient.communications.length > 0 && (
-                <span className="mr-1.5 text-[10px] font-bold bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded-full">
-                  {patient.communications.length}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* ── TAB CONTENT ── */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-5">
-        {activeTab === "overview" && <OverviewTab patient={patient} />}
-        {activeTab === "history"  && <HistoryTab patient={patient} />}
-        {activeTab === "notes"    && <NotesTab patient={patient} />}
-        {activeTab === "files"    && <FilesTab patient={patient} />}
-        {activeTab === "comms"    && <CommunicationsTab patient={patient} />}
-        {activeTab === "tags"     && <TagsTab patient={patient} />}
-      </div>
+function InfoItem({ icon, label, value }: { icon: React.ReactNode; label: string; value: string | null }) {
+  return (
+    <div className="space-y-1">
+      <span className="flex items-center gap-1.5 text-xs text-slate-400">{icon} {label}</span>
+      <p className="text-sm font-medium text-slate-700">{value || "—"}</p>
     </div>
   );
 }

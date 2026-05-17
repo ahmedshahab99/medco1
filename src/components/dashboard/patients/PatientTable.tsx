@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Patient } from "../../../lib/types/dashboard";
+import { Patient } from "../../../hooks/use-patients";
 import {
   Phone,
   Mail,
@@ -31,6 +31,10 @@ function getAvatarColor(id: string) {
   return AVATAR_COLORS[idx];
 }
 
+function getStatusLabel(status: string) {
+  return status === "inactive" ? "غير نشط" : null;
+}
+
 export function PatientTable({ patients, onSelectPatient }: PatientTableProps) {
 
   return (
@@ -40,6 +44,7 @@ export function PatientTable({ patients, onSelectPatient }: PatientTableProps) {
           <tr className="border-b border-slate-100">
             <th className="text-right py-3 px-4 text-xs font-bold text-slate-400 uppercase tracking-wider w-64">المريض</th>
             <th className="text-right py-3 px-4 text-xs font-bold text-slate-400 uppercase tracking-wider">التواصل</th>
+            <th className="text-right py-3 px-4 text-xs font-bold text-slate-400 uppercase tracking-wider">الميلاد</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-50">
@@ -61,8 +66,8 @@ export function PatientTable({ patients, onSelectPatient }: PatientTableProps) {
                     <div>
                       <div className="flex items-center gap-2">
                         <p className="font-semibold text-slate-800 leading-tight">{patient.name}</p>
-                        {patient.status === "inactive" && (
-                          <span className="text-[10px] font-bold bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full">غير نشط</span>
+                        {getStatusLabel(patient.status) && (
+                          <span className="text-[10px] font-bold bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full">{getStatusLabel(patient.status)}</span>
                         )}
                       </div>
                       
@@ -83,6 +88,16 @@ export function PatientTable({ patients, onSelectPatient }: PatientTableProps) {
                         <Mail className="w-3 h-3 text-slate-400 shrink-0" />
                       </span>
                     )}
+                  </div>
+                </td>
+                {/* Birth Date */}
+                <td className="py-3.5 px-4 ">
+                  <div className="flex flex-col gap-1 items-start">
+                    <span className="flex items-center gap-1.5 text-slate-600" dir="ltr">
+                      
+                      <span className="text-xs">{patient.dateOfBirth?.split("T")[0]}</span>
+                    </span>
+                    
                   </div>
                 </td>
               </tr>

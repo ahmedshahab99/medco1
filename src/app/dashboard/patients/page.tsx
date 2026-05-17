@@ -1,25 +1,20 @@
 "use client";
 
-import React, { useState, useMemo, useCallback, useEffect } from "react";
-import { Search, SlidersHorizontal, Plus, UsersRound, ChevronRight, ChevronLeft, X } from "lucide-react";
+import React, { useState, useMemo, useEffect } from "react";
+import { Search, SlidersHorizontal, Plus, UsersRound, ChevronRight, ChevronLeft, X, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { PatientTable } from "@/components/dashboard/patients/PatientTable";
 import { PatientFilters, FilterState } from "@/components/dashboard/patients/PatientFilters";
-import { PatientDetailPanel } from "@/components/dashboard/patients/PatientDetailPanel";
+
 import { NewPatientModal } from "@/components/dashboard/patients/NewPatientModal";
-import { MOCK_PATIENTS } from "@/lib/mock/patients";
-import { Patient } from "@/lib/types/dashboard";
+import { usePatients } from "@/hooks/use-patients";
 
 const PAGE_SIZE = 10;
 
 const DEFAULT_FILTERS: FilterState = {
-  tags: [],
   status: "all",
-  doctor: "",
-  lastVisit: "all",
-  hasUpcoming: "all",
 };
 
 function useDebounce<T>(value: T, delay: number): T {
@@ -31,17 +26,6 @@ function useDebounce<T>(value: T, delay: number): T {
   return debounced;
 }
 
-function matchesLastVisit(patient: Patient, filter: FilterState["lastVisit"]) {
-  if (filter === "all") return true;
-  if (filter === "none") return !patient.lastVisit;
-  if (!patient.lastVisit) return false;
-  const visitDate = new Date(patient.lastVisit).getTime();
-  const now = Date.now();
-  if (filter === "7days")  return now - visitDate <= 7  * 24 * 60 * 60 * 1000;
-  if (filter === "30days") return now - visitDate <= 30 * 24 * 60 * 60 * 1000;
-  return true;
-}
-
 export default function PatientsPage() {
   const [searchRaw, setSearchRaw] = useState("");
   const search = useDebounce(searchRaw, 250);
@@ -50,40 +34,15 @@ export default function PatientsPage() {
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [isNewPatientOpen, setIsNewPatientOpen] = useState(false);
 
-  const router = useRouter();
-  const [page, setPage] = useState(1);
+const router = useRouter();
+const [page, setPage] = useState(1);
 
-  // Responsive: detect if side panel should be full-page
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 1024);
-    check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
-  }, []);
+const { data: patients = [], isLoading, error, refetch } = usePatients(search);
 
-  // Filtering + search logic
   const filtered = useMemo(() => {
-    const q = search.toLowerCase().trim();
-    return MOCK_PATIENTS.filter((p) => {
-      // Search
-      if (q) {
-        const nameMatch  = p.name.toLowerCase().includes(q);
-        const phoneMatch = p.phone.includes(q);
-        const idMatch    = p.id.toLowerCase().includes(q);
-        const emailMatch = (p.email ?? "").toLowerCase().includes(q);
-        if (!nameMatch && !phoneMatch && !idMatch && !emailMatch) return false;
-      }
-      // Filters
-      if (filters.status !== "all" && p.status !== filters.status) return false;
-      if (filters.doctor && p.doctor !== filters.doctor) return false;
-      if (filters.tags.length > 0 && !filters.tags.every((t) => p.tags.includes(t))) return false;
-      if (!matchesLastVisit(p, filters.lastVisit)) return false;
-      if (filters.hasUpcoming === "yes" && !p.nextAppointment) return false;
-      if (filters.hasUpcoming === "no"  &&  p.nextAppointment) return false;
-      return true;
-    });
-  }, [search, filters]);
+    if (filters.status === "all") return patients;
+    return patients.filter((p) => p.status === filters.status);
+  }, [patients, filters.status]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = useMemo(
@@ -91,23 +50,16 @@ export default function PatientsPage() {
     [filtered, page]
   );
 
-  // Reset page when filters/search change
   useEffect(() => { setPage(1); }, [search, filters]);
 
-  const activeFilterCount =
-    filters.tags.length +
-    (filters.status !== "all" ? 1 : 0) +
-    (filters.doctor ? 1 : 0) +
-    (filters.lastVisit !== "all" ? 1 : 0) +
-    (filters.hasUpcoming !== "all" ? 1 : 0);
+  const activeFilterCount = filters.status !== "all" ? 1 : 0;
 
-  const handleSelectPatient = useCallback((p: Patient) => {
+  const handleSelectPatient = (p: { id: string }) => {
     router.push(`/dashboard/patients/${p.id}`);
-  }, [router]);
+  };
 
   return (
     <div className="flex flex-col h-full gap-6">
-      {/* ── PAGE TITLE ── */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-black text-slate-800 flex items-center gap-2.5">
@@ -115,21 +67,16 @@ export default function PatientsPage() {
             المرضى
           </h1>
           <p className="text-sm text-slate-500 mt-0.5">
-            {MOCK_PATIENTS.length} مريض مسجّل · {MOCK_PATIENTS.filter((p) => p.status === "active").length} نشط
+            {isLoading ? "جارٍ التحميل..." : `${patients.length} مريض مسجّل · ${patients.filter((p) => p.status === "active").length} نشط`}
           </p>
         </div>
       </div>
 
-      {/* ── MAIN LAYOUT ── */}
       <div className="flex gap-5 flex-1 min-h-0">
-
-        {/* ═══ LEFT: List panel ═══ */}
         <div
           className="flex flex-col bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden w-full"
         >
-          {/* Top Bar */}
           <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center gap-3">
-            {/* Search */}
             <div className="relative flex-1 w-full">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
               <Input
@@ -148,7 +95,6 @@ export default function PatientsPage() {
               )}
             </div>
 
-            {/* Actions */}
             <div className="flex items-center gap-2 shrink-0">
               <Button
                 variant="outline"
@@ -159,7 +105,7 @@ export default function PatientsPage() {
                 <SlidersHorizontal className="w-4 h-4" />
                 فلتر
                 {activeFilterCount > 0 && (
-                  <span className="absolute -top-1.5 -left-1.5 w-4.5 h-4.5 bg-blue-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center w-5 h-5">
+                  <span className="absolute -top-1.5 -left-1.5 bg-blue-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center w-5 h-5">
                     {activeFilterCount}
                   </span>
                 )}
@@ -175,28 +121,13 @@ export default function PatientsPage() {
             </div>
           </div>
 
-          {/* Active filter chips */}
           {activeFilterCount > 0 && (
             <div className="px-4 py-2.5 border-b border-slate-50 flex items-center gap-2 flex-wrap bg-slate-50/50">
               <span className="text-xs text-slate-400 font-medium">فلاتر نشطة:</span>
-              {filters.tags.map((tag) => (
-                <span key={tag} className="text-xs font-bold bg-blue-100 text-blue-600 px-2.5 py-1 rounded-full flex items-center gap-1">
-                  {tag}
-                  <button onClick={() => setFilters((f) => ({ ...f, tags: f.tags.filter((t) => t !== tag) }))}>
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              ))}
               {filters.status !== "all" && (
                 <span className="text-xs font-bold bg-blue-100 text-blue-600 px-2.5 py-1 rounded-full flex items-center gap-1">
                   {filters.status === "active" ? "نشط" : "غير نشط"}
                   <button onClick={() => setFilters((f) => ({ ...f, status: "all" }))}><X className="w-3 h-3" /></button>
-                </span>
-              )}
-              {filters.doctor && (
-                <span className="text-xs font-bold bg-blue-100 text-blue-600 px-2.5 py-1 rounded-full flex items-center gap-1">
-                  {filters.doctor}
-                  <button onClick={() => setFilters((f) => ({ ...f, doctor: "" }))}><X className="w-3 h-3" /></button>
                 </span>
               )}
               <button
@@ -208,25 +139,40 @@ export default function PatientsPage() {
             </div>
           )}
 
-          {/* Results count */}
           <div className="px-4 py-2 border-b border-slate-50 flex items-center justify-between text-xs text-slate-400">
             <span>
-              {filtered.length === MOCK_PATIENTS.length
-                ? `عرض ${filtered.length} مريض`
-                : `${filtered.length} نتيجة من أصل ${MOCK_PATIENTS.length}`}
+              {isLoading
+                ? "جارٍ التحميل..."
+                : filtered.length === patients.length
+                  ? `عرض ${filtered.length} مريض`
+                  : `${filtered.length} نتيجة من أصل ${patients.length}`}
             </span>
           </div>
 
-          {/* Table */}
           <div className="flex-1 overflow-auto custom-scrollbar">
-            <PatientTable
-              patients={paginated}
-              onSelectPatient={handleSelectPatient}
-            />
+            {error && (
+              <div className="text-center py-20 text-slate-400">
+                <p className="text-lg font-semibold text-red-500 mb-1">حدث خطأ</p>
+                <p className="text-sm mb-4">{error.message ?? "حدث خطأ غير متوقع"}</p>
+                <Button variant="outline" size="sm" onClick={() => refetch()}>
+                  إعادة المحاولة
+                </Button>
+              </div>
+            )}
+            {!error && isLoading && (
+              <div className="flex items-center justify-center py-20">
+                <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+              </div>
+            )}
+            {!error && !isLoading && (
+              <PatientTable
+                patients={paginated}
+                onSelectPatient={handleSelectPatient}
+              />
+            )}
           </div>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
+          {!isLoading && !error && totalPages > 1 && (
             <div className="p-4 border-t border-slate-100 flex items-center justify-between shrink-0">
               <p className="text-xs text-slate-500">
                 صفحة {page} من {totalPages}
@@ -246,7 +192,7 @@ export default function PatientsPage() {
                   return (
                     <Button
                       key={pg}
-                      variant={pg === page ? "primary" : "ghost"}
+                      variant={pg === page ? "default" : "ghost"}
                       size="sm"
                       onClick={() => setPage(pg)}
                       className="w-8 h-8 p-0 text-xs"
@@ -268,10 +214,8 @@ export default function PatientsPage() {
             </div>
           )}
         </div>
-
       </div>
 
-      {/* ── Modals ── */}
       <PatientFilters
         isOpen={isFiltersOpen}
         onClose={() => setIsFiltersOpen(false)}

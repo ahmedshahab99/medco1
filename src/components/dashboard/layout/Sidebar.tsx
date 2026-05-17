@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { Button } from "../../ui/Button";
 import { useParams, usePathname } from "next/navigation";
-import { MOCK_PATIENTS } from "@/lib/mock/patients";
+import { usePatients } from "@/hooks/use-patients";
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -23,10 +23,12 @@ export function Sidebar({ isCollapsed, onToggleCollapse, isMobileOpen, onCloseMo
   const pathname = usePathname();
   const patientId = params.id as string;
 
+  const { data: patientsData } = usePatients();
+
   const patient = useMemo(() => {
-    if (!patientId) return null;
-    return MOCK_PATIENTS.find((p) => p.id === patientId);
-  }, [patientId]);
+    if (!patientId || !patientsData) return null;
+    return patientsData.find((p) => p.id === patientId);
+  }, [patientId, patientsData]);
 
   // Specific links for the patient context
   const patientLinks = useMemo(() => {
