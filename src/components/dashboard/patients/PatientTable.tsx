@@ -50,6 +50,7 @@ export function PatientTable({ patients, onSelectPatient }: PatientTableProps) {
         <tbody className="divide-y divide-slate-50">
           {patients.map((patient) => {
             return (
+              
               <tr
                 key={patient.id}
                 onClick={() => onSelectPatient(patient)}

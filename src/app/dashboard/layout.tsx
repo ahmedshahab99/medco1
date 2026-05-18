@@ -25,6 +25,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const jwtClaims = decodeJwtClaims(session.access_token);
   if (!jwtClaims?.tenant_id) redirect("/setup");
+  
 
   return <DashboardShell>{children}</DashboardShell>;
 }

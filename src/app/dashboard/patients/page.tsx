@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Search, SlidersHorizontal, Plus, UsersRound, ChevronRight, ChevronLeft, X, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
@@ -9,7 +9,7 @@ import { PatientTable } from "@/components/dashboard/patients/PatientTable";
 import { PatientFilters, FilterState } from "@/components/dashboard/patients/PatientFilters";
 
 import { NewPatientModal } from "@/components/dashboard/patients/NewPatientModal";
-import { usePatients } from "@/hooks/use-patients";
+import { usePatients, PaginatedPatients } from "@/hooks/use-patients";
 
 const PAGE_SIZE = 10;
 
@@ -37,18 +37,11 @@ export default function PatientsPage() {
 const router = useRouter();
 const [page, setPage] = useState(1);
 
-const { data: patients = [], isLoading, error, refetch } = usePatients(search);
+const { data: result, isLoading, error, refetch } = usePatients({ search, page, pageSize: PAGE_SIZE, status: filters.status === "all" ? undefined : filters.status });
 
-  const filtered = useMemo(() => {
-    if (filters.status === "all") return patients;
-    return patients.filter((p) => p.status === filters.status);
-  }, [patients, filters.status]);
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const paginated = useMemo(
-    () => filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
-    [filtered, page]
-  );
+  const patients = (result as PaginatedPatients)?.data ?? [];
+  const total = (result as PaginatedPatients)?.total ?? 0;
+  const totalPages = (result as PaginatedPatients)?.totalPages ?? 1;
 
   useEffect(() => { setPage(1); }, [search, filters]);
 
@@ -67,7 +60,7 @@ const { data: patients = [], isLoading, error, refetch } = usePatients(search);
             المرضى
           </h1>
           <p className="text-sm text-slate-500 mt-0.5">
-            {isLoading ? "جارٍ التحميل..." : `${patients.length} مريض مسجّل · ${patients.filter((p) => p.status === "active").length} نشط`}
+            {isLoading ? "جارٍ التحميل..." : `${total} مريض مسجّل`}
           </p>
         </div>
       </div>
@@ -143,9 +136,7 @@ const { data: patients = [], isLoading, error, refetch } = usePatients(search);
             <span>
               {isLoading
                 ? "جارٍ التحميل..."
-                : filtered.length === patients.length
-                  ? `عرض ${filtered.length} مريض`
-                  : `${filtered.length} نتيجة من أصل ${patients.length}`}
+                : `عرض ${patients.length} من أصل ${total} مريض`}
             </span>
           </div>
 
@@ -166,7 +157,7 @@ const { data: patients = [], isLoading, error, refetch } = usePatients(search);
             )}
             {!error && !isLoading && (
               <PatientTable
-                patients={paginated}
+                patients={patients}
                 onSelectPatient={handleSelectPatient}
               />
             )}
