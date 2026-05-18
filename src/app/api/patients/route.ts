@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { createClient } from "@/utils/supabase/server";
 import prisma from "@/lib/prisma";
 import { formatName } from "@/lib/patient-utils";
@@ -40,7 +41,17 @@ function mapPatient(p: {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const search = searchParams.get("search") ?? "";
-  
+  const pageParam = searchParams.get("page");
+  const pageSizeParam = searchParams.get("pageSize");
+  const status = searchParams.get("status");
+  const sortBy = searchParams.get("sortBy") ?? "createdAt";
+  const sortOrder = (searchParams.get("sortOrder") ?? "desc") as "asc" | "desc";
+
+  const page = pageParam ? parseInt(pageParam, 10) : undefined;
+  const pageSize = pageSizeParam
+    ? Math.min(parseInt(pageSizeParam, 10), 100)
+    : 10;
+  const offset = page ? (page - 1) * pageSize : undefined;
 
   const supabase = await createClient();
   const {
@@ -62,25 +73,57 @@ export async function GET(request: Request) {
 
   const tokens = search.trim().split(/\s+/).filter(Boolean);
 
+  const statusFilter =
+    status === "active" || status === "inactive" ? { status } : {};
+
+  const orderBy =
+    sortBy === "name"
+      ? { firstName: sortOrder }
+      : { createdAt: sortOrder };
+
+  const where: Prisma.PatientWhereInput = {
+    tenantId: actor.tenantId,
+    ...statusFilter,
+    ...(tokens.length > 0
+      ? {
+          AND: tokens.map((token) => ({
+            OR: [
+              { firstName: { contains: token, mode: Prisma.QueryMode.insensitive } },
+              { lastName: { contains: token, mode: Prisma.QueryMode.insensitive } },
+              { phone: { contains: token, mode: Prisma.QueryMode.insensitive } },
+            ],
+          })),
+        }
+      : {}),
+  };
+
+  if (page) {
+    const [patients, total] = await Promise.all([
+      prisma.patient.findMany({
+        where,
+        include: { cases: true },
+        orderBy,
+        skip: offset,
+        take: pageSize,
+      }),
+      prisma.patient.count({ where }),
+    ]);
+
+    return NextResponse.json({
+      data: patients.map(mapPatient),
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize) || 1,
+    });
+  }
+
   const patients = await prisma.patient.findMany({
-    where: {
-      tenantId: actor.tenantId,
-      ...(tokens.length > 0
-        ? {
-            AND: tokens.map((token) => ({
-              OR: [
-                { firstName: { contains: token, mode: "insensitive" } },
-                { lastName: { contains: token, mode: "insensitive" } },
-                { phone: { contains: token, mode: "insensitive" } },
-              ],
-            })),
-          }
-        : {}),
-    },
+    where,
     include: {
       cases: true,
     },
-    orderBy: { createdAt: "desc" },
+    orderBy,
     take: search ? 20 : 100,
   });
 

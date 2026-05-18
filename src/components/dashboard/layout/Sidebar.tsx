@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { Button } from "../../ui/Button";
 import { useParams, usePathname } from "next/navigation";
-import { usePatients } from "@/hooks/use-patients";
+import { usePatient, usePatients } from "@/hooks/use-patients";
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -23,12 +23,12 @@ export function Sidebar({ isCollapsed, onToggleCollapse, isMobileOpen, onCloseMo
   const pathname = usePathname();
   const patientId = params.id as string;
 
-  const { data: patientsData } = usePatients();
+  const { data: patient } = usePatient(patientId);
 
-  const patient = useMemo(() => {
-    if (!patientId || !patientsData) return null;
-    return patientsData.find((p) => p.id === patientId);
-  }, [patientId, patientsData]);
+  // const patient = useMemo(() => {
+  //   if (!patientId || !patientsData) return null;
+  //   return patientsData.find((p) => p.id === patientId);
+  // }, [patientId, patientsData]);
 
   // Specific links for the patient context
   const patientLinks = useMemo(() => {
@@ -89,6 +89,7 @@ export function Sidebar({ isCollapsed, onToggleCollapse, isMobileOpen, onCloseMo
         <div className="flex-1 overflow-y-auto py-4 px-3 custom-scrollbar">
           <div className="flex flex-col gap-6">
             {/* Patient Specific Context */}
+            
             {patient && (
               <div className="mb-2 animate-in slide-in-from-right-4 duration-300">
                 {!isCollapsed && (

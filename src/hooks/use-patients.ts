@@ -22,9 +22,36 @@ export interface Patient {
   updatedAt: string;
 }
 
-async function fetchPatients(search?: string): Promise<Patient[]> {
+export interface UsePatientsParams {
+  search?: string;
+  page?: number;
+  pageSize?: number;
+  status?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+}
+
+export interface PaginatedPatients {
+  data: Patient[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+function buildPatientsUrl(params: UsePatientsParams): URL {
   const url = new URL("/api/patients", window.location.origin);
-  if (search) url.searchParams.set("search", search);
+  if (params.search) url.searchParams.set("search", params.search);
+  if (params.page) url.searchParams.set("page", String(params.page));
+  if (params.pageSize) url.searchParams.set("pageSize", String(params.pageSize));
+  if (params.status) url.searchParams.set("status", params.status);
+  if (params.sortBy) url.searchParams.set("sortBy", params.sortBy);
+  if (params.sortOrder) url.searchParams.set("sortOrder", params.sortOrder);
+  return url;
+}
+
+async function fetchPatients(params: UsePatientsParams): Promise<Patient[] | PaginatedPatients> {
+  const url = buildPatientsUrl(params);
   const res = await fetch(url.toString());
   if (!res.ok) {
     const error = await res.json().catch(() => ({ error: "Failed to fetch patients" }));
@@ -33,13 +60,33 @@ async function fetchPatients(search?: string): Promise<Patient[]> {
   return res.json();
 }
 
-export function usePatients(search?: string, page?: number) {
+export function usePatient(id: string) {
   
   return useQuery({
-    queryKey: ["patients", search ?? ""],
-    queryFn: () => fetchPatients(search),
-    // Always fetch; empty search returns all patients (up to 100)
+    queryKey: ["patient", id],
+    queryFn: async () => {
+      const res = await fetch(`/api/patients/${id}`);
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ error: "Failed to fetch patient" }));
+        throw new Error(error.error || "Failed to fetch patient");
+      }
+      return res.json() as Promise<Patient>;
+    },
+    enabled: !!id,
+  });
+}
+
+export function usePatients(search?: string): import("@tanstack/react-query").UseQueryResult<Patient[]>;
+export function usePatients(params: UsePatientsParams & { page: number }): import("@tanstack/react-query").UseQueryResult<PaginatedPatients>;
+export function usePatients(params?: UsePatientsParams): import("@tanstack/react-query").UseQueryResult<Patient[]>;
+export function usePatients(params?: string | UsePatientsParams): import("@tanstack/react-query").UseQueryResult<Patient[] | PaginatedPatients> {
+  const options: UsePatientsParams =
+    typeof params === "string"
+      ? { search: params }
+      : params ?? {};
+  return useQuery({
+    queryKey: ["patients", options],
+    queryFn: () => fetchPatients(options),
     enabled: true,
-    
   });
 }

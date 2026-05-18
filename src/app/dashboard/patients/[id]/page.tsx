@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useParams, useRouter } from "next/navigation";
-import { usePatients } from "@/hooks/use-patients";
+import { usePatient } from "@/hooks/use-patients";
 import { PatientDetailPanel } from "@/components/dashboard/patients/PatientDetailPanel";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -12,7 +12,7 @@ export default function PatientPage() {
   const router = useRouter();
   const id = params.id as string;
 
-  const { data: patients, isLoading, error } = usePatients();
+  const { data: patient, isLoading, error } = usePatient(id);
 
   if (isLoading) {
     return (
@@ -21,8 +21,6 @@ export default function PatientPage() {
       </div>
     );
   }
-
-  const patient = patients?.find((p) => p.id === id);
 
   if (error || !patient) {
     return (
