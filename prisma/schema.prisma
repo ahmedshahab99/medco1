@@ -32,6 +32,7 @@ model Tenant {
   invitations  Invitation[]
   cases        Case[]
   waitlist     Waitlist[]
+  prescriptions Prescription[]
   clinicAvailability ClinicAvailability?
 }
 
@@ -97,6 +98,7 @@ model Patient {
   patientFiles PatientFile[]
   cases        Case[]
   waitlist     Waitlist[]
+  prescriptions Prescription[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -243,4 +245,34 @@ model Waitlist {
   status    String   @default("waiting")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Prescription {
+  id            String      @id @default(uuid())
+  tenantId      String
+  tenant        Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patientId     String
+  patient       Patient     @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  diagnosis     String
+  medications   PrescriptionMedication[]
+  notes         String?
+  validityDays  Int?        @default(30)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([patientId, tenantId])
+  @@index([createdAt])
+}
+
+model PrescriptionMedication {
+  id              String      @id @default(uuid())
+  prescriptionId  String
+  prescription    Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+  name            String
+  dose            String
+  frequency       String
+  duration        String
+  instructions    String?
+
+  @@index([prescriptionId])
 }

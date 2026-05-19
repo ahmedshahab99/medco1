@@ -274,7 +274,7 @@ export default function SetupWizard() {
                 <button
                   type="button"
                   onClick={nextStep}
-                  disabled={!watch("name") || watch("name").length < 2  || !watch("slug") || watch("slug").length < 3 || slugStatus !== "available" || !watch("phone") || errors.phone} // Disable if required fields are not valid
+                  disabled={!watch("name") || watch("name").length < 2  || !watch("slug") || watch("slug").length < 3 || slugStatus !== "available" || !watch("phone") || !!errors.phone} // Disable if required fields are not valid
                   className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   التالي <ChevronLeft className="w-4 h-4" />

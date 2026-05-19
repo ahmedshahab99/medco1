@@ -5,6 +5,9 @@ import { Patient } from "../../../hooks/use-patients";
 import {
   Phone,
   Mail,
+  Calendar,
+  ArrowLeft,
+  MapPin,
 } from "lucide-react";
 
 interface PatientTableProps {
@@ -12,107 +15,174 @@ interface PatientTableProps {
   onSelectPatient: (patient: Patient) => void;
 }
 
-function getInitials(name: string) {
-  const parts = name.trim().split(" ");
-  return parts.length >= 2 ? parts[0][0] + parts[1][0] : parts[0][0];
+const PATIENT_EMOJIS = ["🩺", "💊", "❤️", "🏥", "🫀", "🧬", "🩻", "🦷", "👁️", "🧠", "🫁", "💉"];
+
+function getPatientEmoji(id: string) {
+  const idx = id.charCodeAt(id.length - 1) % PATIENT_EMOJIS.length;
+  return PATIENT_EMOJIS[idx];
 }
 
 const AVATAR_COLORS = [
-  "bg-blue-100 text-blue-700",
-  "bg-violet-100 text-violet-700",
-  "bg-emerald-100 text-emerald-700",
-  "bg-rose-100 text-rose-700",
-  "bg-amber-100 text-amber-700",
-  "bg-cyan-100 text-cyan-700",
+  "from-blue-400 to-blue-600",
+  "from-violet-400 to-violet-600",
+  "from-emerald-400 to-emerald-600",
+  "from-rose-400 to-rose-600",
+  "from-amber-400 to-amber-600",
+  "from-cyan-400 to-cyan-600",
+  "from-indigo-400 to-indigo-600",
+  "from-teal-400 to-teal-600",
 ];
 
-function getAvatarColor(id: string) {
+function getAvatarGradient(id: string) {
   const idx = id.charCodeAt(id.length - 1) % AVATAR_COLORS.length;
   return AVATAR_COLORS[idx];
 }
 
-function getStatusLabel(status: string) {
-  return status === "inactive" ? "غير نشط" : null;
+function calcAge(dob?: string | null) {
+  if (!dob) return null;
+  const diff = Date.now() - new Date(dob).getTime();
+  return Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
+}
+
+function formatDate(iso?: string | null) {
+  if (!iso) return null;
+  return new Date(iso).toLocaleDateString("ar-SA", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 }
 
 export function PatientTable({ patients, onSelectPatient }: PatientTableProps) {
+  if (patients.length === 0) {
+    return (
+      <div className="text-center py-20 text-slate-400">
+        <p className="text-lg font-semibold text-slate-600 mb-1">لا توجد نتائج</p>
+        <p className="text-sm">جرّب تغيير كلمة البحث أو الفلاتر</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="w-full overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-slate-100">
-            <th className="text-right py-3 px-4 text-xs font-bold text-slate-400 uppercase tracking-wider w-64">المريض</th>
-            <th className="text-right py-3 px-4 text-xs font-bold text-slate-400 uppercase tracking-wider">التواصل</th>
-            <th className="text-right py-3 px-4 text-xs font-bold text-slate-400 uppercase tracking-wider">الميلاد</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-50">
-          {patients.map((patient) => {
-            return (
-              
-              <tr
-                key={patient.id}
-                onClick={() => onSelectPatient(patient)}
-                className="group cursor-pointer transition-all duration-150 hover:bg-slate-50/80"
-              >
-                {/* Name + Avatar */}
-                <td className="py-3.5 px-4">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm shrink-0 ${getAvatarColor(patient.id)}`}
-                    >
-                      {getInitials(patient.name)}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold text-slate-800 leading-tight">{patient.name}</p>
-                        {getStatusLabel(patient.status) && (
-                          <span className="text-[10px] font-bold bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full">{getStatusLabel(patient.status)}</span>
-                        )}
-                      </div>
-                      
-                    </div>
-                  </div>
-                </td>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {patients.map((patient) => {
+        const age = calcAge(patient.dateOfBirth);
 
-                {/* Contact */}
-                <td className="py-3.5 px-4 ">
-                  <div className="flex flex-col gap-1 items-start">
-                    <span className="flex items-center gap-1.5 text-slate-600" dir="ltr">
-                      <Phone className="w-3 h-3 text-slate-400 shrink-0" />
-                      <span className="text-xs">{patient.phone}</span>
-                    </span>
-                    {patient.email && (
-                      <span className="flex items-center gap-1.5 text-slate-500">
-                        <span className="text-xs truncate">{patient.email}</span>
-                        <Mail className="w-3 h-3 text-slate-400 shrink-0" />
-                      </span>
+        return (
+          <div
+            key={patient.id}
+            onClick={() => onSelectPatient(patient)}
+            className="bg-white rounded-2xl border border-slate-200 hover:border-blue-300 hover:shadow-lg transition-all duration-200 cursor-pointer p-4 group"
+          >
+            {/* Header with Avatar and Status */}
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-start gap-3 flex-1 min-w-0">
+                <div
+                  className={`w-12 h-12 rounded-xl bg-gradient-to-br ${getAvatarGradient(
+                    patient.id
+                  )} flex items-center justify-center font-bold text-white text-sm shrink-0 shadow-md group-hover:shadow-lg transition-shadow`}
+                >
+                  <span className="text-lg">{getPatientEmoji(patient.id)}</span>
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-slate-900 truncate">
+                    {patient.name}
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    #{patient.id.slice(0, 8)}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                <ArrowLeft className="w-4 h-4" />
+              </div>
+            </div>
+
+            {/* Info Grid */}
+            <div className="space-y-3 mb-4">
+              {/* Age and Gender */}
+              {age && (
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span className="text-sm text-slate-600">
+                    {age} سنة
+                    {patient.gender && (
+                      <>
+                        {" "}
+                        ·{" "}
+                        {patient.gender === "MALE"
+                          ? "ذكر"
+                          : "أنثى"}
+                      </>
                     )}
-                  </div>
-                </td>
-                {/* Birth Date */}
-                <td className="py-3.5 px-4 ">
-                  <div className="flex flex-col gap-1 items-start">
-                    <span className="flex items-center gap-1.5 text-slate-600" dir="ltr">
-                      
-                      <span className="text-xs">{patient.dateOfBirth?.split("T")[0]}</span>
-                    </span>
-                    
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+                  </span>
+                </div>
+              )}
 
-      {patients.length === 0 && (
-        <div className="text-center py-20 text-slate-400">
-          <p className="text-lg font-semibold text-slate-600 mb-1">لا توجد نتائج</p>
-          <p className="text-sm">جرّب تغيير كلمة البحث أو الفلاتر</p>
-        </div>
-      )}
+              {/* Phone */}
+              {patient.phone && (
+                <a
+                  href={`tel:${patient.phone}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex items-center gap-2 hover:text-blue-600 transition-colors"
+                  dir="ltr"
+                >
+                  <Phone className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span className="text-sm text-slate-600 hover:text-blue-600">
+                    {patient.phone}
+                  </span>
+                </a>
+              )}
+
+              {/* Email */}
+              {patient.email && (
+                <a
+                  href={`mailto:${patient.email}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex items-center gap-2 hover:text-blue-600 transition-colors truncate"
+                >
+                  <Mail className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span className="text-sm text-slate-600 hover:text-blue-600 truncate">
+                    {patient.email}
+                  </span>
+                </a>
+              )}
+
+              {/* Address */}
+              {patient.address && (
+                <div className="flex items-start gap-2">
+                  <MapPin className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                  <span className="text-sm text-slate-600 line-clamp-2">
+                    {patient.address}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Footer with Status and Date */}
+            <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs">
+              <div className="flex items-center gap-2">
+                {patient.status === "active" ? (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full font-medium">
+                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                    نشط
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 text-slate-600 rounded-full font-medium">
+                    <span className="w-1.5 h-1.5 bg-slate-400 rounded-full" />
+                    غير نشط
+                  </span>
+                )}
+              </div>
+              <span className="text-slate-400">
+                {formatDate(patient.createdAt)}
+              </span>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

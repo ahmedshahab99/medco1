@@ -1167,7 +1167,7 @@ export default function DigitalClinicLanding() {
 
 // ─── SHARED CTA SECTION COMPONENT ────────────────────────────────────────────
 function CtaSection({ lang, t, nav, btnPrimary, btnGhost, container, C }: {
-  lang: Lang; t: typeof T["ar"]; nav: (p: Page) => void;
+  lang: Lang; t: typeof T[Lang]; nav: (p: Page) => void;
   btnPrimary: React.CSSProperties; btnGhost: React.CSSProperties;
   container: React.CSSProperties; C: Record<string, string>;
 }) {

@@ -70,8 +70,8 @@ export default function AccountForm({ initialData }: AccountFormProps) {
             <Input
               id="firstName"
               {...register("firstName")}
-              error={errors.firstName?.message}
             />
+            {errors.firstName && <p className="text-xs text-red-500 mt-1">{errors.firstName.message}</p>}
           </div>
           <div>
             <label htmlFor="lastName" className="block text-sm font-medium text-slate-700 mb-1">
@@ -80,8 +80,8 @@ export default function AccountForm({ initialData }: AccountFormProps) {
             <Input
               id="lastName"
               {...register("lastName")}
-              error={errors.lastName?.message}
             />
+            {errors.lastName && <p className="text-xs text-red-500 mt-1">{errors.lastName.message}</p>}
           </div>
         </div>
 

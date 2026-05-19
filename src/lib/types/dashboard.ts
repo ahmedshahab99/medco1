@@ -33,3 +33,53 @@ export type StatCardData = {
   trendLabel?: string;
   icon?: ElementType;
 };
+
+// ─── PATIENT ──────────────────────────────────────────────────────────────────
+
+export type PatientStatus = "active" | "inactive";
+export type PatientGender = "male" | "female";
+
+export type PatientVisit = {
+  id: string;
+  date: string;
+  time: string;
+  service: string;
+  doctor: string;
+  status: string;
+};
+
+export type PatientNote = {
+  id: string;
+  appointmentId: string | null;
+  content: string;
+  createdAt: string;
+  doctorName: string;
+};
+
+export type PatientFile = {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  date: string;
+  url: string;
+};
+
+export type Patient = {
+  id: string;
+  name: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone: string;
+  dateOfBirth?: string;
+  gender?: PatientGender;
+  status: PatientStatus;
+  tags: string[];
+  totalVisits: number;
+  visitHistory: PatientVisit[];
+  notes: PatientNote[];
+  files: PatientFile[];
+  communications: any[];
+  nextAppointment?: string;
+};

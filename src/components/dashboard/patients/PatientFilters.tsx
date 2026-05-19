@@ -6,6 +6,10 @@ import { Button } from "../../ui/Button";
 
 export interface FilterState {
   status: "all" | "active" | "inactive";
+  tags?: string[];
+  doctor?: string;
+  lastVisit?: string;
+  hasUpcoming?: string;
 }
 
 interface PatientFiltersProps {

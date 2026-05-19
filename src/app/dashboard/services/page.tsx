@@ -121,13 +121,13 @@ export default function ServicesPage() {
     })
   }
 
-  const handleDelete = async () => {
-    const id = deletingId
-    if (!id) return
+  const handleDelete = async (id?: string) => {
+    const targetId = id ?? deletingId
+    if (!targetId) return
 
     closeConfirm()
     try {
-      await deleteMutation.mutateAsync(id)
+      await deleteMutation.mutateAsync(targetId)
       showToast("تم حذف الخدمة بنجاح", "success")
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "حدث خطأ"

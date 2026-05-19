@@ -46,7 +46,7 @@ export default function LoginForm({
 
   // Refs
   const loginCardRef = useRef<HTMLDivElement>(null);
-  const toastTimeoutRef = useRef<NodeJS.Timeout>();
+  const toastTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   // Apply language to DOM attributes and translations
   useEffect(() => {

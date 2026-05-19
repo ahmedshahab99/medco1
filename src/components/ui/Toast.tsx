@@ -50,7 +50,7 @@ export function useToast() {
     visible: false,
   })
 
-  const timeoutRef = useRef<NodeJS.Timeout>()
+  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
 
   const showToast = useCallback((message: string, type: ToastType = "info") => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current)

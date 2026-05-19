@@ -82,13 +82,11 @@ export default function CaseSection({ patients }: CaseSectionProps) {
             placeholder="عنوان الحالة (مثلاً: متابعة سكري)"
             className="bg-white border-blue-100"
             {...register("newCase.title")}
-            error={fieldError("newCase.title")}
           />
           <Textarea
             placeholder="ملاحظات تشخيصية أولية..."
             className="bg-white border-blue-100 h-20 text-sm"
             {...register("newCase.description")}
-            error={fieldError("newCase.description")}
           />
         </div>
       )}

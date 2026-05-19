@@ -10,6 +10,20 @@ export interface PatientCase {
   createdAt: string;
 }
 
+export interface MedicalNote {
+  id: string;
+  content: string;
+  createdAt: string;
+}
+
+export interface PatientFile {
+  id: string;
+  name: string;
+  url: string;
+  size: string;
+  createdAt: string;
+}
+
 export interface Patient {
   id: string;
   name: string;
@@ -20,6 +34,10 @@ export interface Patient {
   status: string;
   address: string | null;
   cases: PatientCase[];
+  medicalNotes?: MedicalNote[];
+  patientFiles?: PatientFile[];
+  tags?: string[];
+  nextAppointment?: string;
   createdAt: string;
   updatedAt: string;
 }
