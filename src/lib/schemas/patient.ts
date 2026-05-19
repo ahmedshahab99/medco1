@@ -11,6 +11,11 @@ export const patientCreateSchema = z.object({
     .regex(phoneRegex, "رقم الجوال غير صحيح")
     .optional()
     .or(z.literal("")),
+  email: z
+    .string()
+    .email("البريد الإلكتروني غير صحيح")
+    .optional()
+    .or(z.literal("")),
   dateOfBirth: z
     .string()
     .regex(dateRegex, "تاريخ الميلاد غير صحيح")
@@ -25,3 +30,7 @@ export const patientCreateSchema = z.object({
 });
 
 export type PatientCreateInput = z.infer<typeof patientCreateSchema>;
+
+export const patientUpdateSchema = patientCreateSchema.partial();
+
+export type PatientUpdateInput = z.infer<typeof patientUpdateSchema>;

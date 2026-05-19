@@ -1,6 +1,8 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import type { PatientUpdateInput } from "@/lib/schemas/patient";
 
 export interface PatientCase {
   id: string;
@@ -88,5 +90,83 @@ export function usePatients(params?: string | UsePatientsParams): import("@tanst
     queryKey: ["patients", options],
     queryFn: () => fetchPatients(options),
     enabled: true,
+  });
+}
+
+export function useUpdatePatient() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: PatientUpdateInput }) => {
+      const res = await fetch(`/api/patients/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ error: "فشل في تحديث المريض" }));
+        throw new Error(error.error || "فشل في تحديث المريض");
+      }
+      return res.json() as Promise<Patient>;
+    },
+    onMutate: async ({ id, data }) => {
+      const queryKey = ["patient", id];
+      await queryClient.cancelQueries({ queryKey });
+      const previous = queryClient.getQueryData<Patient>(queryKey);
+
+      if (previous) {
+        queryClient.setQueryData<Patient>(queryKey, {
+          ...previous,
+          ...(data.firstName && data.lastName && { name: `${data.firstName} ${data.lastName}` }),
+          ...(data.phone !== undefined && { phone: data.phone }),
+          ...(data.email !== undefined && { email: data.email }),
+          ...(data.dateOfBirth !== undefined && { dateOfBirth: data.dateOfBirth }),
+          ...(data.gender !== undefined && { gender: data.gender }),
+          ...(data.address !== undefined && { address: data.address }),
+        });
+      }
+
+      return { previous, queryKey };
+    },
+    onSuccess: () => {
+      toast.success("تم تحديث المريض بنجاح");
+    },
+    onError: (_err, _vars, context) => {
+      toast.error("فشل في تحديث المريض");
+      if (context?.previous) {
+        queryClient.setQueryData(context.queryKey, context.previous);
+      }
+    },
+    onSettled: (_data, _error, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ["patient", id] });
+      queryClient.invalidateQueries({ queryKey: ["patients"] });
+    },
+  });
+}
+
+export function useDeletePatient() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/patients/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ error: "فشل في حذف المريض" }));
+        throw new Error(error.error || "فشل في حذف المريض");
+      }
+      return res.json() as Promise<{ success: boolean }>;
+    },
+    onSuccess: () => {
+      toast.success("تم حذف المريض بنجاح");
+    },
+    onError: () => {
+      toast.error("فشل في حذف المريض");
+    },
+    onSettled: (_data, _error, id) => {
+      queryClient.invalidateQueries({ queryKey: ["patient", id] });
+      queryClient.invalidateQueries({ queryKey: ["patients"] });
+    },
   });
 }

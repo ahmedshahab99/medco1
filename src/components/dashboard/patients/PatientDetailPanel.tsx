@@ -3,13 +3,15 @@
 import React from "react";
 import { Patient } from "../../../hooks/use-patients";
 import {
-  X, Phone, Mail, CalendarDays, MapPin, Stethoscope, ChevronLeft,
+  X, Phone, Mail, CalendarDays, MapPin, Stethoscope, ChevronLeft, Pencil, Trash2,
 } from "lucide-react";
 
 interface PatientDetailPanelProps {
   patient: Patient;
   onClose: () => void;
   fullPage?: boolean;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
 
 const AVATAR_COLORS = [
@@ -52,6 +54,8 @@ export function PatientDetailPanel({
   patient,
   onClose,
   fullPage = false,
+  onEdit,
+  onDelete,
 }: PatientDetailPanelProps) {
   const age = calcAge(patient.dateOfBirth);
 
@@ -74,12 +78,32 @@ export function PatientDetailPanel({
           ) : (
             <div />
           )}
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {onEdit && (
+              <button
+                onClick={onEdit}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                title="تعديل"
+              >
+                <Pencil className="w-5 h-5" />
+              </button>
+            )}
+            {onDelete && (
+              <button
+                onClick={onDelete}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-white/10 transition-colors"
+                title="حذف"
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         <div className="flex items-start gap-4">

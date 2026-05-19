@@ -1,9 +1,11 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { usePatient } from "@/hooks/use-patients";
 import { PatientDetailPanel } from "@/components/dashboard/patients/PatientDetailPanel";
+import { EditPatientModal } from "@/components/dashboard/patients/EditPatientModal";
+import { DeletePatientDialog } from "@/components/dashboard/patients/DeletePatientDialog";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
@@ -13,6 +15,22 @@ export default function PatientPage() {
   const id = params.id as string;
 
   const { data: patient, isLoading, error } = usePatient(id);
+
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
+  function handleEdit() {
+    setShowEditModal(true);
+  }
+
+  function handleDelete() {
+    setShowDeleteDialog(true);
+  }
+
+  function handleDeleted() {
+    setShowDeleteDialog(false);
+    router.push("/dashboard/patients");
+  }
 
   if (isLoading) {
     return (
@@ -35,10 +53,30 @@ export default function PatientPage() {
   }
 
   return (
-    <PatientDetailPanel
-      patient={patient}
-      onClose={() => router.push("/dashboard/patients")}
-      fullPage
-    />
+    <>
+      <PatientDetailPanel
+        patient={patient}
+        onClose={() => router.push("/dashboard/patients")}
+        fullPage
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+      />
+      {patient && (
+        <EditPatientModal
+          patient={patient}
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+        />
+      )}
+      {patient && (
+        <DeletePatientDialog
+          patientId={patient.id}
+          patientName={patient.name}
+          isOpen={showDeleteDialog}
+          onClose={() => setShowDeleteDialog(false)}
+          onDeleted={handleDeleted}
+        />
+      )}
+    </>
   );
 }
