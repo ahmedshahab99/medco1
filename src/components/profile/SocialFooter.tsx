@@ -1,29 +1,66 @@
-import React from "react";
-import { LucideIcon } from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { Separator } from "@/components/ui/Separator";
+import {
+  MessageCircle,
+  Facebook,
+  Instagram,
+  Music,
+  Globe,
+  Linkedin,
+  Youtube,
+  Twitter,
+} from "lucide-react";
+import { SocialPlatform } from "@prisma/client";
 
-interface Social {
-  id: number;
-  icon: LucideIcon;
+interface SocialLinkItem {
+  id: string;
+  platform: SocialPlatform;
   url: string;
 }
 
 interface SocialFooterProps {
-  socials: Social[];
+  socialLinks: SocialLinkItem[];
 }
 
-const SocialFooter: React.FC<SocialFooterProps> = ({ socials }) => {
-  return (
-    <footer className="flex justify-center items-center gap-6 pt-6 pb-12 border-t border-zinc-200 dark:border-zinc-800">
-      {socials.map((social) => {
-        const Icon = social.icon;
-        return (
-          <a key={social.id} href={social.url} className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800">
-            <Icon size={20} />
-          </a>
-        );
-      })}
-    </footer>
-  );
+const PLATFORM_ICONS: Record<SocialPlatform, typeof Globe> = {
+  WHATSAPP: MessageCircle,
+  FACEBOOK: Facebook,
+  INSTAGRAM: Instagram,
+  TIKTOK: Music,
+  X: Twitter,
+  LINKEDIN: Linkedin,
+  YOUTUBE: Youtube,
 };
 
-export default SocialFooter;
+export default function SocialFooter({ socialLinks }: SocialFooterProps) {
+  if (socialLinks.length === 0) return null;
+
+  return (
+    <footer className="flex flex-col items-center gap-4 pt-6 pb-12">
+      <Separator />
+      <div className="flex justify-center items-center gap-4">
+        {socialLinks.map((link) => {
+          const Icon = PLATFORM_ICONS[link.platform] || Globe;
+          return (
+            <Button
+              key={link.id}
+              asChild
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <a
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={link.platform}
+              >
+                <Icon size={20} />
+              </a>
+            </Button>
+          );
+        })}
+      </div>
+    </footer>
+  );
+}
