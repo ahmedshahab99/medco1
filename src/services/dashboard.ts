@@ -48,6 +48,8 @@ export const DashboardService = {
       },
       include: {
         patient: true,
+        doctor: true,
+        service: true,
       },
       orderBy: {
         startTime: "asc",
