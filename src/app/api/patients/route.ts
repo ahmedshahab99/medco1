@@ -18,7 +18,7 @@ function mapPatient(p: {
   cases: { id: string; title: string; createdAt: Date }[];
   createdAt: Date;
   updatedAt: Date;
-}) {
+}, nextAppt?: { startTime: Date } | null) {
   return {
     id: p.id,
     name: formatName(p.firstName, p.lastName),
@@ -33,9 +33,23 @@ function mapPatient(p: {
       title: c.title,
       createdAt: c.createdAt.toISOString(),
     })),
+    nextAppointment: nextAppt?.startTime?.toISOString() ?? null,
     createdAt: p.createdAt.toISOString(),
     updatedAt: p.updatedAt.toISOString(),
   };
+}
+
+async function getNextAppointment(patientId: string, tenantId: string) {
+  return prisma.appointment.findFirst({
+    where: {
+      patientId,
+      tenantId,
+      startTime: { gte: new Date() },
+      status: { in: ["SCHEDULED", "CONFIRMED"] },
+    },
+    orderBy: { startTime: "asc" },
+    select: { startTime: true },
+  });
 }
 
 export async function GET(request: Request) {
@@ -109,8 +123,13 @@ export async function GET(request: Request) {
       prisma.patient.count({ where }),
     ]);
 
+    const mapped = await Promise.all(patients.map(async (p) => {
+      const nextAppt = await getNextAppointment(p.id, actor!.tenantId!);
+      return mapPatient(p, nextAppt);
+    }));
+
     return NextResponse.json({
-      data: patients.map(mapPatient),
+      data: mapped,
       total,
       page,
       pageSize,
@@ -127,7 +146,12 @@ export async function GET(request: Request) {
     take: search ? 20 : 100,
   });
 
-  return NextResponse.json(patients.map(mapPatient));
+  const mapped = await Promise.all(patients.map(async (p) => {
+    const nextAppt = await getNextAppointment(p.id, actor!.tenantId!);
+    return mapPatient(p, nextAppt);
+  }));
+
+  return NextResponse.json(mapped);
 }
 
 export async function POST(request: Request) {

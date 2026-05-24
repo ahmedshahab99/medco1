@@ -8,6 +8,7 @@ import {
   Calendar,
   ArrowLeft,
   MapPin,
+  Clock,
 } from "lucide-react";
 
 interface PatientTableProps {
@@ -156,6 +157,26 @@ export function PatientTable({ patients, onSelectPatient }: PatientTableProps) {
                   <MapPin className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
                   <span className="text-sm text-slate-600 line-clamp-2">
                     {patient.address}
+                  </span>
+                </div>
+              )}
+
+              {/* Next Appointment */}
+              {patient.nextAppointment && (
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-indigo-400 shrink-0" />
+                  <span className="text-sm font-bold text-indigo-600">
+                    {new Date(patient.nextAppointment).toLocaleDateString("ar-SA", {
+                      weekday: "short",
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    })}
+                    {" · "}
+                    {new Date(patient.nextAppointment).toLocaleTimeString("ar-SA", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </span>
                 </div>
               )}

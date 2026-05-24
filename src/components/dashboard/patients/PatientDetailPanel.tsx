@@ -220,6 +220,20 @@ export function PatientDetailPanel({
               <p className="text-lg font-black text-slate-800">{formatGender(patient.gender) || "—"}</p>
             </div>
           </div>
+          {patient.nextAppointment && (
+            <div className="p-2.5 text-center bg-gradient-to-r from-indigo-50/50 to-blue-50/50 border-t border-indigo-100/50">
+              <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider mb-0.5">الموعد القادم</p>
+              <p className="text-sm font-black text-indigo-600">
+                {new Date(patient.nextAppointment).toLocaleDateString("ar-SA", {
+                  weekday: "long", year: "numeric", month: "long", day: "numeric",
+                })}
+                {" · "}
+                {new Date(patient.nextAppointment).toLocaleTimeString("ar-SA", {
+                  hour: "2-digit", minute: "2-digit",
+                })}
+              </p>
+            </div>
+          )}
           <div className="flex items-center justify-between px-4 py-2">
             <span className="text-[11px] text-slate-400 flex items-center gap-1.5">
               <Clock className="w-3 h-3" />

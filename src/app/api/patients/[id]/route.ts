@@ -17,7 +17,7 @@ function mapPatient(p: {
   cases: { id: string; title: string; createdAt: Date }[];
   createdAt: Date;
   updatedAt: Date;
-}) {
+}, nextAppt?: { startTime: Date } | null) {
   return {
     id: p.id,
     name: formatName(p.firstName, p.lastName),
@@ -32,6 +32,7 @@ function mapPatient(p: {
       title: c.title,
       createdAt: c.createdAt.toISOString(),
     })),
+    nextAppointment: nextAppt?.startTime?.toISOString() ?? null,
     createdAt: p.createdAt.toISOString(),
     updatedAt: p.updatedAt.toISOString(),
   };
@@ -73,7 +74,18 @@ export async function GET(
     return NextResponse.json({ error: "Patient not found" }, { status: 404 });
   }
 
-  return NextResponse.json(mapPatient(patient));
+  const nextAppt = await prisma.appointment.findFirst({
+    where: {
+      patientId: id,
+      tenantId: actor.tenantId,
+      startTime: { gte: new Date() },
+      status: { in: ["SCHEDULED", "CONFIRMED"] },
+    },
+    orderBy: { startTime: "asc" },
+    select: { startTime: true },
+  });
+
+  return NextResponse.json(mapPatient(patient, nextAppt));
 }
 
 export async function PATCH(
