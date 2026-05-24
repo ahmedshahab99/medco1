@@ -3,7 +3,7 @@ import { Card, CardTitle } from "../../ui/Card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../ui/Table";
 import { Badge } from "../../ui/Badge";
 import { Button } from "../../ui/Button";
-import { Appointment } from "../../../lib/types/dashboard";
+import type { Appointment } from "../../../lib/types/dashboard";
 import { MoreHorizontal } from "lucide-react";
 
 const mockAppointments: Appointment[] = [
@@ -13,7 +13,7 @@ const mockAppointments: Appointment[] = [
   { id: "4", patientName: "يوسف علي", date: "اليوم", time: "02:15 م", type: "consultation", status: "CANCELLED", doctor: "د. أحمد" },
 ];
 
-export function UpcomingAppointments() {
+export function UpcomingAppointments({ appointments }: { appointments?: Appointment[] }) {
   const getBadgeVariant = (status: Appointment['status']) => {
     switch (status) {
       case "COMPLETED": return "success";
@@ -64,7 +64,7 @@ export function UpcomingAppointments() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {mockAppointments.map((app) => (
+          { (appointments ?? mockAppointments).map((app) => (
             <TableRow key={app.id}>
               <TableCell className="font-bold text-slate-800">{app.patientName}</TableCell>
               <TableCell>

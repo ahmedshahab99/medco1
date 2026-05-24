@@ -3,13 +3,15 @@
 import React, { useState, useEffect } from "react";
 import { Search, SlidersHorizontal, Plus, UsersRound, ChevronRight, ChevronLeft, X, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { startOfDay, endOfDay } from "date-fns";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { PatientTable } from "@/components/dashboard/patients/PatientTable";
 import { PatientFilters, FilterState } from "@/components/dashboard/patients/PatientFilters";
-
+import { TodaySchedule } from "@/components/dashboard/patients/TodaySchedule";
 import { NewPatientModal } from "@/components/dashboard/patients/NewPatientModal";
 import { usePatients, PaginatedPatients } from "@/hooks/use-patients";
+import { useAppointments } from "@/hooks/use-appointments";
 
 const PAGE_SIZE = 10;
 
@@ -39,6 +41,9 @@ const [page, setPage] = useState(1);
 
 const { data: result, isLoading, error, refetch } = usePatients({ search, page, pageSize: PAGE_SIZE, status: filters.status === "all" ? undefined : filters.status });
 
+const today = new Date();
+const { data: todayApps, isLoading: appsLoading, error: appsError, refetch: refetchApps } = useAppointments(startOfDay(today), endOfDay(today));
+
   const patients = (result as PaginatedPatients)?.data ?? [];
   const total = (result as PaginatedPatients)?.total ?? 0;
   const totalPages = (result as PaginatedPatients)?.totalPages ?? 1;
@@ -66,9 +71,10 @@ const { data: result, isLoading, error, refetch } = usePatients({ search, page, 
       </div>
 
       <div className="flex gap-5 flex-1 min-h-0">
-        <div
-          className="flex flex-col bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden w-full"
-        >
+        <div className="flex flex-col gap-5 flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+          <TodaySchedule appointments={todayApps} isLoading={appsLoading} error={appsError} onRefetch={refetchApps} />
+
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden shrink-0">
           <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center gap-3">
             <div className="relative flex-1 w-full">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
@@ -205,6 +211,7 @@ const { data: result, isLoading, error, refetch } = usePatients({ search, page, 
             </div>
           )}
         </div>
+      </div>
       </div>
 
       <PatientFilters
