@@ -1,6 +1,5 @@
 import React from "react";
 import DashboardClient from "@/components/dashboard/DashboardClient";
-import { Users, CalendarCheck, TrendingUp, DollarSign } from "lucide-react";
 import { DashboardService } from "@/services/dashboard";
 import prisma from "@/lib/prisma";
 import { getUserId } from "@/lib/tenant";
@@ -14,10 +13,10 @@ export default async function DashboardPage() {
   const statsData = await DashboardService.getStats();
   const upcomingData = await DashboardService.getUpcomingAppointments();
   
-  const icons = [Users, CalendarCheck, TrendingUp, DollarSign];
-  const stats = statsData.map((s, i) => ({
-    ...s,
-    icon: icons[i],
+  const stats = statsData.map((s) => ({
+    title: s.title,
+    value: s.value,
+    trend: s.trend,
   }));
 
   const appointments = upcomingData.map(app => ({
