@@ -47,7 +47,7 @@ export async function GET(request: Request) {
     orderBy: { startTime: "asc" },
   });
 
-  const mapped = appointments.map((appt) => ({
+  const mapped = appointments.map((appt: any) => ({
     id: appt.id,
     patientId: appt.patientId,
     patientName: formatName(appt.patient.firstName, appt.patient.lastName),
