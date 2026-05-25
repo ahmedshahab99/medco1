@@ -1,5 +1,3 @@
-"use server";
-
 import { redis } from "@/lib/redis";
 import { serviceRoleClient } from "@/utils/supabase/service-role";
 

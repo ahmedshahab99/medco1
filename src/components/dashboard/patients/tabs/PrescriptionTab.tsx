@@ -211,141 +211,46 @@ export function PrescriptionTab({ patientId, patientName }: PrescriptionTabProps
     }
   };
 
+  const escapeHtml = (unsafe: string) => {
+    return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;")
+  }
+
   const handlePrintPrescription = (prescription: Prescription) => {
     const clinicName = clinicInfo?.name || "عيادة";
     const doctor = doctorName || "الطبيب المعالج";
     const specialty = clinicInfo?.specialty || "";
     const today = new Date().toLocaleDateString("ar-SA");
 
-    const printContent = `
-      <html dir="rtl" lang="ar">
-        <head>
-          <meta charset="UTF-8">
-          <title>وصفة طبية - ${patientName}</title>
-          <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
-          <style>
-            @page { margin: 20mm 15mm; }
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: 'Tajawal', 'Amiri', 'Traditional Arabic', 'Arabic Typesetting', 'Almarai', Arial, sans-serif; line-height: 1.7; color: #1e293b; background: #fff; }
-            .prescription { max-width: 210mm; margin: 0 auto; padding: 10px; }
-            .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg); font-size: 80px; opacity: 0.04; color: #1e40af; font-weight: bold; pointer-events: none; white-space: nowrap; z-index: 0; }
-            .header { text-align: center; border-bottom: 3px double #1e40af; padding-bottom: 20px; margin-bottom: 25px; position: relative; }
-            .clinic-name { font-size: 26px; font-weight: 800; color: #1e40af; letter-spacing: 1px; }
-            .clinic-details { font-size: 13px; color: #64748b; margin-top: 5px; }
-            .clinic-details span { display: inline-block; margin: 0 8px; }
-            .rx-symbol { font-size: 32px; color: #1e40af; text-align: center; margin: 10px 0; font-weight: bold; }
-            .doctor-line { text-align: left; font-size: 13px; color: #475569; margin-bottom: 20px; }
-            .patient-info { background: #f8fafc; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e2e8f0; }
-            .patient-info table { width: 100%; border-collapse: collapse; }
-            .patient-info td { padding: 4px 8px; font-size: 14px; }
-            .patient-info td:first-child { font-weight: 600; color: #475569; width: 100px; }
-            .patient-info td:last-child { color: #1e293b; }
-            .diagnosis-box { background: #eff6ff; padding: 15px 20px; border-right: 5px solid #2563eb; margin: 20px 0; border-radius: 4px; }
-            .diagnosis-label { font-weight: 700; color: #1e40af; font-size: 14px; margin-bottom: 5px; }
-            .diagnosis-text { color: #1e293b; font-size: 15px; }
-            .medications { margin: 20px 0; }
-            .medications-title { font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 12px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; }
-            .med-table { width: 100%; border-collapse: collapse; }
-            .med-table th { background: #1e40af; color: #fff; padding: 10px 12px; font-size: 13px; text-align: center; font-weight: 600; }
-            .med-table td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; text-align: center; font-size: 14px; }
-            .med-table tr:last-child td { border-bottom: none; }
-            .med-table tr:nth-child(even) td { background: #f8fafc; }
-            .med-name-cell { font-weight: 600; color: #0f172a; }
-            .notes-box { background: #fffbeb; padding: 15px 20px; border-right: 5px solid #d97706; border-radius: 4px; margin-top: 20px; }
-            .notes-label { font-weight: 700; color: #92400e; font-size: 14px; margin-bottom: 5px; }
-            .validity { text-align: center; margin-top: 20px; padding: 10px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; color: #16a34a; font-weight: 700; font-size: 14px; }
-            .footer { margin-top: 35px; padding-top: 15px; border-top: 1px solid #cbd5e1; text-align: center; font-size: 11px; color: #94a3b8; }
-            .signature { margin-top: 30px; display: flex; justify-content: space-between; align-items: end; }
-            .signature-box { text-align: center; }
-            .signature-line { width: 200px; border-top: 1px solid #64748b; margin-top: 40px; padding-top: 8px; font-size: 13px; color: #475569; }
-            @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
-          </style>
-        </head>
-        <body>
-          <div class="watermark">${clinicName}</div>
-          <div class="prescription">
-            <div class="header">
-              <div class="clinic-name">${clinicName}</div>
-              <div class="clinic-details">
-                ${specialty ? `<span>${specialty}</span> · ` : ""}
-                <span>${today}</span>
-              </div>
-            </div>
+    const esc = escapeHtml;
+    const createdDate = new Date(prescription.createdAt).toLocaleDateString("ar-SA");
+    const now = new Date().toLocaleString("ar-SA");
+    const medRows = prescription.medications.map((med, idx) =>
+      `<tr><td>${idx + 1}</td><td class="med-name-cell">${esc(med.name)}</td><td>${esc(med.dose)}</td><td>${esc(med.frequency)}</td><td>${esc(med.duration)}</td>${med.instructions ? `<td>${esc(med.instructions)}</td>` : ""}</tr>`
+    ).join("");
+    const hasInstructions = prescription.medications.some(m => m.instructions);
 
-            <div class="rx-symbol">℞</div>
-
-            <div class="doctor-line">الطبيب: ${doctor}</div>
-
-            <div class="patient-info">
-              <table>
-                <tr><td>اسم المريض:</td><td>${patientName}</td></tr>
-                <tr><td>التاريخ:</td><td>${new Date(prescription.createdAt).toLocaleDateString("ar-SA")}</td></tr>
-                <tr><td>رقم الوصفة:</td><td>#${prescription.id.slice(0, 8)}</td></tr>
-              </table>
-            </div>
-
-            <div class="diagnosis-box">
-              <div class="diagnosis-label">التشخيص</div>
-              <div class="diagnosis-text">${prescription.diagnosis}</div>
-            </div>
-
-            <div class="medications">
-              <div class="medications-title">الأدوية الموصوفة</div>
-              <table class="med-table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>اسم الدواء</th>
-                    <th>الجرعة</th>
-                    <th>التكرار</th>
-                    <th>المدة</th>
-                    ${prescription.medications.some(m => m.instructions) ? "<th>تعليمات</th>" : ""}
-                  </tr>
-                </thead>
-                <tbody>
-                  ${prescription.medications.map((med, idx) => `
-                    <tr>
-                      <td>${idx + 1}</td>
-                      <td class="med-name-cell">${med.name}</td>
-                      <td>${med.dose}</td>
-                      <td>${med.frequency}</td>
-                      <td>${med.duration}</td>
-                      ${med.instructions ? `<td>${med.instructions}</td>` : ""}
-                    </tr>
-                  `).join("")}
-                </tbody>
-              </table>
-            </div>
-
-            ${prescription.notes ? `
-              <div class="notes-box">
-                <div class="notes-label">ملاحظات</div>
-                <div>${prescription.notes}</div>
-              </div>
-            ` : ""}
-
-            <div class="validity">
-              صالحة لمدة ${prescription.validityDays || 30} يوماً من تاريخ الإصدار
-            </div>
-
-            <div class="signature">
-              <div class="signature-box">
-                <div class="signature-line">ختم العيادة</div>
-              </div>
-              <div class="signature-box">
-                <div class="signature-line">توقيع الطبيب</div>
-              </div>
-            </div>
-
-            <div class="footer">
-              <p>تم إنشاء هذه الوصفة إلكترونياً عبر نظام ميدكو لإدارة العيادات</p>
-              <p>${new Date().toLocaleString("ar-SA")}</p>
-              ${clinicInfo?.phone ? `<p>للاستفسار: ${clinicInfo.phone}${clinicInfo?.address ? ` · ${clinicInfo.address}` : ""}</p>` : ""}
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
+    const printContent = `<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head><meta charset="UTF-8"><title>وصفة طبية - ${esc(patientName)}</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+<style>@page{margin:20mm 15mm}*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Tajawal','Amiri',sans-serif;line-height:1.7;color:#1e293b;background:#fff}.prescription{max-width:210mm;margin:0 auto;padding:10px}.watermark{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%)rotate(-30deg);font-size:80px;opacity:.04;color:#1e40af;font-weight:bold;pointer-events:none;z-index:0}.header{text-align:center;border-bottom:3px double #1e40af;padding-bottom:20px;margin-bottom:25px}.clinic-name{font-size:26px;font-weight:800;color:#1e40af;letter-spacing:1px}.clinic-details{font-size:13px;color:#64748b;margin-top:5px}.doctor-line{text-align:left;font-size:13px;color:#475569;margin-bottom:20px}.patient-info{background:#f8fafc;padding:15px 20px;border-radius:8px;margin-bottom:20px;border:1px solid #e2e8f0}.patient-info table{width:100%;border-collapse:collapse}.patient-info td{padding:4px 8px;font-size:14px}.patient-info td:first-child{font-weight:600;color:#475569;width:100px}.patient-info td:last-child{color:#1e293b}.diagnosis-box{background:#eff6ff;padding:15px 20px;border-right:5px solid #2563eb;margin:20px 0;border-radius:4px}.diagnosis-label{font-weight:700;color:#1e40af;font-size:14px;margin-bottom:5px}.diagnosis-text{color:#1e293b;font-size:15px}.medications{margin:20px 0}.medications-title{font-size:16px;font-weight:700;color:#1e293b;margin-bottom:12px;border-bottom:2px solid #e2e8f0;padding-bottom:8px}.med-table{width:100%;border-collapse:collapse}.med-table th{background:#1e40af;color:#fff;padding:10px 12px;font-size:13px;text-align:center;font-weight:600}.med-table td{padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:center;font-size:14px}.med-table tr:last-child td{border-bottom:none}.med-table tr:nth-child(even) td{background:#f8fafc}.med-name-cell{font-weight:600;color:#0f172a}.notes-box{background:#fffbeb;padding:15px 20px;border-right:5px solid #d97706;border-radius:4px;margin-top:20px}.notes-label{font-weight:700;color:#92400e;font-size:14px;margin-bottom:5px}.validity{text-align:center;margin-top:20px;padding:10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;color:#16a34a;font-weight:700;font-size:14px}.footer{margin-top:35px;padding-top:15px;border-top:1px solid #cbd5e1;text-align:center;font-size:11px;color:#94a3b8}.signature{margin-top:30px;display:flex;justify-content:space-between;align-items:end}.signature-box{text-align:center}.signature-line{width:200px;border-top:1px solid #64748b;margin-top:40px;padding-top:8px;font-size:13px;color:#475569}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style>
+</head>
+<body>
+<div class="watermark">${esc(clinicName)}</div>
+<div class="prescription">
+<div class="header"><div class="clinic-name">${esc(clinicName)}</div><div class="clinic-details">${specialty ? `<span>${esc(specialty)}</span> &middot; ` : ""}<span>${today}</span></div></div>
+<div class="rx-symbol">&#8478;</div>
+<div class="doctor-line">الطبيب: ${esc(doctor)}</div>
+<div class="patient-info"><table><tr><td>اسم المريض:</td><td>${esc(patientName)}</td></tr><tr><td>التاريخ:</td><td>${createdDate}</td></tr><tr><td>رقم الوصفة:</td><td>#${esc(prescription.id.slice(0, 8))}</td></tr></table></div>
+<div class="diagnosis-box"><div class="diagnosis-label">التشخيص</div><div class="diagnosis-text">${esc(prescription.diagnosis)}</div></div>
+<div class="medications"><div class="medications-title">الأدوية الموصوفة</div><table class="med-table"><thead><tr><th>#</th><th>اسم الدواء</th><th>الجرعة</th><th>التكرار</th><th>المدة</th>${hasInstructions ? "<th>تعليمات</th>" : ""}</tr></thead><tbody>${medRows}</tbody></table></div>
+${prescription.notes ? `<div class="notes-box"><div class="notes-label">ملاحظات</div><div>${esc(prescription.notes)}</div></div>` : ""}
+<div class="validity">صالحة لمدة ${prescription.validityDays || 30} يوماً من تاريخ الإصدار</div>
+<div class="signature"><div class="signature-box"><div class="signature-line">ختم العيادة</div></div><div class="signature-box"><div class="signature-line">توقيع الطبيب</div></div></div>
+<div class="footer"><p>تم إنشاء هذه الوصفة إلكترونياً عبر نظام ميدكو لإدارة العيادات</p><p>${now}</p>${clinicInfo?.phone ? `<p>للاستفسار: ${esc(clinicInfo.phone)}${clinicInfo?.address ? ` &middot; ${esc(clinicInfo.address)}` : ""}</p>` : ""}</div>
+</div>
+</body>
+</html>`;
 
     const iframe = document.createElement("iframe");
     iframe.style.cssText = "position:fixed;top:-9999px;left:0;width:210mm;height:297mm;border:none";

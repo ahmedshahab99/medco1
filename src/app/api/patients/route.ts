@@ -173,6 +173,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  if (actor.role !== "ADMIN" && actor.role !== "DOCTOR") {
+    return NextResponse.json({ error: "ليس لديك صلاحية" }, { status: 403 });
+  }
+
   const body = await request.json();
   const parsed = patientCreateSchema.safeParse(body);
 

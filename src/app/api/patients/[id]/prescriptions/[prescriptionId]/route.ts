@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getTenantId } from "@/lib/tenant";
+import { createClient } from "@/utils/supabase/server";
 import prisma from "@/lib/prisma";
 
 async function verifyPrescriptionAccess(tenantId: string, patientId: string, prescriptionId: string) {
@@ -27,6 +28,14 @@ export async function PUT(
 
     if (!tenantId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
+    const profile = await prisma.profile.findUnique({ where: { id: user.id } });
+    if (!profile || (profile.role !== "ADMIN" && profile.role !== "DOCTOR")) {
+      return NextResponse.json({ error: "ليس لديك صلاحية" }, { status: 403 });
     }
 
     const rx = await verifyPrescriptionAccess(tenantId, patientId, prescriptionId);
@@ -87,6 +96,14 @@ export async function DELETE(
 
     if (!tenantId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
+    const profile = await prisma.profile.findUnique({ where: { id: user.id } });
+    if (!profile || (profile.role !== "ADMIN" && profile.role !== "DOCTOR")) {
+      return NextResponse.json({ error: "ليس لديك صلاحية" }, { status: 403 });
     }
 
     const rx = await verifyPrescriptionAccess(tenantId, patientId, prescriptionId);

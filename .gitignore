@@ -37,3 +37,4 @@ htmlcov/
 Thumbs.db
 ```
 /src/generated/prisma
+.vercel

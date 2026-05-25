@@ -112,6 +112,10 @@ export async function PATCH(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  if (actor.role !== "ADMIN" && actor.role !== "DOCTOR") {
+    return NextResponse.json({ error: "ليس لديك صلاحية" }, { status: 403 });
+  }
+
   const existingPatient = await prisma.patient.findFirst({
     where: {
       id,
@@ -176,6 +180,10 @@ export async function DELETE(
 
   if (!actor?.tenantId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (actor.role !== "ADMIN" && actor.role !== "DOCTOR") {
+    return NextResponse.json({ error: "ليس لديك صلاحية" }, { status: 403 });
   }
 
   const existingPatient = await prisma.patient.findFirst({

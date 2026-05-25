@@ -88,6 +88,11 @@ export async function POST(
       );
     }
 
+    const profile = await prisma.profile.findUnique({ where: { id: userId } });
+    if (!profile || (profile.role !== "ADMIN" && profile.role !== "DOCTOR")) {
+      return NextResponse.json({ error: "ليس لديك صلاحية" }, { status: 403 });
+    }
+
     const body = await request.json();
 
     // Validate input
@@ -144,9 +149,8 @@ export async function POST(
     );
   } catch (error) {
     console.error("Error creating prescription:", error);
-    const message = error instanceof Error ? error.message : "Failed to create prescription";
     return NextResponse.json(
-      { error: message },
+      { error: "فشل إنشاء الوصفة الطبية" },
       { status: 500 }
     );
   }
