@@ -22,8 +22,12 @@ export async function login(formData: FormData) {
     }
   }
 
+  const origin = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
   const { error } = await supabase.auth.signInWithOtp({
     email: validation.data.email,
+    options: {
+      emailRedirectTo: `${origin}/auth/callback`,
+    },
   })
 
   if (error) {
