@@ -30,6 +30,16 @@ export default async function InvoicesPage() {
     take: 50,
   });
 
+  let recurringExpenses: any[] = [];
+  try {
+    recurringExpenses = await prisma.recurringExpense.findMany({
+      where: { tenantId: actor.tenantId },
+      orderBy: { createdAt: "desc" },
+    });
+  } catch (e) {
+    console.error("Failed to fetch recurring expenses:", e);
+  }
+
   return (
     <InvoicesClient
       initialTransactions={transactions.map((t) => ({
@@ -40,6 +50,10 @@ export default async function InvoicesPage() {
         updatedAt: t.updatedAt.toISOString(),
       }))}
       initialSummary={{ totalIncome, totalExpense, net: totalIncome - totalExpense }}
+      initialRecurringExpenses={recurringExpenses.map((r) => ({
+        ...r,
+        amount: Number(r.amount),
+      }))}
       patients={patients.map((p) => ({
         id: p.id,
         name: `${p.firstName} ${p.lastName}`,

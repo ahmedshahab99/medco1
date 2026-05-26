@@ -25,6 +25,11 @@ export const appointmentCreateSchema = z.object({
         .min(3, "العنوان يجب أن يكون 3 أحرف على الأقل")
         .optional()
         .or(z.literal("")),
+      consultationFee: z
+        .string()
+        .regex(/^\d+$/, "الكشفية يجب أن تكون رقماً")
+        .optional()
+        .or(z.literal("")),
     })
     .optional(),
   waitlistId: z.string().optional(),
@@ -40,6 +45,11 @@ export const appointmentCreateSchema = z.object({
   startTime: z.string().datetime(),
   endTime: z.string().datetime(),
   notes: z.string().optional(),
+  consultationFee: z
+    .string()
+    .regex(/^\d+$/, "الكشفية يجب أن تكون رقماً")
+    .optional()
+    .or(z.literal("")),
 });
 
 export const appointmentPatchSchema = z.object({

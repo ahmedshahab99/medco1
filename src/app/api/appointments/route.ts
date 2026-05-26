@@ -141,6 +141,7 @@ export async function POST(request: Request) {
         firstName: data.newPatient.firstName,
         lastName: data.newPatient.lastName,
         phone: data.newPatient.phone,
+        consultationFee: data.consultationFee || undefined,
       },
     });
     patientId = newPatient.id;
@@ -206,6 +207,21 @@ export async function POST(request: Request) {
     createdAt: appointment.createdAt.toISOString(),
     updatedAt: appointment.updatedAt.toISOString(),
   };
+
+  // ─── TRANSACTION CREATION (consultation fee) ───
+  if (data.consultationFee) {
+    await prisma.transaction.create({
+      data: {
+        tenantId: actor.tenantId,
+        type: "INCOME",
+        category: "CONSULTATION",
+        amount: parseFloat(data.consultationFee),
+        description: "الكشفية",
+        date: new Date(data.startTime),
+        patientId,
+      },
+    });
+  }
 
   return NextResponse.json(mapped, { status: 201 });
 }

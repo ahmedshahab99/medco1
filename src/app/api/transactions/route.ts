@@ -27,19 +27,40 @@ export async function GET(request: Request) {
 
   const month = searchParams.get("month");
   const year = searchParams.get("year");
+  const category = searchParams.get("category");
+  const type = searchParams.get("type");
+  const pageSizeParam = searchParams.get("pageSize");
+  const pageParam = searchParams.get("page");
+
+  const page = pageParam ? parseInt(pageParam, 10) : undefined;
+  const pageSize = pageSizeParam ? Math.min(parseInt(pageSizeParam, 10), 100) : undefined;
+  const skip = page && pageSize ? (page - 1) * pageSize : undefined;
 
   const where: Record<string, unknown> = { tenantId: actor.tenantId };
+
   if (month && year) {
     const start = new Date(parseInt(year), parseInt(month) - 1, 1);
     const end = new Date(parseInt(year), parseInt(month), 0, 23, 59, 59);
     where.date = { gte: start, lte: end };
+  } else if (year && !month) {
+    const start = new Date(parseInt(year), 0, 1);
+    const end = new Date(parseInt(year), 11, 31, 23, 59, 59);
+    where.date = { gte: start, lte: end };
   }
 
-  const transactions = await prisma.transaction.findMany({
-    where: where as any,
-    orderBy: { date: "desc" },
-    include: { patient: { select: { id: true, firstName: true, lastName: true } } },
-  });
+  if (category) where.category = category;
+  if (type) where.type = type;
+
+  const [transactions, total] = await Promise.all([
+    prisma.transaction.findMany({
+      where: where as any,
+      orderBy: { date: "desc" },
+      include: { patient: { select: { id: true, firstName: true, lastName: true } } },
+      ...(skip !== undefined && { skip }),
+      ...(pageSize !== undefined && { take: pageSize }),
+    }),
+    prisma.transaction.count({ where: where as any }),
+  ]);
 
   const totalIncome = transactions
     .filter((t) => t.type === "INCOME")
@@ -48,7 +69,11 @@ export async function GET(request: Request) {
     .filter((t) => t.type === "EXPENSE")
     .reduce((s, t) => s + Number(t.amount), 0);
 
-  return NextResponse.json({ transactions, summary: { totalIncome, totalExpense, net: totalIncome - totalExpense } });
+  return NextResponse.json({
+    transactions,
+    total,
+    summary: { totalIncome, totalExpense, net: totalIncome - totalExpense },
+  });
 }
 
 export async function POST(request: Request) {

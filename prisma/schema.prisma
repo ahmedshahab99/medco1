@@ -35,6 +35,7 @@ model Tenant {
   prescriptions Prescription[]
   transactions  Transaction[]
   clinicAvailability ClinicAvailability?
+  recurringExpenses  RecurringExpense[]
 }
 
 model SocialLink {
@@ -317,4 +318,20 @@ model Transaction {
 
   @@index([tenantId, date])
   @@index([tenantId, category])
+}
+
+model RecurringExpense {
+  id          String              @id @default(uuid())
+  tenantId    String
+  tenant      Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  category    TransactionCategory
+  amount      Decimal
+  description String?
+  notes       String?
+  dayOfMonth  Int                 @default(1)
+  isActive    Boolean             @default(true)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@index([tenantId, isActive])
 }

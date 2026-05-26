@@ -20,6 +20,7 @@ export const appointmentFormSchema = z
     startTime: z.string().min(1, "وقت البدء مطلوب"),
     endTime: z.string().min(1, "وقت الانتهاء مطلوب"),
     notes: z.string().optional(),
+    consultationFee: z.string().regex(/^\d+$/).optional().or(z.literal("")),
   })
   .superRefine((data, ctx) => {
     if (data.patientMode === "existing" && !data.patientId) {

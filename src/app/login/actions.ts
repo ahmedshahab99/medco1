@@ -2,6 +2,7 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import { z } from 'zod'
 
 const loginSchema = z.object({
@@ -22,7 +23,10 @@ export async function login(formData: FormData) {
     }
   }
 
-  const origin = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  const h = await headers()
+  const host = h.get('x-forwarded-host') || h.get('host') || ''
+  const protocol = process.env.NODE_ENV === 'development' ? 'http' : 'https'
+  const origin = process.env.NEXT_PUBLIC_SITE_URL || (host ? `${protocol}://${host}` : 'http://localhost:3000')
   const { error } = await supabase.auth.signInWithOtp({
     email: validation.data.email,
     options: {
