@@ -47,7 +47,18 @@ export async function getTenantId(): Promise<string> {
     // Also try by email
     if (user.email) {
       const profileByEmail = await prisma.profile.findUnique({ where: { email: user.email } });
-      if (profileByEmail?.tenantId) return profileByEmail.tenantId;
+      if (profileByEmail?.tenantId) {
+        // Link the profile to the current auth user ID
+        try {
+          await prisma.profile.update({
+            where: { id: profileByEmail.id },
+            data: { id: user.id },
+          });
+        } catch {
+          // FK constraint — ignore, email fallback will work next time too
+        }
+        return profileByEmail.tenantId;
+      }
     }
   }
 
