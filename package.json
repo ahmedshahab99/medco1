@@ -5,7 +5,6 @@
   "scripts": {
     "dev": "next dev --turbo -p 3000",
     "build": "next build",
-    "vercel-build": "prisma generate && (prisma db push || true) && next build",
     "start": "next start",
     "lint": "eslint",
     "postinstall": "prisma generate"
