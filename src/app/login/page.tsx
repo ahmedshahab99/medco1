@@ -34,6 +34,7 @@ export default function LoginPage() {
     startTransition(async () => {
       const formData = new FormData()
       formData.append('email', data.email)
+      formData.append('origin', window.location.origin)
 
       const result = await login(formData)
 

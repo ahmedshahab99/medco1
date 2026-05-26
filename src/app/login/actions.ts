@@ -1,8 +1,6 @@
 'use server'
 
 import { createClient } from '@/utils/supabase/server'
-import { redirect } from 'next/navigation'
-import { headers } from 'next/headers'
 import { z } from 'zod'
 
 const loginSchema = z.object({
@@ -14,7 +12,7 @@ export async function login(formData: FormData) {
   const supabase = await createClient()
 
   const email = formData.get('email')?.toString()
-  
+  const clientOrigin = formData.get('origin')?.toString()
 
   const validation = loginSchema.safeParse({ email })
   if (!validation.success) {
@@ -23,16 +21,7 @@ export async function login(formData: FormData) {
     }
   }
 
-  let origin = ''
-  try {
-    const h = await headers()
-    const host = h.get('x-forwarded-host') || h.get('host') || ''
-    const protocol = process.env.NODE_ENV === 'development' ? 'http' : 'https'
-    if (host) origin = `${protocol}://${host}`
-  } catch {
-    // headers not available
-  }
-  if (!origin) origin = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  const origin = clientOrigin || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
   const { error } = await supabase.auth.signInWithOtp({
     email: validation.data.email,
     options: {
