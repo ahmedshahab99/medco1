@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
+import prisma from "@/lib/prisma";
 
 /**
  * Decodes the JWT claims to extract the tenant_id.
@@ -33,11 +34,24 @@ export async function getTenantId(): Promise<string> {
 
   const jwtClaims = decodeJwtClaims(session.access_token);
   
-  if (!jwtClaims?.tenant_id) {
-    redirect("/setup");
+  if (jwtClaims?.tenant_id) {
+    return jwtClaims.tenant_id;
   }
 
-  return jwtClaims.tenant_id;
+  // Fallback: look up tenant from database (for Google OAuth users)
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user?.id) {
+    const profile = await prisma.profile.findUnique({ where: { id: user.id } });
+    if (profile?.tenantId) return profile.tenantId;
+
+    // Also try by email
+    if (user.email) {
+      const profileByEmail = await prisma.profile.findUnique({ where: { email: user.email } });
+      if (profileByEmail?.tenantId) return profileByEmail.tenantId;
+    }
+  }
+
+  redirect("/setup");
 }
 
 /**
