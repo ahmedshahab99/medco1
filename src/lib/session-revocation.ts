@@ -10,13 +10,10 @@ const JWT_EXPIRY_SECONDS = 3600;
  * The blacklist TTL matches the JWT lifetime so stale tokens die naturally.
  */
 export async function revokeUserSessions(userId: string) {
-  // 1. Revoke all refresh tokens globally (prevents future token refresh)
   await serviceRoleClient.auth.admin.signOut(userId, "global");
-
-  // 2. Blacklist current JWT for max JWT lifetime.
-  //    Value = Unix timestamp (ms) of revocation.
-  //    If a user re-logins after this, they get a new JWT with a newer iat.
-  await redis.set(`session:revoked:${userId}`, Date.now(), {
-    ex: JWT_EXPIRY_SECONDS,
-  });
+  if (redis) {
+    await redis.set(`session:revoked:${userId}`, Date.now(), {
+      ex: JWT_EXPIRY_SECONDS,
+    });
+  }
 }

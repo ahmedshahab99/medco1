@@ -33,6 +33,7 @@ model Tenant {
   cases        Case[]
   waitlist     Waitlist[]
   prescriptions Prescription[]
+  transactions  Transaction[]
   clinicAvailability ClinicAvailability?
 }
 
@@ -90,8 +91,9 @@ model Patient {
   phone       String?
   dateOfBirth DateTime?
   gender      Gender?
-  status      String    @default("active")
-  address     String?
+  status           String    @default("active")
+  address          String?
+  consultationFee  Decimal?
 
   appointments Appointment[]
   medicalNotes MedicalNote[]
@@ -99,6 +101,7 @@ model Patient {
   cases        Case[]
   waitlist     Waitlist[]
   prescriptions Prescription[]
+  transactions Transaction[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -275,4 +278,43 @@ model PrescriptionMedication {
   instructions    String?
 
   @@index([prescriptionId])
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+enum TransactionCategory {
+  CONSULTATION
+  MEDICATIONS
+  SERVICES
+  CLINIC_RENT
+  INTERNET
+  SALARIES
+  UTILITIES
+  SUPPLIES
+  MARKETING
+  INSURANCE
+  TAXES
+  MAINTENANCE
+  OTHER
+}
+
+model Transaction {
+  id          String              @id @default(uuid())
+  tenantId    String
+  tenant      Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  type        TransactionType
+  category    TransactionCategory
+  amount      Decimal
+  description String?
+  date        DateTime
+  patientId   String?
+  patient     Patient?            @relation(fields: [patientId], references: [id])
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@index([tenantId, date])
+  @@index([tenantId, category])
 }

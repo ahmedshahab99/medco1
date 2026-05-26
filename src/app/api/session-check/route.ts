@@ -29,7 +29,7 @@ export async function GET() {
   const payload = decodeJwtPayload(session.access_token);
   const iat = typeof payload?.iat === "number" ? payload.iat : null;
 
-  if (!iat) {
+  if (!iat || !redis) {
     return NextResponse.json({ revoked: false });
   }
 

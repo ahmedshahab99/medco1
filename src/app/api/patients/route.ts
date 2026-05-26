@@ -173,7 +173,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (actor.role !== "ADMIN" && actor.role !== "DOCTOR") {
+  if (actor.role !== "ADMIN" && actor.role !== "DOCTOR" && actor.role !== "RECEPTIONIST") {
     return NextResponse.json({ error: "ليس لديك صلاحية" }, { status: 403 });
   }
 
@@ -188,6 +188,7 @@ export async function POST(request: Request) {
   }
 
   const { firstName, lastName, phone, dateOfBirth, gender, address } = parsed.data;
+  const consultationFee = body.consultationFee ? parseFloat(body.consultationFee) : undefined;
 
   const created = await prisma.patient.create({
     data: {
@@ -197,6 +198,7 @@ export async function POST(request: Request) {
       dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
       gender: gender || undefined,
       address: address || undefined,
+      consultationFee: consultationFee || undefined,
       tenantId: actor.tenantId,
     },
     include: {
