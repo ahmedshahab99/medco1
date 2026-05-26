@@ -138,6 +138,8 @@ export async function submitSetupWizard(formData: FormData) {
     throw lastError;
   }
 
+  let alreadySetup = false;
+
   try {
     await withRetry(async () => {
       await prisma.$transaction(async (tx) => {
@@ -165,7 +167,8 @@ export async function submitSetupWizard(formData: FormData) {
         }
 
         if (profile.tenantId) {
-          throw new Error("لقد قمت بإعداد العيادة مسبقاً.");
+          alreadySetup = true;
+          return;
         }
 
         // Check slug uniqueness one more time
@@ -202,9 +205,16 @@ export async function submitSetupWizard(formData: FormData) {
       });
     });
   } catch (err: unknown) {
+    if (alreadySetup) {
+      redirect("/dashboard");
+    }
     console.error("Setup error:", err);
     const message = err instanceof Error ? err.message : "حدث خطأ أثناء إعداد العيادة.";
     return { error: message };
+  }
+
+  if (alreadySetup) {
+    redirect("/dashboard");
   }
 
   // Refresh session so the JWT picks up the new user_role and tenant_id claims
