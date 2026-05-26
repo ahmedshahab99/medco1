@@ -23,18 +23,16 @@ export async function login(formData: FormData) {
     }
   }
 
-  let origin = process.env.NEXT_PUBLIC_SITE_URL || ''
-  if (!origin) {
-    try {
-      const h = await headers()
-      const host = h.get('x-forwarded-host') || h.get('host') || ''
-      const protocol = process.env.NODE_ENV === 'development' ? 'http' : 'https'
-      if (host) origin = `${protocol}://${host}`
-    } catch {
-      // fallback
-    }
+  let origin = ''
+  try {
+    const h = await headers()
+    const host = h.get('x-forwarded-host') || h.get('host') || ''
+    const protocol = process.env.NODE_ENV === 'development' ? 'http' : 'https'
+    if (host) origin = `${protocol}://${host}`
+  } catch {
+    // headers not available
   }
-  if (!origin) origin = 'http://localhost:3000'
+  if (!origin) origin = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
   const { error } = await supabase.auth.signInWithOtp({
     email: validation.data.email,
     options: {
