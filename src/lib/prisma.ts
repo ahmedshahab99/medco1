@@ -3,21 +3,34 @@ import { Pool } from 'pg'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { validateEnv } from '../../env'
 
-validateEnv()
-
-const prismaClientSingleton = () => {
-  const connectionString = process.env.DATABASE_URL
-  const pool = new Pool({ connectionString })
-  const adapter = new PrismaPg(pool)
-  return new PrismaClient({ adapter })
-}
-
 declare const globalThis: {
-  prismaGlobal: ReturnType<typeof prismaClientSingleton>;
+  prismaGlobal: PrismaClient;
 } & typeof global;
 
-const prisma = globalThis.prismaGlobal ?? prismaClientSingleton()
+let prismaInstance: PrismaClient | null = null
+let prismaInitError: Error | null = null
+
+function getPrisma(): PrismaClient {
+  if (prismaInstance) return prismaInstance
+  if (prismaInitError) throw prismaInitError
+  try {
+    validateEnv()
+    const connectionString = process.env.DATABASE_URL
+    const pool = new Pool({ connectionString })
+    const adapter = new PrismaPg(pool)
+    prismaInstance = new PrismaClient({ adapter })
+    if (process.env.NODE_ENV !== 'production') globalThis.prismaGlobal = prismaInstance
+    return prismaInstance
+  } catch (e) {
+    prismaInitError = e as Error
+    throw e
+  }
+}
+
+const prisma = new Proxy({} as PrismaClient, {
+  get(_, prop) {
+    return (getPrisma() as any)[prop]
+  },
+})
 
 export default prisma
-
-if (process.env.NODE_ENV !== 'production') globalThis.prismaGlobal = prisma
