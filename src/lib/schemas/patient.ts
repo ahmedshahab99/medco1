@@ -27,6 +27,11 @@ export const patientCreateSchema = z.object({
     .min(3, "العنوان يجب أن يكون 3 أحرف على الأقل")
     .optional()
     .or(z.literal("")),
+  consultationFee: z
+    .string()
+    .regex(/^\d+$/, "الكشفية يجب أن تكون رقماً")
+    .optional()
+    .or(z.literal("")),
 });
 
 export type PatientCreateInput = z.infer<typeof patientCreateSchema>;
@@ -34,9 +39,3 @@ export type PatientCreateInput = z.infer<typeof patientCreateSchema>;
 export const patientUpdateSchema = patientCreateSchema.partial();
 
 export type PatientUpdateInput = z.infer<typeof patientUpdateSchema>;
-
-export const quickPatientSchema = z.object({
-  name: z.string().min(2, "الاسم يجب أن يكون حرفين على الأقل"),
-  phone: z.string().min(5, "رقم الهاتف مطلوب"),
-  consultationFee: z.string().regex(/^\d+$/).optional().or(z.literal("")),
-});

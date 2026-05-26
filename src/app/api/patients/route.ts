@@ -187,8 +187,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { firstName, lastName, phone, dateOfBirth, gender, address } = parsed.data;
-  const consultationFee = body.consultationFee ? parseFloat(body.consultationFee) : undefined;
+  const { firstName, lastName, phone, dateOfBirth, gender, address, consultationFee } = parsed.data;
 
   const created = await prisma.patient.create({
     data: {
