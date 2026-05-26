@@ -72,6 +72,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       await handleAuthSuccess(supabase)
       return response
     }
+    // Log the error for debugging
+    console.error('exchangeCodeForSession error:', error)
   }
 
   // --- Strategy 2: token_hash verification (cross-browser confirmation) ---
