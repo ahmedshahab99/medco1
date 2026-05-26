@@ -37,5 +37,5 @@ export async function login(formData: FormData) {
     return { error: error.message }
   }
 
-  return { success: true };
+  return { success: true, origin };
 }

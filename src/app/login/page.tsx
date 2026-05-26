@@ -43,6 +43,7 @@ export default function LoginPage() {
         
       }else if (result?.success){
         setSuccess(true)
+        console.log('Login origin:', result?.origin)
       }
 
     })
