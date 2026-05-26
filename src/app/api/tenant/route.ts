@@ -36,9 +36,15 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const actor = await prisma.profile.findUnique({
+  let actor = await prisma.profile.findUnique({
     where: { id: user.id },
   });
+
+  if (!actor?.tenantId && user.email) {
+    actor = await prisma.profile.findUnique({
+      where: { email: user.email },
+    });
+  }
 
   if (!actor?.tenantId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useRouter } from "next/navigation";
 import { LogoUploader } from "@/components/features/setup/LogoUploader";
 import { submitSetupWizard, checkSlugAvailability } from "./actions";
 import { Store, Phone, AlignLeft, MapPin, Building2, ChevronLeft, ChevronRight, Loader2, X, Link, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
@@ -64,7 +65,21 @@ export default function SetupWizard() {
     },
   });
 
+  const router = useRouter();
   const slugValue = watch("slug");
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/tenant");
+        if (res.ok) {
+          router.replace("/dashboard");
+        }
+      } catch {
+        // not logged in or no tenant — show setup form
+      }
+    })();
+  }, [router]);
 
   useEffect(() => {
     if (!slugValue || slugValue.length === 0) {
