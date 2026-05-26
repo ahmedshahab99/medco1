@@ -72,8 +72,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       await handleAuthSuccess(supabase)
       return response
     }
-    // Log the error for debugging
-    console.error('exchangeCodeForSession error:', error)
+    // Pass the error message to the error page
+    const errorMsg = error?.message || 'unknown'
+    return NextResponse.redirect(`${origin}/auth/auth-error?error=${encodeURIComponent(errorMsg)}`)
   }
 
   // --- Strategy 2: token_hash verification (cross-browser confirmation) ---
