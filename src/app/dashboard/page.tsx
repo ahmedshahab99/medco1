@@ -3,12 +3,31 @@ import DashboardClient from "@/components/dashboard/DashboardClient";
 import { DashboardService } from "@/services/dashboard";
 import prisma from "@/lib/prisma";
 import { getUserId } from "@/lib/tenant";
+import { createClient } from "@/utils/supabase/server";
 
 export default async function DashboardPage() {
   const userId = await getUserId();
-  const profile = await prisma.profile.findUnique({
+  let profile = await prisma.profile.findUnique({
     where: { id: userId },
   });
+
+  // If no profile by ID, try to find by email (handles Google OAuth with existing email)
+  if (!profile) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user?.email) {
+      profile = await prisma.profile.findUnique({ where: { email: user.email } });
+      if (profile) {
+        // Update profile ID to match current auth user
+        await prisma.profile.update({
+          where: { id: profile.id },
+          data: { id: userId },
+        }).catch(() => {
+          // If FK constraint fails, keep old ID — lookup by email next time
+        });
+      }
+    }
+  }
 
   const statsData = await DashboardService.getStats();
   const upcomingData = await DashboardService.getUpcomingAppointments();

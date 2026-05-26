@@ -141,12 +141,20 @@ export async function submitSetupWizard(formData: FormData) {
   try {
     await withRetry(async () => {
       await prisma.$transaction(async (tx) => {
-        // Check if profile exists; create if it somehow doesn't
+        // Check if profile exists by email first (handles Google OAuth with existing email)
         let profile = await tx.profile.findUnique({
-          where: { id: user.id }
+          where: { email: user.email! }
         });
 
-        if (!profile) {
+        if (profile) {
+          // Profile exists but might have a different auth ID — update it to match
+          if (profile.id !== user.id) {
+            await tx.profile.update({
+              where: { id: profile.id },
+              data: { id: user.id }
+            });
+          }
+        } else {
           profile = await tx.profile.create({
             data: {
               id: user.id,
