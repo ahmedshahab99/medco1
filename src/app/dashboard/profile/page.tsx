@@ -4,7 +4,7 @@ import ProfileForm from "./ProfileForm";
 import { createClient } from "@/utils/supabase/server";
 import type { TenantProfile } from "@/lib/types/tenant";
 
-function serializeTenant(tenant: any): TenantProfile {
+function serializeTenant(tenant: any): Omit<TenantProfile, 'defaultConsultationFee'> {
   return {
     id: tenant.id,
     name: tenant.name,
@@ -56,7 +56,10 @@ export default async function ProfilePage() {
 
   if (!tenant) redirect("/setup");
 
-  const tenantData = serializeTenant(tenant);
+  const tenantData: TenantProfile = {
+    ...serializeTenant(tenant),
+    defaultConsultationFee: tenant.defaultConsultationFee ? Number(tenant.defaultConsultationFee) : null,
+  };
   const isAdmin = jwtClaims.user_role === "ADMIN";
 
   return <ProfileForm initialData={tenantData} isAdmin={isAdmin} />;

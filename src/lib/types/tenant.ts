@@ -12,6 +12,7 @@ export interface TenantProfile {
   address: string | null;
   latitude: number | null;
   longitude: number | null;
+  defaultConsultationFee: number | null;
   socialLinks: {
     id: string;
     platform: TenantSocialPlatform;

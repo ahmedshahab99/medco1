@@ -17,6 +17,7 @@ function serializeTenant(tenant: any): TenantProfile {
     address: tenant.address,
     latitude: tenant.latitude,
     longitude: tenant.longitude,
+    defaultConsultationFee: tenant.defaultConsultationFee ? Number(tenant.defaultConsultationFee) : null,
     socialLinks: tenant.socialLinks.map((link: any) => ({
       id: link.id,
       platform: link.platform,
@@ -115,6 +116,7 @@ export async function PATCH(request: Request) {
         address: data.address,
         latitude: data.latitude,
         longitude: data.longitude,
+        defaultConsultationFee: data.defaultConsultationFee ? parseFloat(data.defaultConsultationFee) : null,
       },
       include: { socialLinks: true },
     });

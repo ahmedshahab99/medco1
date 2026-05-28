@@ -92,6 +92,7 @@ export default function ProfileForm({ initialData, isAdmin }: ProfileFormProps) 
       address: initialData.address ?? "",
       latitude: initialData.latitude ?? null,
       longitude: initialData.longitude ?? null,
+      defaultConsultationFee: initialData.defaultConsultationFee?.toString() ?? "",
       socialLinks: initialData.socialLinks.map((l) => ({
         id: l.id,
         platform: l.platform,
@@ -136,6 +137,7 @@ export default function ProfileForm({ initialData, isAdmin }: ProfileFormProps) 
       address: rawData.address?.trim() || null,
       latitude: rawData.latitude ?? null,
       longitude: rawData.longitude ?? null,
+      defaultConsultationFee: rawData.defaultConsultationFee || "",
     };
 
     try {
@@ -270,6 +272,24 @@ export default function ProfileForm({ initialData, isAdmin }: ProfileFormProps) 
                   rows={4}
                 />
               </div>
+            </div>
+          </Card>
+
+          {/* Consultation Fee */}
+          <Card className="p-6 md:p-8">
+            <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+              <span>💰</span> الكشفية
+            </h3>
+            <div className="space-y-2">
+              <p className="text-sm text-slate-500 mb-2">سعر الكشفية الافتراضي للمواعيد الجديدة (لن يظهر للمرضى)</p>
+              <input
+                {...register("defaultConsultationFee")}
+                dir="ltr"
+                type="text" inputMode="numeric"
+                disabled={disabled}
+                placeholder="مثال: 25000"
+                className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/30 focus:border-blue-600 transition outline-none text-slate-800 text-sm"
+              />
             </div>
           </Card>
 
