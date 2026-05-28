@@ -138,3 +138,11 @@ body {
     @apply font-sans;
   }
 }
+
+.leaflet-container .leaflet-pane { z-index: 0 !important; }
+.leaflet-tile-pane { z-index: 0 !important; }
+.leaflet-overlay-pane { z-index: 0 !important; }
+.leaflet-shadow-pane,
+.leaflet-marker-pane,
+.leaflet-tooltip-pane,
+.leaflet-popup-pane,.leaflet-control-zoom-in,.leaflet-control-zoom-out { z-index: 0 !important; }

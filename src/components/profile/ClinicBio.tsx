@@ -1,15 +1,11 @@
-import { Card, CardContent } from "@/components/ui/Card";
-
 interface ClinicBioProps {
   bio: string;
 }
 
 export default function ClinicBio({ bio }: ClinicBioProps) {
   return (
-    <Card className="mb-8 max-w-[400px] mx-auto text-center">
-      <CardContent>
-        <p className="text-sm text-muted-foreground leading-relaxed">{bio}</p>
-      </CardContent>
-    </Card>
+    <div className="mb-8 max-w-[400px] mx-auto text-center px-4">
+      <p className="text-sm text-foreground/80 leading-relaxed font-medium">{bio}</p>
+    </div>
   );
 }

@@ -6,7 +6,7 @@ import { isReservedSlug } from "@/lib/reserved-slugs";
 import ClinicHeader from "@/components/profile/ClinicHeader";
 import ClinicBio from "@/components/profile/ClinicBio";
 import QuickActions from "@/components/profile/QuickActions";
-import DoctorsList from "@/components/profile/DoctorsList";
+import ClinicMap from "@/components/profile/ClinicMap";
 import SocialFooter from "@/components/profile/SocialFooter";
 import type { SocialPlatform } from "@prisma/client";
 
@@ -40,7 +40,6 @@ export async function generateMetadata({
 
 export default async function ClinicProfilePage({ params }: PageProps) {
   const { slug } = await params;
-  
 
   if (!validateSlugFormat(slug).valid || isReservedSlug(slug)) {
     notFound();
@@ -50,15 +49,6 @@ export default async function ClinicProfilePage({ params }: PageProps) {
     where: { slug },
     include: {
       socialLinks: true,
-      profiles: {
-        where: { role: { in: ["DOCTOR", "ADMIN"] } },
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          role: true,
-        },
-      },
     },
   });
 
@@ -67,7 +57,7 @@ export default async function ClinicProfilePage({ params }: PageProps) {
   }
 
   return (
-    <main className="min-h-screen bg-background font-sans">
+    <main className="min-h-screen bg-gradient-to-b from-primary/5 to-background font-sans">
       <div className="max-w-md mx-auto p-4 sm:p-6 lg:p-8 pb-24">
         <ClinicHeader
           name={tenant.name}
@@ -81,7 +71,7 @@ export default async function ClinicProfilePage({ params }: PageProps) {
         <QuickActions
           clinicName={tenant.name}
           phone={tenant.phone}
-          address={tenant.address}
+          
           socialLinks={
             tenant.socialLinks.map((s) => ({
               id: s.id,
@@ -91,7 +81,7 @@ export default async function ClinicProfilePage({ params }: PageProps) {
           }
         />
 
-        <DoctorsList doctors={tenant.profiles} />
+        <ClinicMap lat={tenant.latitude} lng={tenant.longitude} address={tenant.address} />
 
         <SocialFooter
           socialLinks={
