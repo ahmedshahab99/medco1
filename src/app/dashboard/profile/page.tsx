@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
-import { requireAuth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import ProfileForm from "./ProfileForm";
+import { createClient } from "@/utils/supabase/server";
 import type { TenantProfile } from "@/lib/types/tenant";
 
 function serializeTenant(tenant: any): TenantProfile {
@@ -25,34 +25,39 @@ function serializeTenant(tenant: any): TenantProfile {
   };
 }
 
-export default async function ProfilePage() {
-  let profile;
+function decodeJwtClaims(accessToken: string | undefined): { user_role: string | null; tenant_id: string | null } | null {
+  if (!accessToken) return null;
   try {
-    profile = await requireAuth();
+    const jwtParts = accessToken.split(".");
+    if (jwtParts.length !== 3) return null;
+    const payload = JSON.parse(Buffer.from(jwtParts[1], "base64").toString("utf-8"));
+    return {
+      user_role: payload.user_role ?? null,
+      tenant_id: payload.tenant_id ?? null,
+    };
   } catch {
-    redirect("/login");
+    return null;
   }
+}
 
-  if (!profile?.tenantId) {
-    redirect("/setup");
-  }
+export default async function ProfilePage() {
+  const supabase = await createClient();
+  const { data: { session } } = await supabase.auth.getSession();
 
-  try {
-    const tenant = await prisma.tenant.findUnique({
-      where: { id: profile.tenantId },
-      include: { socialLinks: true },
-    });
+  if (!session?.access_token) redirect("/login");
 
-    if (!tenant) {
-      redirect("/setup");
-    }
+  const jwtClaims = decodeJwtClaims(session.access_token);
+  if (!jwtClaims?.tenant_id) redirect("/setup");
 
-    const tenantData = serializeTenant(tenant);
-    const isAdmin = profile.role === "ADMIN";
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: jwtClaims.tenant_id },
+    include: { socialLinks: true },
+  });
 
-    return <ProfileForm initialData={tenantData} isAdmin={isAdmin} />;
-  } catch (e) {
-    console.error("Profile tenant load error:", e);
-    redirect("/setup");
-  }
+  if (!tenant) redirect("/setup");
+
+  const tenantData = serializeTenant(tenant);
+  const isAdmin = jwtClaims.user_role === "ADMIN";
+
+  return <ProfileForm initialData={tenantData} isAdmin={isAdmin} />;
 }

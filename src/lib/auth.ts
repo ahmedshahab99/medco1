@@ -2,7 +2,6 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
-import prisma from "@/lib/prisma";
 import type { AuthProfile, UserRole, JwtCustomClaims } from "@/lib/types/auth";
 import { isRoleAllowed } from "@/lib/types/auth";
 
@@ -44,39 +43,6 @@ export async function getAuthState(): Promise<AuthProfile | null> {
       role: jwtClaims.user_role,
       tenantId: jwtClaims.tenant_id,
     };
-  }
-
-  // Fallback: look up profile from database
-  if (session.user.id) {
-    const profile = await prisma.profile.findUnique({
-      where: { id: session.user.id },
-    });
-    if (profile?.tenantId) {
-      return {
-        id: profile.id,
-        email: profile.email,
-        firstName: profile.firstName ?? deriveNameFromEmail(profile.email),
-        lastName: profile.lastName ?? null,
-        role: profile.role,
-        tenantId: profile.tenantId,
-      };
-    }
-    // Try by email
-    if (session.user.email) {
-      const profileByEmail = await prisma.profile.findUnique({
-        where: { email: session.user.email },
-      });
-      if (profileByEmail?.tenantId) {
-        return {
-          id: profileByEmail.id,
-          email: profileByEmail.email,
-          firstName: profileByEmail.firstName ?? deriveNameFromEmail(profileByEmail.email),
-          lastName: profileByEmail.lastName ?? null,
-          role: profileByEmail.role,
-          tenantId: profileByEmail.tenantId,
-        };
-      }
-    }
   }
 
   return null;
