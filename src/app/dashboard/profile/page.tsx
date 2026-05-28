@@ -28,12 +28,11 @@ function serializeTenant(tenant: any): Omit<TenantProfile, 'defaultConsultationF
 function decodeJwtClaims(accessToken: string | undefined): { user_role: string | null; tenant_id: string | null } | null {
   if (!accessToken) return null;
   try {
-    const jwtParts = accessToken.split(".");
-    if (jwtParts.length !== 3) return null;
-    const payload = JSON.parse(Buffer.from(jwtParts[1], "base64").toString("utf-8"));
+    const parts = accessToken.split(".");
+    if (parts.length !== 3) return null;
     return {
-      user_role: payload.user_role ?? null,
-      tenant_id: payload.tenant_id ?? null,
+      user_role: JSON.parse(Buffer.from(parts[1], "base64").toString()).user_role ?? null,
+      tenant_id: JSON.parse(Buffer.from(parts[1], "base64").toString()).tenant_id ?? null,
     };
   } catch {
     return null;
@@ -41,26 +40,27 @@ function decodeJwtClaims(accessToken: string | undefined): { user_role: string |
 }
 
 export default async function ProfilePage() {
-  const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  try {
+    const supabase = await createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) redirect("/login");
 
-  if (!session?.access_token) redirect("/login");
+    const jwtClaims = decodeJwtClaims(session.access_token);
+    if (!jwtClaims?.tenant_id) redirect("/setup");
 
-  const jwtClaims = decodeJwtClaims(session.access_token);
-  if (!jwtClaims?.tenant_id) redirect("/setup");
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: jwtClaims.tenant_id },
+      include: { socialLinks: true },
+    });
+    if (!tenant) redirect("/setup");
 
-  const tenant = await prisma.tenant.findUnique({
-    where: { id: jwtClaims.tenant_id },
-    include: { socialLinks: true },
-  });
+    const tenantData: TenantProfile = {
+      ...serializeTenant(tenant),
+      defaultConsultationFee: tenant.defaultConsultationFee ? Number(tenant.defaultConsultationFee) : null,
+    };
 
-  if (!tenant) redirect("/setup");
-
-  const tenantData: TenantProfile = {
-    ...serializeTenant(tenant),
-    defaultConsultationFee: tenant.defaultConsultationFee ? Number(tenant.defaultConsultationFee) : null,
-  };
-  const isAdmin = jwtClaims.user_role === "ADMIN";
-
-  return <ProfileForm initialData={tenantData} isAdmin={isAdmin} />;
+    return <ProfileForm initialData={tenantData} isAdmin={jwtClaims.user_role === "ADMIN"} />;
+  } catch {
+    redirect("/setup");
+  }
 }
