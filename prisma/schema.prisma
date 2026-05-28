@@ -19,6 +19,7 @@ model Tenant {
   address   String?
   latitude  Float?
   longitude Float?
+  defaultConsultationFee Decimal?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 

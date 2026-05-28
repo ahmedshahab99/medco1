@@ -49,3 +49,27 @@ export async function updateProfile(formData: FormData) {
     return { error: "حدث خطأ أثناء تحديث الملف الشخصي." };
   }
 }
+
+export async function updateFees(tenantId: string, fee: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "يرجى تسجيل الدخول أولاً." };
+
+  const actor = await prisma.profile.findUnique({ where: { id: user.id } });
+  if (!actor?.tenantId || actor.tenantId !== tenantId) return { error: "غير مصرح" };
+  if (actor.role !== "ADMIN") return { error: "فقط المدير يمكنه تعديل الكشفية" };
+
+  const amount = fee ? parseFloat(fee) : null;
+  if (amount !== null && (isNaN(amount) || amount <= 0)) return { error: "يرجى إدخال مبلغ صحيح" };
+
+  try {
+    await prisma.tenant.update({
+      where: { id: tenantId },
+      data: { defaultConsultationFee: amount },
+    });
+    revalidatePath("/dashboard/account");
+    return { success: true };
+  } catch {
+    return { error: "حدث خطأ أثناء تحديث الكشفية." };
+  }
+}
