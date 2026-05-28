@@ -26,23 +26,33 @@ function serializeTenant(tenant: any): TenantProfile {
 }
 
 export default async function ProfilePage() {
-  const profile = await requireAuth();
+  let profile;
+  try {
+    profile = await requireAuth();
+  } catch {
+    redirect("/login");
+  }
 
-  if (!profile.tenantId) {
+  if (!profile?.tenantId) {
     redirect("/setup");
   }
 
-  const tenant = await prisma.tenant.findUnique({
-    where: { id: profile.tenantId },
-    include: { socialLinks: true },
-  });
+  try {
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: profile.tenantId },
+      include: { socialLinks: true },
+    });
 
-  if (!tenant) {
+    if (!tenant) {
+      redirect("/setup");
+    }
+
+    const tenantData = serializeTenant(tenant);
+    const isAdmin = profile.role === "ADMIN";
+
+    return <ProfileForm initialData={tenantData} isAdmin={isAdmin} />;
+  } catch (e) {
+    console.error("Profile tenant load error:", e);
     redirect("/setup");
   }
-
-  const tenantData = serializeTenant(tenant);
-  const isAdmin = profile.role === "ADMIN";
-
-  return <ProfileForm initialData={tenantData} isAdmin={isAdmin} />;
 }
