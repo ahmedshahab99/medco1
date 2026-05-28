@@ -33,6 +33,7 @@ const setupSchema = z.object({
   address: z.string().optional(),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
+  consultationFee: z.string().optional(),
 });
 
 type SetupFormData = z.infer<typeof setupSchema>;
@@ -62,6 +63,7 @@ export default function SetupWizard() {
       bio: "",
       logo: "",
       address: "",
+      consultationFee: "",
     },
   });
 
@@ -135,6 +137,7 @@ export default function SetupWizard() {
     if (data.address) formData.append("address", data.address);
     if (data.latitude) formData.append("latitude", data.latitude.toString());
     if (data.longitude) formData.append("longitude", data.longitude.toString());
+    if (data.consultationFee) formData.append("consultationFee", data.consultationFee);
 
     const result = await submitSetupWizard(formData);
 
@@ -330,6 +333,19 @@ export default function SetupWizard() {
                     setValue("latitude", lat);
                     setValue("longitude", lng);
                   }}
+                />
+              </div>
+
+              <div className="space-y-1.5 pt-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
+                  💰 الكشفية (اختياري)
+                </label>
+                <p className="text-xs text-slate-400 mb-2">سعر الكشفية الافتراضي للمواعيد (لن يظهر للمرضى)</p>
+                <input
+                  {...register("consultationFee")}
+                  type="text" inputMode="numeric" dir="ltr"
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition outline-none"
+                  placeholder="مثال: 25000"
                 />
               </div>
 
