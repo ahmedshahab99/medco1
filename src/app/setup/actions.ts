@@ -233,6 +233,7 @@ export async function submitSetupWizard(formData: FormData) {
             tenantId: newTenant.id,
             schedule: DEFAULT_SCHEDULE as unknown as Prisma.InputJsonValue,
             settings: DEFAULT_ADVANCED as unknown as Prisma.InputJsonValue,
+
           }
         })
 
