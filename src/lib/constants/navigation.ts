@@ -31,7 +31,7 @@ export const navigationGroups: NavGroup[] = [
     items: [
       { title: "الصفحة الشخصية", href: "/dashboard/profile", icon: Globe },
       { title: "الخدمات", href: "/dashboard/services", icon: Star },
-      { title: "التقييمات", href: "/dashboard/reviews", icon: MessageSquare },
+      { title: "التقييمات", href: "/dashboard/reviews", icon: MessageSquare, disabled: true },
     ],
   },
   {
@@ -39,14 +39,14 @@ export const navigationGroups: NavGroup[] = [
     items: [
       { title: "التقويم", href: "/dashboard/calendar", icon: Calendar },
       { title: "أوقات العمل", href: "/dashboard/availability", icon: Clock },
-      { title: "قائمة الانتظار", href: "/dashboard/waitlist", icon: Users },
+      { title: "قائمة الانتظار", href: "/dashboard/waitlist", icon: Users, disabled: true },
     ],
   },
   {
     label: "المرضى",
     items: [
       { title: "قائمة المرضى", href: "/dashboard/patients", icon: UsersRound },
-      { title: "تفاصيل المريض", href: "/dashboard/patients/details", icon: UserSquare2 },
+      { title: "تفاصيل المريض", href: "/dashboard/patients/details", icon: UserSquare2, disabled: true },
       { title: "التصنيفات", href: "/dashboard/patients/tags", icon: Tags },
     ],
   },
@@ -60,7 +60,7 @@ export const navigationGroups: NavGroup[] = [
     label: "المالية",
     items: [
       { title: "الفواتير والمدفوعات", href: "/dashboard/invoices", icon: CreditCard },
-      { title: "التقارير", href: "/dashboard/reports", icon: FileText },
+      { title: "التقارير", href: "/dashboard/reports", icon: FileText, disabled: true },
     ],
   },
   {
@@ -72,14 +72,14 @@ export const navigationGroups: NavGroup[] = [
   {
     label: "التحليلات",
     items: [
-      { title: "إحصاءات الإيرادات", href: "/dashboard/analytics/revenue", icon: PieChart },
+      { title: "إحصاءات الإيرادات", href: "/dashboard/analytics/revenue", icon: PieChart, disabled: true },
     ],
   },
   {
     label: "الإعدادات",
     items: [
       { title: "حسابي", href: "/dashboard/account", icon: User },
-      { title: "الملف الشخصي والهوية", href: "/dashboard/settings/branding", icon: Palette },
+      { title: "الملف الشخصي والهوية", href: "/dashboard/settings/branding", icon: Palette, disabled: true },
       { title: "المستخدمين والصلاحيات", href: "/dashboard/settings/users", icon: ShieldCheck },
     ],
   },
