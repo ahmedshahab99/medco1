@@ -80,6 +80,7 @@ export default function BookingForm({
       notes,
       doctorId,
       startTime,
+      paymentMethod: "IN_PERSON",
     });
 
     if (result.success) {
@@ -198,6 +199,16 @@ export default function BookingForm({
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
           />
+        </div>
+
+        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-start gap-3">
+          <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center shrink-0 mt-0.5">
+            <span className="text-emerald-600 text-sm">💰</span>
+          </div>
+          <div>
+            <p className="text-sm font-bold text-emerald-800">الدفع حضوري</p>
+            <p className="text-xs text-emerald-600 mt-0.5">سيتم الدفع عند وصولك إلى العيادة</p>
+          </div>
         </div>
 
         <div className="pt-4 mt-2">

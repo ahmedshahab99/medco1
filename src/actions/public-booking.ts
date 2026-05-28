@@ -16,6 +16,7 @@ const publicBookingSchema = z.object({
   notes: z.string().optional(),
   doctorId: z.string().min(1, "الطبيب مطلوب"),
   startTime: z.string().min(1, "وقت الموعد مطلوب"),
+  paymentMethod: z.enum(["IN_PERSON"]).default("IN_PERSON"),
 });
 
 export interface PublicClinicData {
@@ -349,6 +350,12 @@ export async function createPublicAppointment(
     });
   }
 
+  // Get clinic's default consultation fee (private, not shown to patients)
+  const tenantWithFee = await prisma.tenant.findUnique({
+    where: { id: tenant.id },
+    select: { defaultConsultationFee: true },
+  });
+
   const appointment = await prisma.appointment.create({
     data: {
       tenantId: tenant.id,
@@ -359,6 +366,8 @@ export async function createPublicAppointment(
       endTime: endDate,
       notes: notes || undefined,
       status: "SCHEDULED",
+      consultationFee: tenantWithFee?.defaultConsultationFee ?? undefined,
+      paymentStatus: "PENDING",
     },
   });
 
