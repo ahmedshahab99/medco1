@@ -55,8 +55,8 @@ export default function BookingModal({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && resetAndClose()}>
       <DialogContent
-        className="max-h-[90vh] sm:max-h-[85vh] overflow-y-auto p-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-        showCloseButton
+        className="max-h-[90vh] sm:max-h-[85vh] overflow-y-auto p-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] font-sans"
+        showCloseButton 
       >
         <DialogHeader className="px-6 pt-4 pb-2 border-b sticky top-0 bg-popover z-10 rounded-t-xl">
           {step < 4 && (

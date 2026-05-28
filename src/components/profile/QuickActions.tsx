@@ -21,7 +21,6 @@ interface SocialLink {
 interface QuickActionsProps {
   clinicName: string;
   phone: string | null;
-  address: string | null;
   socialLinks: SocialLink[];
 }
 
@@ -34,25 +33,24 @@ const PLATFORM_LABELS: Partial<Record<SocialPlatform, string>> = {
 export default function QuickActions({
   clinicName,
   phone,
-  address,
+  
   socialLinks,
 }: QuickActionsProps) {
   const [isBookingOpen, setIsBookingOpen] = useState(false);
 
   const whatsappLink = socialLinks.find((s) => s.platform === "WHATSAPP");
-  const googleMapsUrl = address
-    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`
-    : null;
+  
 
   return (
     <>
-      <section className="flex flex-col gap-3 mb-10">
+      <section className="flex flex-col gap-3 mb-10 px-2">
         {whatsappLink && (
-          <Button asChild variant="default" size="lg" className="h-12">
+          <Button asChild size="lg" className="h-14 w-full rounded-full shadow-sm hover:shadow-md hover:scale-[1.02] transition-all bg-[#25D366] hover:bg-[#128C7E] text-white font-medium text-base">
             <a
               href={whatsappLink.url}
               target="_blank"
               rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full"
             >
               <MessageCircle className="size-5" />
               {PLATFORM_LABELS.WHATSAPP}
@@ -61,32 +59,23 @@ export default function QuickActions({
         )}
 
         {phone && (
-          <Button asChild variant="outline" size="lg" className="h-12">
-            <a href={`tel:${phone}`}>
+          <Button asChild variant="outline" size="lg" className="h-14 w-full rounded-full shadow-sm hover:shadow-md hover:scale-[1.02] transition-all text-base bg-background/80 backdrop-blur-sm">
+            <a href={`tel:${phone}`} className="flex items-center justify-center gap-2 w-full">
               <Phone className="size-5" />
               اتصال
             </a>
           </Button>
         )}
 
-        {googleMapsUrl && (
-          <Button asChild variant="outline" size="lg" className="h-12">
-            <a href={googleMapsUrl} target="_blank" rel="noopener noreferrer">
-              <MapPin className="size-5" />
-              الاتجاهات
-            </a>
-          </Button>
-        )}
-
-        <Separator className="my-1" />
+        <Separator className="my-2 opacity-50" />
 
         <Button
           variant="default"
           size="lg"
-          className="h-12"
+          className="h-14 w-full rounded-full shadow-sm hover:shadow-md hover:scale-[1.02] transition-all text-base bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
           onClick={() => setIsBookingOpen(true)}
         >
-          <Calendar className="size-5" />
+          <Calendar className="size-5 me-2" />
           حجز موعد
         </Button>
       </section>

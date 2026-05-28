@@ -1,6 +1,12 @@
 import { Button } from "@/components/ui/Button";
 import { Separator } from "@/components/ui/Separator";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/Tooltip";
+import {
   MessageCircle,
   Facebook,
   Instagram,
@@ -32,34 +38,54 @@ const PLATFORM_ICONS: Record<SocialPlatform, typeof Globe> = {
   YOUTUBE: Youtube,
 };
 
+const PLATFORM_LABELS: Record<SocialPlatform, string> = {
+  WHATSAPP: "واتساب",
+  FACEBOOK: "فيسبوك",
+  INSTAGRAM: "انستغرام",
+  TIKTOK: "تيك توك",
+  X: "إكس (تويتر)",
+  LINKEDIN: "لينكد إن",
+  YOUTUBE: "يوتيوب",
+};
+
 export default function SocialFooter({ socialLinks }: SocialFooterProps) {
   if (socialLinks.length === 0) return null;
 
   return (
     <footer className="flex flex-col items-center gap-4 pt-6 pb-12">
       <Separator />
-      <div className="flex justify-center items-center gap-4">
-        {socialLinks.map((link) => {
-          const Icon = PLATFORM_ICONS[link.platform] || Globe;
-          return (
-            <Button
-              key={link.id}
-              asChild
-              variant="ghost"
-              size="icon"
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <a
-                href={link.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={link.platform}
-              >
-                <Icon size={20} />
-              </a>
-            </Button>
-          );
-        })}
+      <div className="flex justify-center items-center gap-4 flex-wrap">
+        <TooltipProvider>
+          {socialLinks.map((link) => {
+            const Icon = PLATFORM_ICONS[link.platform] || Globe;
+            const label = PLATFORM_LABELS[link.platform] || link.platform;
+            
+            return (
+              <Tooltip key={link.id}>
+                <TooltipTrigger asChild>
+                  <Button
+                    asChild
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-full size-12 transition-all hover:scale-110 hover:bg-accent hover:text-accent-foreground"
+                  >
+                    <a
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={label}
+                    >
+                      <Icon className="size-6" />
+                    </a>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{label}</p>
+                </TooltipContent>
+              </Tooltip>
+            );
+          })}
+        </TooltipProvider>
       </div>
     </footer>
   );

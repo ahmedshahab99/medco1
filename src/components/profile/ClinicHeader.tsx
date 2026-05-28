@@ -16,9 +16,9 @@ export default function ClinicHeader({
   address,
 }: ClinicHeaderProps) {
   return (
-    <header className="flex flex-col items-center text-center mb-10">
-      <div className="mb-5">
-        <Avatar size="lg" className="size-28 ring-4 ring-primary/10">
+    <header className="flex flex-col items-center text-center mb-6">
+      <div className="mb-4">
+        <Avatar className="size-28 ring-2 ring-primary/10 shadow-sm">
           {logo ? (
             <AvatarImage src={logo} alt={name} />
           ) : null}
@@ -27,14 +27,14 @@ export default function ClinicHeader({
           </AvatarFallback>
         </Avatar>
       </div>
-      <h1 className="text-2xl font-bold tracking-tight mb-1">{name}</h1>
+      <h1 className="text-xl sm:text-2xl font-bold tracking-tight mb-1">{name}</h1>
       {specialty && (
         <Badge variant="secondary" className="mb-2">
           {specialty}
         </Badge>
       )}
       {address && (
-        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+        <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-1">
           <MapPin size={14} />
           <span>{address}</span>
         </div>
