@@ -56,10 +56,26 @@ export async function PATCH(
 
   const data = parseResult.data;
 
+  // If marking as paid, create a transaction
+  if (data.paymentStatus === "PAID" && existing.paymentStatus !== "PAID" && existing.consultationFee) {
+    await prisma.transaction.create({
+      data: {
+        tenantId: actor.tenantId,
+        type: "INCOME",
+        category: "CONSULTATION",
+        amount: Number(existing.consultationFee),
+        description: "الكشفية",
+        date: new Date(),
+        patientId: existing.patientId,
+      },
+    });
+  }
+
   const updated = await prisma.appointment.update({
     where: { id },
     data: {
       ...(data.status && { status: data.status }),
+      ...(data.paymentStatus && { paymentStatus: data.paymentStatus }),
       ...(data.startTime && { startTime: new Date(data.startTime) }),
       ...(data.endTime && { endTime: new Date(data.endTime) }),
       ...(data.notes !== undefined && { notes: data.notes }),
@@ -91,6 +107,8 @@ export async function PATCH(
     notes: updated.notes,
     caseId: updated.caseId,
     caseName: updated.case?.title ?? null,
+    consultationFee: updated.consultationFee ? Number(updated.consultationFee) : null,
+    paymentStatus: updated.paymentStatus,
     createdAt: updated.createdAt.toISOString(),
     updatedAt: updated.updatedAt.toISOString(),
   };

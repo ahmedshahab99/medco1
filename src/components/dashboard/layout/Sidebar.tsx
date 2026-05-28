@@ -4,12 +4,11 @@ import React, { useMemo } from "react";
 import { navigationGroups } from "../../../lib/constants/navigation";
 import { SidebarItem } from "./SidebarItem";
 import { 
-  Activity, Menu, ChevronLeft, User, FileText, 
-  Files, Calendar, Briefcase, CreditCard, Bell 
+  Activity, ChevronLeft, ChevronRight, User, FileText, 
+  Files, Calendar, Briefcase, CreditCard, Bell, PanelLeftClose, PanelLeft
 } from "lucide-react";
-import { Button } from "../../ui/Button";
-import { useParams, usePathname } from "next/navigation";
-import { usePatient, usePatients } from "@/hooks/use-patients";
+import { useParams } from "next/navigation";
+import { usePatient } from "@/hooks/use-patients";
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -20,17 +19,9 @@ interface SidebarProps {
 
 export function Sidebar({ isCollapsed, onToggleCollapse, isMobileOpen, onCloseMobile }: SidebarProps) {
   const params = useParams();
-  const pathname = usePathname();
   const patientId = params.id as string;
-
   const { data: patient } = usePatient(patientId);
 
-  // const patient = useMemo(() => {
-  //   if (!patientId || !patientsData) return null;
-  //   return patientsData.find((p) => p.id === patientId);
-  // }, [patientId, patientsData]);
-
-  // Specific links for the patient context
   const patientLinks = useMemo(() => {
     if (!patientId) return [];
     const baseUrl = `/dashboard/patients/${patientId}`;
@@ -47,102 +38,75 @@ export function Sidebar({ isCollapsed, onToggleCollapse, isMobileOpen, onCloseMo
 
   return (
     <>
-      {/* Mobile Backdrop */}
       {isMobileOpen && (
-        <div 
-          className="fixed inset-0 bg-slate-900/50 z-40 lg:hidden"
-          onClick={onCloseMobile}
-        />
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden" onClick={onCloseMobile} />
       )}
 
-      {/* Sidebar */}
-      <aside 
-        className={`fixed lg:sticky top-0 bottom-0 z-50 flex flex-col bg-white border-l border-slate-200 transition-all duration-300 h-screen
-          ${isCollapsed ? "w-20" : "w-72"}
-          ${isMobileOpen ? "translate-x-0 right-0" : "translate-x-full right-0 lg:translate-x-0"}
-        `}
-      >
+      <aside className={`fixed lg:sticky top-0 bottom-0 z-50 flex flex-col bg-gradient-to-b from-slate-900 to-slate-800 transition-all duration-300 h-screen
+        ${isCollapsed ? "w-[72px]" : "w-64"}
+        ${isMobileOpen ? "translate-x-0 right-0" : "-translate-x-full right-0 lg:translate-x-0"}
+      `}>
         {/* Header */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-slate-100 flex-shrink-0">
+        <div className="h-16 flex items-center justify-between px-4 border-b border-white/10 flex-shrink-0">
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0">
-              <Activity className="text-white w-6 h-6" />
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-emerald-500/20">
+              <Activity className="text-white w-5 h-5" />
             </div>
             {!isCollapsed && (
-              <span className="text-2xl font-black bg-gradient-to-l from-blue-700 to-blue-400 bg-clip-text text-transparent truncate">
-                ميدكو
-              </span>
+              <span className="text-lg font-black text-white tracking-tight">ميدكو</span>
             )}
           </div>
-          
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={onToggleCollapse}
-            className="hidden lg:flex text-slate-500 hover:text-slate-900"
-          >
-            <Menu className="w-5 h-5" />
-          </Button>
+          <button onClick={onToggleCollapse} className="hidden lg:flex items-center justify-center w-7 h-7 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-all">
+            {isCollapsed ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+          </button>
         </div>
 
-        {/* Navigation Wrapper */}
-        <div className="flex-1 overflow-y-auto py-4 px-3 custom-scrollbar">
-          <div className="flex flex-col gap-6">
-            {/* Patient Specific Context */}
-            
+        {/* Navigation */}
+        <div className="flex-1 overflow-y-auto py-4 px-3 custom-scrollbar scrollbar-thin">
+          <div className="flex flex-col gap-5">
+
+            {/* Patient Context */}
             {patient && (
-              <div className="mb-2 animate-in slide-in-from-right-4 duration-300">
+              <div>
                 {!isCollapsed && (
-                  <div className="px-3 mb-4">
-                    <button 
-                      onClick={() => window.location.href = "/dashboard/patients"}
-                      className="flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors uppercase tracking-wider mb-3"
-                    >
-                      <ChevronLeft className="w-3 h-3" />
+                  <div className="px-2 mb-3">
+                    <button onClick={() => window.location.href = "/dashboard/patients"}
+                      className="flex items-center gap-1 text-xs font-medium text-emerald-400 hover:text-emerald-300 transition-colors mb-3">
+                      <ChevronRight className="w-3 h-3" />
                       العودة للمرضى
                     </button>
-                    <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100">
-                      <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm shrink-0">
-                        {patient.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
+                    <div className="flex items-center gap-3 p-2.5 bg-white/5 rounded-xl border border-white/10">
+                      <div className="w-9 h-9 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-sm shrink-0">
+                        {patient.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2)}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-bold text-slate-900 truncate">{patient.name}</p>
-                        <p className="text-[10px] text-slate-500 font-medium">#{patient.id}</p>
+                        <p className="text-sm font-bold text-white truncate">{patient.name}</p>
+                        <p className="text-[10px] text-white/40">#{patient.id.slice(0, 8)}</p>
                       </div>
                     </div>
                   </div>
                 )}
-                
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-0.5">
                   {patientLinks.map((item, idx) => (
-                    <SidebarItem 
-                      key={idx} 
-                      item={item} 
-                      isCollapsed={isCollapsed} 
-                    />
+                    <SidebarItem key={idx} item={item} isCollapsed={isCollapsed} dark />
                   ))}
                 </div>
-                
-                {!isCollapsed && <div className="mt-6 border-t border-slate-100 mx-3" />}
+                {!isCollapsed && <div className="mt-4 border-t border-white/5 mx-2" />}
               </div>
             )}
 
-            {/* Main Navigation */}
+            {/* Navigation Groups */}
             {navigationGroups.map((group, idx) => (
-              <div key={idx} className={patient ? "opacity-60" : ""}>
+              <div key={idx} className={patient ? "opacity-50" : ""}>
                 {!isCollapsed && (
-                  <h4 className="px-3 mb-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  <h4 className="px-3 mb-2 text-[11px] font-bold text-white/30 uppercase tracking-widest">
                     {group.label}
                   </h4>
                 )}
-                {isCollapsed && <div className="h-4" />}
-                <div className="flex flex-col gap-1">
+                {isCollapsed && <div className="h-3" />}
+                <div className="flex flex-col gap-0.5">
                   {group.items.map((item, itemIdx) => (
-                    <SidebarItem 
-                      key={itemIdx} 
-                      item={item} 
-                      isCollapsed={isCollapsed} 
-                    />
+                    <SidebarItem key={itemIdx} item={item} isCollapsed={isCollapsed} dark />
                   ))}
                 </div>
               </div>
@@ -152,12 +116,10 @@ export function Sidebar({ isCollapsed, onToggleCollapse, isMobileOpen, onCloseMo
 
         {/* Footer */}
         {!isCollapsed && (
-          <div className="p-4 border-t border-slate-100 flex-shrink-0">
-            <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
-              <p className="text-sm font-bold text-slate-800">باقة العيادة الذكية</p>
-              <p className="text-xs text-slate-500 mt-1">تجديد: ١٥ أكتوبر ٢٠٢٦</p>
-              <Button size="sm" className="w-full mt-3 bg-slate-900 hover:bg-slate-800">الترقية الآن</Button>
-            </div>
+          <div className="p-3 mx-3 mb-3 bg-white/5 rounded-xl border border-white/10 flex-shrink-0">
+            <p className="text-xs font-bold text-white/80">باقة العيادة الذكية</p>
+            <p className="text-[10px] text-white/40 mt-0.5">تجديد: ١٥ أكتوبر ٢٠٢٦</p>
+            <button className="w-full mt-2 py-2 text-xs font-bold bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all">الترقية</button>
           </div>
         )}
       </aside>

@@ -2,26 +2,18 @@ import {
   Home,
   Globe,
   Star,
-  Settings,
   Calendar,
   Clock,
   Users,
   UserSquare2,
   Tags,
   MessageSquare,
-  Megaphone,
   CreditCard,
   FileText,
-  PackageSearch,
   UsersRound,
-  Calculator,
-  TrendingUp,
-  UserX,
   PieChart,
   Palette,
   ShieldCheck,
-  Receipt,
-  Briefcase,
   UserPlus,
   User
 } from "lucide-react";
@@ -62,7 +54,6 @@ export const navigationGroups: NavGroup[] = [
     label: "التواصل",
     items: [
       { title: "التذكيرات", href: "/dashboard/reminders", icon: MessageSquare },
-      { title: "الحملات الإعلانية", href: "/dashboard/campaigns", icon: Megaphone },
     ],
   },
   {
@@ -75,17 +66,12 @@ export const navigationGroups: NavGroup[] = [
   {
     label: "العمليات والإدارة",
     items: [
-      { title: "المخزون", href: "/dashboard/inventory", icon: PackageSearch },
-      { title: "طاقم العمل", href: "/dashboard/staff", icon: Briefcase },
       { title: "الدعوات", href: "/dashboard/invite", icon: UserPlus },
-      { title: "الحضور والرواتب", href: "/dashboard/payroll", icon: Calculator },
     ],
   },
   {
     label: "التحليلات",
     items: [
-      { title: "اتجاهات المواعيد", href: "/dashboard/analytics/trends", icon: TrendingUp },
-      { title: "معدل الغياب", href: "/dashboard/analytics/no-shows", icon: UserX },
       { title: "إحصاءات الإيرادات", href: "/dashboard/analytics/revenue", icon: PieChart },
     ],
   },
@@ -95,7 +81,6 @@ export const navigationGroups: NavGroup[] = [
       { title: "حسابي", href: "/dashboard/account", icon: User },
       { title: "الملف الشخصي والهوية", href: "/dashboard/settings/branding", icon: Palette },
       { title: "المستخدمين والصلاحيات", href: "/dashboard/settings/users", icon: ShieldCheck },
-      { title: "الاشتراك والفواتير", href: "/dashboard/settings/billing", icon: Receipt },
     ],
   },
 ];

@@ -63,6 +63,7 @@ export const appointmentPatchSchema = z.object({
       "NO_SHOW",
     ])
     .optional(),
+  paymentStatus: z.enum(["PENDING", "PAID"]).optional(),
   startTime: z.string().datetime().optional(),
   endTime: z.string().datetime().optional(),
   notes: z.string().optional(),

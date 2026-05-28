@@ -63,6 +63,8 @@ export async function GET(request: Request) {
     notes: appt.notes,
     caseId: appt.caseId,
     caseName: appt.case?.title ?? null,
+    consultationFee: appt.consultationFee ? Number(appt.consultationFee) : null,
+    paymentStatus: appt.paymentStatus,
     createdAt: appt.createdAt.toISOString(),
     updatedAt: appt.updatedAt.toISOString(),
   }));
@@ -168,6 +170,8 @@ export async function POST(request: Request) {
     caseId = newCase.id;
   }
 
+  const consultationFee = data.consultationFee ? parseFloat(data.consultationFee) : undefined;
+
   const appointment = await prisma.appointment.create({
     data: {
       tenantId: actor.tenantId,
@@ -179,6 +183,8 @@ export async function POST(request: Request) {
       endTime: new Date(data.endTime),
       notes: data.notes,
       status: "SCHEDULED",
+      consultationFee,
+      paymentStatus: "PENDING",
     },
     include: {
       patient: true,
@@ -204,24 +210,11 @@ export async function POST(request: Request) {
     notes: appointment.notes,
     caseId: appointment.caseId,
     caseName: appointment.case?.title ?? null,
+    consultationFee: appointment.consultationFee ? Number(appointment.consultationFee) : null,
+    paymentStatus: appointment.paymentStatus,
     createdAt: appointment.createdAt.toISOString(),
     updatedAt: appointment.updatedAt.toISOString(),
   };
-
-  // ─── TRANSACTION CREATION (consultation fee) ───
-  if (data.consultationFee) {
-    await prisma.transaction.create({
-      data: {
-        tenantId: actor.tenantId,
-        type: "INCOME",
-        category: "CONSULTATION",
-        amount: parseFloat(data.consultationFee),
-        description: "الكشفية",
-        date: new Date(data.startTime),
-        patientId,
-      },
-    });
-  }
 
   return NextResponse.json(mapped, { status: 201 });
 }

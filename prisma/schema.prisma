@@ -143,21 +143,23 @@ model ClinicAvailability {
 }
 
 model Appointment {
-  id        String            @id @default(uuid())
-  tenantId  String
-  tenant    Tenant            @relation(fields: [tenantId], references: [id])
-  patientId String
-  patient   Patient           @relation(fields: [patientId], references: [id])
-  doctorId  String
-  doctor    Profile           @relation("DoctorAppointments", fields: [doctorId], references: [id])
-  serviceId String
-  service   Service           @relation(fields: [serviceId], references: [id])
-  caseId    String?
-  case      Case?             @relation(fields: [caseId], references: [id])
-  startTime DateTime
-  endTime   DateTime
-  status    AppointmentStatus @default(SCHEDULED)
-  notes     String?
+  id               String            @id @default(uuid())
+  tenantId         String
+  tenant           Tenant            @relation(fields: [tenantId], references: [id])
+  patientId        String
+  patient          Patient           @relation(fields: [patientId], references: [id])
+  doctorId         String
+  doctor           Profile           @relation("DoctorAppointments", fields: [doctorId], references: [id])
+  serviceId        String
+  service          Service           @relation(fields: [serviceId], references: [id])
+  caseId           String?
+  case             Case?             @relation(fields: [caseId], references: [id])
+  startTime        DateTime
+  endTime          DateTime
+  status           AppointmentStatus @default(SCHEDULED)
+  notes            String?
+  consultationFee  Decimal?
+  paymentStatus    PaymentStatus     @default(PENDING)
 
   medicalNotes MedicalNote[]
 
@@ -172,6 +174,11 @@ enum AppointmentStatus {
   COMPLETED
   CANCELLED
   NO_SHOW
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
 }
 
 model MedicalNote {

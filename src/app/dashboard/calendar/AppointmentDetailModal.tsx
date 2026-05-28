@@ -12,6 +12,8 @@ import {
   RotateCcw,
   Trash2,
   User,
+  DollarSign,
+  Wallet,
 } from "lucide-react";
 import { format } from "date-fns";
 import { arSA } from "date-fns/locale/ar-SA";
@@ -29,6 +31,7 @@ interface AppointmentDetailModalProps {
   isUpdating?: boolean;
   isDeleting?: boolean;
   onStatusChange: (id: string, status: AppointmentPatchInput["status"]) => void;
+  onMarkAsPaid?: (id: string) => void;
   onDelete: (id: string) => void;
   onBookAnother: (appt: CalendarAppointment) => void;
   onReschedule: (appt: CalendarAppointment) => void;
@@ -43,6 +46,7 @@ export default function AppointmentDetailModal({
   onDelete,
   onBookAnother,
   onReschedule,
+  onMarkAsPaid,
 }: AppointmentDetailModalProps) {
   const [panel, setPanel] = useState<"none" | "payment" | "notes" | "reschedule">("none");
   const [isDeleteOpen, setDeleteOpen] = useState(false);
@@ -164,21 +168,34 @@ export default function AppointmentDetailModal({
               </Button>
             </div>
 
-            <div className="pt-2">
-              <Button
-                variant="outline"
-                className="w-full justify-between items-center text-slate-700 border-slate-200 h-11"
-                onClick={() => setPanel((p) => (p === "payment" ? "none" : "payment"))}
-              >
-                <span className="flex items-center gap-2">إضافة دفعة (فاتورة)</span>
-                <CreditCard className="w-4 h-4 text-slate-400" />
-              </Button>
-              {panel === "payment" && (
-                <div className="mt-2 p-4 bg-slate-50 rounded-xl border border-slate-200 animate-in slide-in-from-top-2 duration-200">
-                  <p className="text-sm text-slate-500">قيد التطوير</p>
+            {appointment.consultationFee && (
+              <div className="bg-gradient-to-r from-emerald-50 to-emerald-50/50 rounded-xl p-4 border border-emerald-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-bold text-emerald-800 flex items-center gap-1.5">
+                    <DollarSign className="w-4 h-4" />
+                    الكشفية
+                  </span>
+                  <span className="text-lg font-extrabold text-emerald-700">
+                    {Number(appointment.consultationFee).toLocaleString("ar-IQ")} د.ع
+                  </span>
                 </div>
-              )}
-            </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-emerald-600 font-medium flex items-center gap-1">
+                    <Wallet className="w-3.5 h-3.5" />
+                    {appointment.paymentStatus === "PAID" ? "تم الدفع" : "بانتظار الدفع"}
+                  </span>
+                  {appointment.paymentStatus !== "PAID" && (
+                    <button
+                      onClick={() => onMarkAsPaid?.(appointment.id)}
+                      disabled={isUpdating}
+                      className="px-3 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-all disabled:opacity-50 shadow-sm shadow-emerald-200"
+                    >
+                      تأكيد الدفع
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div>
               <Button
