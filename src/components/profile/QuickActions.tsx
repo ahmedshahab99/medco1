@@ -3,7 +3,6 @@
 import { useState } from "react";
 import {
   MessageCircle,
-  MapPin,
   Phone,
   Calendar,
 } from "lucide-react";
@@ -19,8 +18,9 @@ interface SocialLink {
 }
 
 interface QuickActionsProps {
-  clinicName: string;
+  slug: string;
   phone: string | null;
+  doctorCount: number;
   socialLinks: SocialLink[];
 }
 
@@ -31,15 +31,14 @@ const PLATFORM_LABELS: Partial<Record<SocialPlatform, string>> = {
 };
 
 export default function QuickActions({
-  clinicName,
+  slug,
   phone,
-  
+  doctorCount,
   socialLinks,
 }: QuickActionsProps) {
   const [isBookingOpen, setIsBookingOpen] = useState(false);
 
   const whatsappLink = socialLinks.find((s) => s.platform === "WHATSAPP");
-  
 
   return (
     <>
@@ -72,10 +71,11 @@ export default function QuickActions({
         <Button
           variant="default"
           size="lg"
-          className="h-14 w-full rounded-full shadow-sm hover:shadow-md hover:scale-[1.02] transition-all text-base bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
+          className="h-12 rounded-full"
+          disabled={doctorCount === 0}
           onClick={() => setIsBookingOpen(true)}
         >
-          <Calendar className="size-5 me-2" />
+          <Calendar className="size-5" />
           حجز موعد
         </Button>
       </section>
@@ -83,14 +83,8 @@ export default function QuickActions({
       <BookingModal
         isOpen={isBookingOpen}
         onClose={() => setIsBookingOpen(false)}
-        doctorName={clinicName}
-        timeSlots={TIME_SLOTS}
+        slug={slug}
       />
     </>
   );
 }
-
-const TIME_SLOTS = [
-  "09:00 ص", "09:30 ص", "10:00 ص", "11:00 ص",
-  "02:00 م", "02:30 م", "03:00 م", "04:30 م",
-];

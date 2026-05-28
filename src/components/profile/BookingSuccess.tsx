@@ -2,6 +2,7 @@
 
 import { CheckCircle2, Calendar as CalendarIcon, Clock } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { formatTime12 } from "@/lib/date-utils";
 
 interface BookingSuccessProps {
   onClose: () => void;
@@ -39,7 +40,7 @@ export default function BookingSuccess({
         </div>
         <div className="flex items-center gap-3">
           <Clock size={18} className="text-muted-foreground" />
-          <p className="font-semibold">{time}</p>
+          <p className="font-semibold">{time ? formatTime12(time) : ""}</p>
         </div>
       </div>
 

@@ -8,6 +8,7 @@ import ClinicBio from "@/components/profile/ClinicBio";
 import QuickActions from "@/components/profile/QuickActions";
 import ClinicMap from "@/components/profile/ClinicMap";
 import SocialFooter from "@/components/profile/SocialFooter";
+import DoctorsList from "@/components/profile/DoctorsList";
 import type { SocialPlatform } from "@prisma/client";
 
 interface PageProps {
@@ -49,6 +50,10 @@ export default async function ClinicProfilePage({ params }: PageProps) {
     where: { slug },
     include: {
       socialLinks: true,
+      profiles: {
+        where: { role: { in: ["DOCTOR", "ADMIN"] } },
+        select: { id: true, firstName: true, lastName: true, role: true },
+      },
     },
   });
 
@@ -68,10 +73,12 @@ export default async function ClinicProfilePage({ params }: PageProps) {
 
         {tenant.bio && <ClinicBio bio={tenant.bio} />}
 
+        
+
         <QuickActions
-          clinicName={tenant.name}
+          slug={slug}
           phone={tenant.phone}
-          
+          doctorCount={tenant.profiles.length}
           socialLinks={
             tenant.socialLinks.map((s) => ({
               id: s.id,
