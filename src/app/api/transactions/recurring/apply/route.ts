@@ -39,43 +39,49 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "لا توجد مصروفات ثابتة نشطة" }, { status: 400 });
   }
 
-  const created: Array<{ id: string; description: string | null; amount: number }> = [];
+  const results: Array<{ id: string; description: string | null; amount: number; action: string }> = [];
 
   for (const expense of recurringExpenses) {
     const transactionDate = new Date(year, month - 1, expense.dayOfMonth);
 
+    // Find existing transaction for this month by description + category
     const existing = await prisma.transaction.findFirst({
       where: {
         tenantId: actor.tenantId,
         description: expense.description,
+        category: expense.category,
         date: {
           gte: new Date(year, month - 1, 1),
           lte: new Date(year, month, 0, 23, 59, 59),
         },
-        amount: expense.amount,
-        category: expense.category,
       },
     });
 
-    if (existing) continue;
-
-    const tx = await prisma.transaction.create({
-      data: {
-        tenantId: actor.tenantId,
-        type: "EXPENSE",
-        category: expense.category,
-        amount: expense.amount,
-        description: expense.description,
-        date: transactionDate,
-      },
-    });
-
-    created.push({ id: tx.id, description: tx.description, amount: Number(tx.amount) });
+    if (existing) {
+      // Update existing transaction with new amount/date
+      const updated = await prisma.transaction.update({
+        where: { id: existing.id },
+        data: { amount: expense.amount, date: transactionDate },
+      });
+      results.push({ id: updated.id, description: updated.description, amount: Number(updated.amount), action: "updated" });
+    } else {
+      const tx = await prisma.transaction.create({
+        data: {
+          tenantId: actor.tenantId,
+          type: "EXPENSE",
+          category: expense.category,
+          amount: expense.amount,
+          description: expense.description,
+          date: transactionDate,
+        },
+      });
+      results.push({ id: tx.id, description: tx.description, amount: Number(tx.amount), action: "created" });
+    }
   }
 
   return NextResponse.json({
-    created,
-    count: created.length,
+    results,
+    count: results.length,
     total: recurringExpenses.length,
   });
 }

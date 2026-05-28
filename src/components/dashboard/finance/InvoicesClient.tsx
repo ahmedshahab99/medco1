@@ -183,6 +183,24 @@ export function InvoicesClient({
       setTransactions(data.transactions);
       setSummary(data.summary);
     }
+    // Auto-apply recurring expenses for this month
+    fetch("/api/transactions/recurring/apply", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ month: m, year: y }),
+    }).then(async (applyRes) => {
+      if (applyRes.ok) {
+        const applyData = await applyRes.json();
+        if (applyData.count > 0) {
+          const res2 = await fetch(`/api/transactions?month=${m}&year=${y}`);
+          if (res2.ok) {
+            const data2 = await res2.json();
+            setTransactions(data2.transactions);
+            setSummary(data2.summary);
+          }
+        }
+      }
+    }).catch(() => {});
   }
 
   async function fetchRecurring() {
@@ -808,11 +826,10 @@ function RecurringView({
           <p className="text-xs text-slate-400">مصروفات تتكرر شهرياً (إيجار، رواتب، إنترنت...)</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={handleApplyRecurring} disabled={applyingRecurring}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-all shadow-lg shadow-indigo-200">
-            {applyingRecurring ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-            تطبيق للشهر الحالي ({monthName})
-          </button>
+          <span className="text-xs text-slate-400 bg-slate-100 px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+            <Check className="w-3.5 h-3.5 text-emerald-500" />
+            تلقائي
+          </span>
           <button onClick={() => { resetRecurringForm(); setShowRecurringForm(true); }}
             className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-all shadow-lg shadow-emerald-200">
             <Plus className="w-4 h-4" />إضافة مصروف ثابت
