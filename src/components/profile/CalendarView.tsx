@@ -3,14 +3,21 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { getDayOfWeekKey } from "@/lib/date-utils";
 
 interface CalendarViewProps {
   onSelectDate: (date: Date) => void;
+  enabledDays: string[];
+  bookingWindow: number;
 }
 
 const WEEKDAYS = ["أحد", "إثنين", "ثلاثاء", "أربعاء", "خميس", "جمعة", "سبت"];
 
-export default function CalendarView({ onSelectDate }: CalendarViewProps) {
+export default function CalendarView({
+  onSelectDate,
+  enabledDays,
+  bookingWindow,
+}: CalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const daysInMonth = new Date(
@@ -38,6 +45,13 @@ export default function CalendarView({ onSelectDate }: CalendarViewProps) {
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+
+  const maxDate = new Date();
+  maxDate.setDate(maxDate.getDate() + bookingWindow);
+
+  function toDateKey(y: number, m: number, d: number): string {
+    return `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+  }
 
   return (
     <div className="w-full">
@@ -80,8 +94,17 @@ export default function CalendarView({ onSelectDate }: CalendarViewProps) {
             day
           );
           const isPast = date < today;
-          const isUnavailable = date.getDay() === 5 || day % 5 === 0;
-          const disabled = isPast || isUnavailable;
+          const isBeyondWindow = date > maxDate;
+
+          const dateKey = toDateKey(
+            currentDate.getFullYear(),
+            currentDate.getMonth(),
+            day
+          );
+          const dayOfWeekKey = getDayOfWeekKey(dateKey);
+          const isDayDisabled = !enabledDays.includes(dayOfWeekKey);
+
+          const disabled = isPast || isBeyondWindow || isDayDisabled;
           const isToday = date.getTime() === today.getTime();
 
           if (disabled) {
