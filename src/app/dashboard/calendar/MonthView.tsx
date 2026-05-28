@@ -82,9 +82,14 @@ export default function MonthView({ appointments, currentDate, onChangeDate, onS
                 <div className="hidden md:flex flex-col gap-1">
                   {dayAppts.slice(0, 3).map((appt) => (
                     <div key={appt.id} onClick={(e) => { e.stopPropagation(); const orig = appointments.find((a) => a.id === appt.id); if (orig) onSelectAppt(orig); }}
-                      className="flex items-center gap-1 px-1.5 py-1 rounded-md bg-emerald-50 border border-emerald-100 cursor-pointer hover:bg-emerald-100 transition-all">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-                      <span className="text-[10px] font-medium text-emerald-800 truncate leading-tight">{appt.patientName}</span>
+                      className={`flex items-center gap-1 px-1.5 py-1 rounded-md cursor-pointer hover:brightness-95 transition-all border ${appt.paymentStatus === 'PAID' ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${appt.paymentStatus === 'PAID' ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+                      <span className="text-[10px] font-medium text-slate-700 truncate leading-tight">{appt.patientName}</span>
+                      {appt.consultationFee && (
+                        <span className={`text-[8px] font-bold px-1 rounded shrink-0 ${appt.paymentStatus === 'PAID' ? 'text-emerald-600 bg-emerald-100' : 'text-amber-600 bg-amber-100'}`}>
+                          {appt.consultationFee.toLocaleString('ar-IQ')}
+                        </span>
+                      )}
                     </div>
                   ))}
                   {dayAppts.length > 3 && (
@@ -95,7 +100,7 @@ export default function MonthView({ appointments, currentDate, onChangeDate, onS
                 {/* Mobile: dots */}
                 <div className="flex md:hidden flex-wrap gap-0.5 mt-0.5">
                   {dayAppts.slice(0, 5).map((appt) => (
-                    <div key={appt.id} className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    <div key={appt.id} className={`w-1.5 h-1.5 rounded-full ${appt.paymentStatus === 'PAID' ? 'bg-emerald-400' : 'bg-amber-400'}`} />
                   ))}
                 </div>
 
