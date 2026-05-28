@@ -2,6 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
+import prisma from "@/lib/prisma";
 import type { AuthProfile, UserRole, JwtCustomClaims } from "@/lib/types/auth";
 import { isRoleAllowed } from "@/lib/types/auth";
 
@@ -31,18 +32,54 @@ export async function getAuthState(): Promise<AuthProfile | null> {
   if (!session?.access_token) return null;
 
   const jwtClaims = decodeJwtClaims(session.access_token);
-  if (!jwtClaims?.user_role || !jwtClaims?.tenant_id) return null;
+  
+  // If JWT has claims, use them directly
+  if (jwtClaims?.user_role && jwtClaims?.tenant_id) {
+    const email = session.user.email ?? "";
+    return {
+      id: session.user.id,
+      email,
+      firstName: deriveNameFromEmail(email),
+      lastName: null,
+      role: jwtClaims.user_role,
+      tenantId: jwtClaims.tenant_id,
+    };
+  }
 
-  const email = session.user.email ?? "";
+  // Fallback: look up profile from database
+  if (session.user.id) {
+    const profile = await prisma.profile.findUnique({
+      where: { id: session.user.id },
+    });
+    if (profile?.tenantId) {
+      return {
+        id: profile.id,
+        email: profile.email,
+        firstName: profile.firstName ?? deriveNameFromEmail(profile.email),
+        lastName: profile.lastName ?? null,
+        role: profile.role,
+        tenantId: profile.tenantId,
+      };
+    }
+    // Try by email
+    if (session.user.email) {
+      const profileByEmail = await prisma.profile.findUnique({
+        where: { email: session.user.email },
+      });
+      if (profileByEmail?.tenantId) {
+        return {
+          id: profileByEmail.id,
+          email: profileByEmail.email,
+          firstName: profileByEmail.firstName ?? deriveNameFromEmail(profileByEmail.email),
+          lastName: profileByEmail.lastName ?? null,
+          role: profileByEmail.role,
+          tenantId: profileByEmail.tenantId,
+        };
+      }
+    }
+  }
 
-  return {
-    id: session.user.id,
-    email,
-    firstName: deriveNameFromEmail(email),
-    lastName: null,
-    role: jwtClaims.user_role,
-    tenantId: jwtClaims.tenant_id,
-  };
+  return null;
 }
 
 export async function requireAuth(): Promise<AuthProfile> {
