@@ -23,7 +23,7 @@ export default function ClinicMap({ lat, lng, address }: ClinicMapProps) {
   const position: L.LatLng = new L.LatLng(lat, lng);
 
   return (
-    <section className="mb-10 px-2">
+    <section className="mb-10 px-2 relative z-0">
       <h2 className="text-base font-semibold mb-3 text-center text-foreground/80">الموقع على الخريطة</h2>
       <div className="w-full h-[250px] sm:h-[300px] rounded-3xl overflow-hidden border border-border shadow-sm hover:shadow-md transition-all duration-300">
         <MapContainer

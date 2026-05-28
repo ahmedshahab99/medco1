@@ -229,7 +229,6 @@ export async function getAvailableSlots(
       cursor += serviceDuration;
     }
   }
-  console.log("Available slots for", dateStr, "doctor", doctorId, ":", slots);
   return { slots };
 }
 

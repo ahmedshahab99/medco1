@@ -12,24 +12,7 @@ import { QuickSummary } from "@/components/features/availability/QuickSummary";
 import { getClinicAvailability, saveClinicAvailability } from "./actions";
 import { uid } from "@/lib/date-utils";
 import type { WeekSchedule, AdvancedSettings } from "@/components/features/availability/types";
-
-const DEFAULT_SCHEDULE: WeekSchedule = {
-  saturday:  { enabled: true,  segments: [{ id: "s1", start: "09:00", end: "17:00" }] },
-  sunday:    { enabled: true,  segments: [{ id: "s2", start: "09:00", end: "17:00" }] },
-  monday:    { enabled: true,  segments: [{ id: "s3", start: "09:00", end: "17:00" }] },
-  tuesday:   { enabled: true,  segments: [{ id: "s4", start: "09:00", end: "17:00" }] },
-  wednesday: { enabled: true,  segments: [{ id: "s5", start: "09:00", end: "17:00" }] },
-  thursday:  { enabled: true,  segments: [{ id: "s6", start: "09:00", end: "13:00" }] },
-  friday:    { enabled: false, segments: [{ id: "s7", start: "09:00", end: "17:00" }] },
-};
-
-const DEFAULT_ADVANCED: AdvancedSettings = {
-  bufferBefore:  10,
-  bufferAfter:   10,
-  maxPerDay:     20,
-  bookingWindow: 30,
-  minNotice:     2,
-};
+import { DEFAULT_SCHEDULE, DEFAULT_ADVANCED } from "@/components/features/availability/constants";
 
 export default function AvailabilityPage() {
   const [schedule, setSchedule] = useState<WeekSchedule>(DEFAULT_SCHEDULE);

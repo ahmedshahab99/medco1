@@ -67,7 +67,7 @@ model Profile {
   role      UserRole @default(DOCTOR)
 
   tenantId String?
-  tenant   Tenant? @relation(fields: [tenantId], references: [id])
+  tenant   Tenant? @relation(fields: [tenantId], references: [id], onDelete: SetNull)
 
   appointments     Appointment[]  @relation("DoctorAppointments")
   sentInvitations  Invitation[]   @relation("SentInvitations")
@@ -86,7 +86,7 @@ enum UserRole {
 model Patient {
   id          String    @id @default(uuid())
   tenantId    String
-  tenant      Tenant    @relation(fields: [tenantId], references: [id])
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   firstName   String
   lastName    String
   email       String?
@@ -119,7 +119,7 @@ enum Gender {
 model Service {
   id          String     @id @default(uuid())
   tenantId    String
-  tenant      Tenant     @relation(fields: [tenantId], references: [id])
+  tenant      Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name        String
   description String?
   duration    Int
@@ -136,7 +136,7 @@ model Service {
 model ClinicAvailability {
   id         String   @id @default(uuid())
   tenantId   String   @unique
-  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   schedule   Json
   settings   Json
   createdAt  DateTime @default(now())
@@ -144,23 +144,25 @@ model ClinicAvailability {
 }
 
 model Appointment {
-  id               String            @id @default(uuid())
-  tenantId         String
-  tenant           Tenant            @relation(fields: [tenantId], references: [id])
-  patientId        String
-  patient          Patient           @relation(fields: [patientId], references: [id])
-  doctorId         String
-  doctor           Profile           @relation("DoctorAppointments", fields: [doctorId], references: [id])
-  serviceId        String
-  service          Service           @relation(fields: [serviceId], references: [id])
-  caseId           String?
-  case             Case?             @relation(fields: [caseId], references: [id])
-  startTime        DateTime
-  endTime          DateTime
-  status           AppointmentStatus @default(SCHEDULED)
-  notes            String?
+
+  id        String            @id @default(uuid())
+  tenantId  String
+  tenant    Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patientId String
+  patient   Patient           @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctorId  String
+  doctor    Profile           @relation("DoctorAppointments", fields: [doctorId], references: [id], onDelete: Restrict)
+  serviceId String
+  service   Service           @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  caseId    String?
+  case      Case?             @relation(fields: [caseId], references: [id], onDelete: SetNull)
+  startTime DateTime
+  endTime   DateTime
+  status    AppointmentStatus @default(SCHEDULED)
+  notes     String?
   consultationFee  Decimal?
   paymentStatus    PaymentStatus     @default(PENDING)
+
 
   medicalNotes MedicalNote[]
 
@@ -185,11 +187,11 @@ enum PaymentStatus {
 model MedicalNote {
   id            String      @id @default(uuid())
   tenantId      String
-  tenant        Tenant      @relation(fields: [tenantId], references: [id])
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   appointmentId String
-  appointment   Appointment @relation(fields: [appointmentId], references: [id])
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
   patientId     String
-  patient       Patient     @relation(fields: [patientId], references: [id])
+  patient       Patient     @relation(fields: [patientId], references: [id], onDelete: Cascade)
   content       String
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
@@ -198,9 +200,9 @@ model MedicalNote {
 model PatientFile {
   id            String       @id @default(uuid())
   tenantId      String
-  tenant        Tenant       @relation(fields: [tenantId], references: [id])
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   patientId     String
-  patient       Patient      @relation(fields: [patientId], references: [id])
+  patient       Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
   appointmentId String?
   name          String
   url           String
@@ -220,7 +222,7 @@ model Invitation {
   invitedBy  String
   inviter    Profile          @relation("SentInvitations", fields: [invitedBy], references: [id], onDelete: Cascade)
   acceptedBy String?
-  acceptedProfile Profile?    @relation("AcceptedInvitations", fields: [acceptedBy], references: [id])
+  acceptedProfile Profile?    @relation("AcceptedInvitations", fields: [acceptedBy], references: [id], onDelete: SetNull)
   expiresAt  DateTime
   createdAt  DateTime         @default(now())
 
@@ -239,7 +241,7 @@ model Case {
   tenantId    String
   tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   patientId   String
-  patient     Patient  @relation(fields: [patientId], references: [id])
+  patient     Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
   title       String
   description String?
   appointments Appointment[]
@@ -252,7 +254,7 @@ model Waitlist {
   tenantId  String
   tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   patientId String
-  patient   Patient  @relation(fields: [patientId], references: [id])
+  patient   Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
   notes     String?
   status    String   @default("waiting")
   createdAt DateTime @default(now())
@@ -320,7 +322,7 @@ model Transaction {
   description String?
   date        DateTime
   patientId   String?
-  patient     Patient?            @relation(fields: [patientId], references: [id])
+  patient     Patient?            @relation(fields: [patientId], references: [id], onDelete: SetNull)
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
 

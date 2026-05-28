@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { isReservedSlug } from "@/lib/reserved-slugs";
 import { SLUG_REGEX } from "@/lib/slug-utils";
 import QRCode from "qrcode";
+import { DEFAULT_SCHEDULE, DEFAULT_ADVANCED } from "@/components/features/availability/constants";
 
 const setupSchema = z.object({
   name: z.string().min(2, "اسم العيادة يجب أن يحتوي على حرفين الأقل"),
@@ -198,6 +199,35 @@ export async function submitSetupWizard(formData: FormData) {
             defaultConsultationFee: (feeAmount && !isNaN(feeAmount)) ? feeAmount : undefined,
           }
         });
+
+        await tx.service.create({
+          data: {
+            name: "الاستشارة",
+            description: "الخدمة الافتراضية للاستشارات الطبية",
+            price: 25000,
+            tenantId: newTenant.id,
+            color: "#3B82F6",
+            duration: 30,
+          }
+        })
+        await tx.service.create({
+          data: {
+            name: "المراجعة",
+            description: "الخدمة الافتراضية للاستشارات الطبية",
+            price: 0,
+            tenantId: newTenant.id,
+            color: "#10B981",
+            duration: 30,
+          }
+        })
+
+        await tx.clinicAvailability.create({
+          data: {
+            tenantId: newTenant.id,
+            schedule: DEFAULT_SCHEDULE,
+            settings: DEFAULT_ADVANCED,
+          }
+        })
 
         await tx.profile.update({
           where: { id: user.id },
