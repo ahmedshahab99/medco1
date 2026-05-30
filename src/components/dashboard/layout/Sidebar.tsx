@@ -42,7 +42,7 @@ export function Sidebar({ isCollapsed, onToggleCollapse, isMobileOpen, onCloseMo
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden" onClick={onCloseMobile} />
       )}
 
-      <aside className={`fixed lg:sticky top-0 bottom-0 z-50 flex flex-col bg-gradient-to-b from-slate-900 to-slate-800 transition-all duration-300 h-screen
+      <aside className={`fixed lg:sticky top-0 bottom-0 z-50 flex flex-col bg-gradient-to-b from-slate-900 to-slate-800 transition-all duration-300 h-[100dvh]
         ${isCollapsed ? "w-[72px]" : "w-64"}
         ${isMobileOpen ? "translate-x-0 right-0" : "-translate-x-full right-0 lg:translate-x-0"}
       `}>

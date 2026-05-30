@@ -689,7 +689,7 @@ function MonthlyView({
                 سجل المعاملات
               </h3>
             </div>
-            <div className="divide-y divide-slate-50 max-h-[600px] overflow-y-auto">
+            <div className="divide-y divide-slate-50 max-h-[50vh] md:max-h-[600px] overflow-y-auto">
               {filteredTransactions.length === 0 && (
                 <div className="p-10 text-center text-slate-400">
                   <Wallet className="w-10 h-10 mx-auto mb-3 opacity-50" />

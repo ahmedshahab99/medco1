@@ -287,7 +287,7 @@ export default function DayView({ appointments, currentDate, startHour, endHour,
 
   return (
     <div className="flex-1 overflow-y-auto custom-scrollbar" ref={containerRef}>
-      <div className="min-w-[400px] md:min-w-0">
+      <div className="min-w-0 md:min-w-[400px]">
         {/* Sticky Header */}
         <div className="sticky top-0 bg-white/95 backdrop-blur-sm z-20 flex border-b border-slate-100">
           <div className="w-16 md:w-20 shrink-0 text-center py-3 text-[10px] font-semibold text-slate-400 border-l border-slate-100">

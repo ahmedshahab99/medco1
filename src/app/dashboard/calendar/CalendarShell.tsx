@@ -127,7 +127,7 @@ export default function CalendarShell() {
   
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)]">
+    <div className="flex flex-col min-h-[calc(100vh-8rem)] min-h-[calc(100dvh-8rem)]">
       <CalendarHeader
         currentDate={currentDate}
         viewMode={viewMode}
