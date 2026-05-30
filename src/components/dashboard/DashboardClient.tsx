@@ -85,63 +85,58 @@ export default function DashboardClient({
           <div className="absolute top-1/2 left-1/3 w-64 h-64 bg-purple-400/10 rounded-full blur-3xl" />
           <svg className="absolute bottom-0 left-0 right-0 opacity-10" viewBox="0 0 1440 120"><path fill="#fff" d="M0,64L80,69.3C160,75,320,85,480,80C640,75,800,53,960,48C1120,43,1280,53,1360,58.7L1440,64L1440,120L1360,120C1280,120,1120,120,960,120C800,120,640,120,480,120C320,120,160,120,80,120L0,120Z"/></svg>
         </div>
-        <div className="relative px-7 py-8 md:py-10 md:px-10">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className={`transform transition-all duration-700 ${visible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"}`}>
-              <div className="flex items-center gap-3 mb-2">
-                <span className="text-3xl">{greetingEmoji}</span>
-                <div>
-                  <h1 className="text-2xl md:text-3xl font-black text-white">{greetingTime}، {profileName}</h1>
-                  <p className="text-indigo-200 text-sm mt-0.5 font-medium">{todayStr}</p>
-                </div>
+        <div className="relative px-4 py-5 md:py-10 md:px-10">
+          <div className={`transform transition-all duration-700 ${visible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"}`}>
+            <div className="flex items-center gap-3 mb-2">
+              <span className="text-2xl md:text-3xl">{greetingEmoji}</span>
+              <div className="min-w-0">
+                <h1 className="text-lg md:text-3xl font-black text-white truncate">{greetingTime}، {profileName}</h1>
+                <p className="text-indigo-200 text-xs md:text-sm mt-0.5 font-medium">{todayStr}</p>
               </div>
-              <div className="flex items-center gap-4 mt-3">
-                <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/10">
-                  <CalendarCheck className="w-4 h-4 text-emerald-300" />
-                  <span className="text-white text-sm font-bold">{totalToday}</span>
-                  <span className="text-indigo-200 text-xs">موعد اليوم</span>
-                </div>
-                <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/10">
-                  <DollarSign className="w-4 h-4 text-amber-300" />
-                  <span className="text-white text-sm font-bold">{revenueFormatted}</span>
-                  <span className="text-indigo-200 text-xs">ر.س</span>
-                </div>
+            </div>
+            <div className="flex items-center gap-2 md:gap-4 mt-3">
+              <div className="flex items-center gap-1.5 bg-white/10 backdrop-blur-sm rounded-xl px-3 py-1.5 md:px-4 md:py-2 border border-white/10">
+                <CalendarCheck className="w-3.5 h-3.5 text-emerald-300" />
+                <span className="text-white text-xs md:text-sm font-bold">{totalToday}</span>
+                <span className="text-indigo-200 text-[10px] md:text-xs">موعد</span>
+              </div>
+              <div className="flex items-center gap-1.5 bg-white/10 backdrop-blur-sm rounded-xl px-3 py-1.5 md:px-4 md:py-2 border border-white/10">
+                <DollarSign className="w-3.5 h-3.5 text-amber-300" />
+                <span className="text-white text-xs md:text-sm font-bold">{revenueFormatted}</span>
+                <span className="text-indigo-200 text-[10px] md:text-xs">د.ع</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 md:gap-8">
         {/* ── Main Column ── */}
-        <div className="xl:col-span-3 flex flex-col gap-8">
+        <div className="xl:col-span-3 flex flex-col gap-4 md:gap-8">
 
           {/* ── Stats Grid ── */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
             {stats.map((stat, i) => {
               const colors = STAT_COLORS[i % STAT_COLORS.length];
               const Icon = STAT_ICONS[i % STAT_ICONS.length];
               const targetNum = parseInt(stat.value.replace(/[^0-9]/g, "")) || 0;
               const displayVal = stat.value.includes("ر.س") ? stat.value : (countUp[i] || targetNum).toLocaleString("ar-SA");
               return (
-                <div
-                  key={i}
-                  className={`group relative bg-white rounded-2xl border border-slate-100 p-5 transition-all duration-500 hover:shadow-xl ${colors.shadow} hover:-translate-y-0.5 overflow-hidden ${visible ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0"}`}
-                  style={{ transitionDelay: `${i * 100}ms` }}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-slate-50/50 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div key={i}
+                  className={`group relative bg-white rounded-xl md:rounded-2xl border border-slate-100 p-3 md:p-5 transition-all duration-500 hover:shadow-xl ${colors.shadow} ${visible ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0"}`}
+                  style={{ transitionDelay: `${i * 100}ms` }}>
                   <div className="relative">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className={`w-11 h-11 rounded-xl ${colors.light} flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3`}>
-                        <Icon className={`w-5 h-5 ${colors.icon}`} />
+                    <div className="flex items-center justify-between mb-2 md:mb-4">
+                      <div className={`w-8 h-8 md:w-11 md:h-11 rounded-lg md:rounded-xl ${colors.light} flex items-center justify-center`}>
+                        <Icon className={`w-4 h-4 md:w-5 md:h-5 ${colors.icon}`} />
                       </div>
-                      <span className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full ${stat.trend >= 0 ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>
-                        <TrendingUp className="w-3 h-3" />
+                      <span className={`flex items-center gap-0.5 text-[10px] md:text-xs font-bold px-1.5 py-0.5 rounded-full ${stat.trend >= 0 ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>
+                        <TrendingUp className="w-2.5 h-2.5 md:w-3 md:h-3" />
                         {Math.abs(stat.trend)}%
                       </span>
                     </div>
-                    <h3 className="text-2xl font-black text-slate-800 tracking-tight">{displayVal}</h3>
-                    <p className="text-xs text-slate-500 mt-1 font-medium">{stat.title}</p>
+                    <h3 className="text-base md:text-2xl font-black text-slate-800 tracking-tight">{displayVal}</h3>
+                    <p className="text-[10px] md:text-xs text-slate-500 mt-0.5 md:mt-1 font-medium">{stat.title}</p>
                   </div>
                 </div>
               );
@@ -149,22 +144,22 @@ export default function DashboardClient({
           </div>
 
           {/* ── Today's Timeline + Upcoming → side by side ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
 
             {/* ── Today's Timeline ── */}
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-              <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-sm shadow-emerald-200">
-                    <Clock className="w-4 h-4 text-white" />
+            <div className="bg-white rounded-xl md:rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+              <div className="px-4 md:px-5 py-3 md:py-4 border-b border-slate-100 flex items-center justify-between">
+                <div className="flex items-center gap-2 md:gap-2.5">
+                  <div className="w-7 h-7 md:w-9 md:h-9 rounded-lg md:rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-sm">
+                    <Clock className="w-3.5 h-3.5 md:w-4 md:h-4 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-slate-800">جدول اليوم</h3>
-                    <p className="text-[10px] text-slate-400">{totalToday} موعد{totalToday !== 1 ? "" : ""}</p>
+                    <h3 className="text-xs md:text-sm font-bold text-slate-800">جدول اليوم</h3>
+                    <p className="text-[9px] md:text-[10px] text-slate-400">{totalToday} موعد</p>
                   </div>
                 </div>
-                <button onClick={() => router.push("/dashboard/calendar")} className="text-[10px] font-bold text-emerald-600 hover:text-emerald-700 transition-colors flex items-center gap-1">
-                  التقويم <ChevronLeft className="w-3 h-3" />
+                <button onClick={() => router.push("/dashboard/calendar")} className="text-[9px] md:text-[10px] font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1">
+                  التقويم <ChevronLeft className="w-2.5 h-2.5 md:w-3 md:h-3" />
                 </button>
               </div>
               <div className="px-4 py-3 max-h-[420px] overflow-y-auto custom-scrollbar">
@@ -221,19 +216,19 @@ export default function DashboardClient({
             </div>
 
             {/* ── Upcoming Appointments ── */}
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-              <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center shadow-sm shadow-blue-200">
-                    <CalendarCheck className="w-4 h-4 text-white" />
+            <div className="bg-white rounded-xl md:rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+              <div className="px-4 md:px-5 py-3 md:py-4 border-b border-slate-100 flex items-center justify-between">
+                <div className="flex items-center gap-2 md:gap-2.5">
+                  <div className="w-7 h-7 md:w-9 md:h-9 rounded-lg md:rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center shadow-sm">
+                    <CalendarCheck className="w-3.5 h-3.5 md:w-4 md:h-4 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-slate-800">المواعيد القادمة</h3>
-                    <p className="text-[10px] text-slate-400">المواعيد المستقبلية</p>
+                    <h3 className="text-xs md:text-sm font-bold text-slate-800">المواعيد القادمة</h3>
+                    <p className="text-[9px] md:text-[10px] text-slate-400">المواعيد المستقبلية</p>
                   </div>
                 </div>
-                <button onClick={() => router.push("/dashboard/calendar")} className="text-[10px] font-bold text-blue-600 hover:text-blue-700 transition-colors flex items-center gap-1">
-                  الكل <ChevronLeft className="w-3 h-3" />
+                <button onClick={() => router.push("/dashboard/calendar")} className="text-[9px] md:text-[10px] font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1">
+                  الكل <ChevronLeft className="w-2.5 h-2.5 md:w-3 md:h-3" />
                 </button>
               </div>
               <div className="max-h-[420px] overflow-y-auto custom-scrollbar">
@@ -286,14 +281,14 @@ export default function DashboardClient({
         </div>
 
         {/* ── Right Sidebar ── */}
-        <div className="xl:col-span-1 flex flex-col gap-6">
+        <div className="xl:col-span-1 flex flex-col gap-4 md:gap-6">
           {/* Quick Actions */}
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-            <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+          <div className="bg-white rounded-xl md:rounded-2xl border border-slate-100 shadow-sm p-4 md:p-5">
+            <h3 className="text-xs md:text-sm font-bold text-slate-800 mb-3 md:mb-4 flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-amber-500" />
               إجراءات سريعة
             </h3>
-            <div className="space-y-2.5">
+            <div className="grid grid-cols-2 md:grid-cols-1 gap-2 md:gap-2.5">
               <QuickActionBtn icon={UserPlus} label="مريض جديد" color="bg-blue-500" onClick={() => router.push("/dashboard/patients")} />
               <QuickActionBtn icon={CalendarCheck} label="موعد جديد" color="bg-emerald-500" onClick={() => router.push("/dashboard/calendar")} />
               <QuickActionBtn icon={Pill} label="وصفة طبية" color="bg-violet-500" onClick={() => router.push("/dashboard/patients")} />
@@ -302,12 +297,12 @@ export default function DashboardClient({
           </div>
 
           {/* Today Summary */}
-          <div className="bg-gradient-to-br from-violet-50 to-purple-50 rounded-2xl border border-violet-100 p-5">
-            <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+          <div className="bg-gradient-to-br from-violet-50 to-purple-50 rounded-xl md:rounded-2xl border border-violet-100 p-4 md:p-5">
+            <h3 className="text-xs md:text-sm font-bold text-slate-800 mb-3 md:mb-4 flex items-center gap-2">
               <HeartPulse className="w-4 h-4 text-violet-600" />
               ملخص اليوم
             </h3>
-            <div className="space-y-3.5">
+            <div className="space-y-3">
               <SummaryRow icon={CalendarCheck} label="المواعيد" value={totalToday.toString()} color="text-emerald-600" bg="bg-emerald-100" />
               <SummaryRow icon={UserPlus} label="مرضى جدد" value={stats[2]?.value ?? "0"} color="text-blue-600" bg="bg-blue-100" />
               <SummaryRow icon={Activity} label="مكتملة" value={sorted.filter(a => a.status === "COMPLETED" || a.status === "ARRIVED").length.toString()} color="text-teal-600" bg="bg-teal-100" />
@@ -322,11 +317,11 @@ export default function DashboardClient({
 
 function QuickActionBtn({ icon: Icon, label, color, onClick }: { icon: React.ElementType; label: string; color: string; onClick: () => void }) {
   return (
-    <button onClick={onClick} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-100 hover:border-slate-200 hover:shadow-sm transition-all duration-200 group">
-      <div className={`w-9 h-9 rounded-xl ${color} flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform`}>
-        <Icon className="w-4 h-4 text-white" />
+    <button onClick={onClick} className="w-full flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-lg md:rounded-xl border border-slate-100 hover:border-slate-200 hover:shadow-sm transition-all duration-200 group">
+      <div className={`w-7 h-7 md:w-9 md:h-9 rounded-lg md:rounded-xl ${color} flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform`}>
+        <Icon className="w-3.5 h-3.5 md:w-4 md:h-4 text-white" />
       </div>
-      <span className="text-sm font-bold text-slate-700 group-hover:text-slate-900 transition-colors">{label}</span>
+      <span className="text-xs md:text-sm font-bold text-slate-700 group-hover:text-slate-900 transition-colors">{label}</span>
     </button>
   );
 }
