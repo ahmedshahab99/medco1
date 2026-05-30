@@ -224,8 +224,8 @@ export async function submitSetupWizard(formData: FormData) {
         await tx.clinicAvailability.create({
           data: {
             tenantId: newTenant.id,
-            schedule: DEFAULT_SCHEDULE,
-            settings: DEFAULT_ADVANCED,
+            schedule: DEFAULT_SCHEDULE as any,
+            settings: DEFAULT_ADVANCED as any,
           }
         })
 

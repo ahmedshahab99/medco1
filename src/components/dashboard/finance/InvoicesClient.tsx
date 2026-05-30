@@ -397,7 +397,7 @@ export function InvoicesClient({
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-emerald-50">
       {/* Header */}
-      <div className="relative overflow-hidden bg-gradient-to-l from-indigo-600 via-purple-600 to-emerald-600 text-white px-6 py-6 md:py-8">
+      <div className="relative overflow-hidden bg-gradient-to-l from-indigo-600 via-purple-600 to-emerald-600 text-white px-4 py-4 md:px-6 md:py-8">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+')] opacity-30" />
         <div className="absolute -top-20 -left-20 w-60 h-60 bg-white/10 rounded-full blur-3xl" />
         <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-emerald-300/20 rounded-full blur-2xl" />
@@ -408,35 +408,35 @@ export function InvoicesClient({
                 <Wallet className="w-4 h-4" />
                 الإدارة المالية
               </div>
-              <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">الفواتير والإيرادات</h1>
+              <h1 className="text-xl md:text-3xl font-extrabold tracking-tight">الفواتير والإيرادات</h1>
             </div>
             {activeTab === "monthly" && (
-              <div className="flex gap-2">
-                <button onClick={() => { resetForm(); setShowAddForm(true); }} className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-all">
-                  <Plus className="w-4 h-4" />إضافة
+              <div className="flex gap-1.5 md:gap-2">
+                <button onClick={() => { resetForm(); setShowAddForm(true); }} className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-2.5 md:px-4 py-1.5 md:py-2 rounded-lg md:rounded-xl text-xs md:text-sm font-bold flex items-center gap-1 md:gap-2 transition-all">
+                  <Plus className="w-3.5 h-3.5 md:w-4 md:h-4" /><span className="hidden md:inline">إضافة</span><span className="md:hidden">جديد</span>
                 </button>
-                <button onClick={printStatement} className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-4 py-2 rounded-xl text-sm font-bold items-center gap-2 transition-all hidden md:flex">
-                  <Printer className="w-4 h-4" />كشف حساب
+                <button onClick={printStatement} className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-2.5 md:px-4 py-1.5 md:py-2 rounded-lg md:rounded-xl text-xs md:text-sm font-bold items-center gap-1 md:gap-2 transition-all hidden md:flex">
+                  <Printer className="w-3.5 h-3.5 md:w-4 md:h-4" />طباعة
                 </button>
-                <button onClick={exportCSV} className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-4 py-2 rounded-xl text-sm font-bold items-center gap-2 transition-all hidden md:flex">
-                  <Download className="w-4 h-4" />تصدير
+                <button onClick={exportCSV} className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-2.5 md:px-4 py-1.5 md:py-2 rounded-lg md:rounded-xl text-xs md:text-sm font-bold items-center gap-1 md:gap-2 transition-all hidden md:flex">
+                  <Download className="w-3.5 h-3.5 md:w-4 md:h-4" />تصدير
                 </button>
               </div>
             )}
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-1 bg-white/10 rounded-xl p-1 w-fit">
+          <div className="flex gap-1 bg-white/10 rounded-lg md:rounded-xl p-0.5 md:p-1 w-fit">
             {[
               { key: "monthly" as TabType, label: "شهري", icon: Calendar },
-              { key: "recurring" as TabType, label: "مصروفات ثابتة", icon: Repeat },
+              { key: "recurring" as TabType, label: "مصروفات", icon: Repeat },
               { key: "reports" as TabType, label: "تقارير", icon: BarChart3 },
             ].map((t) => {
               const Icon = t.icon;
               return (
                 <button key={t.key} onClick={() => setActiveTab(t.key)}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === t.key ? "bg-white text-indigo-700 shadow-sm" : "text-white/70 hover:text-white hover:bg-white/10"}`}>
-                  <Icon className="w-4 h-4" />{t.label}
+                  className={`flex items-center gap-1 md:gap-1.5 px-2.5 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-bold transition-all ${activeTab === t.key ? "bg-white text-indigo-700 shadow-sm" : "text-white/70 hover:text-white hover:bg-white/10"}`}>
+                  <Icon className="w-3.5 h-3.5 md:w-4 md:h-4" />{t.label}
                 </button>
               );
             })}
