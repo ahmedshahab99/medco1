@@ -3,6 +3,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { redirect } from "next/navigation";
 import { isReservedSlug } from "@/lib/reserved-slugs";
 import { SLUG_REGEX } from "@/lib/slug-utils";
@@ -224,8 +225,8 @@ export async function submitSetupWizard(formData: FormData) {
         await tx.clinicAvailability.create({
           data: {
             tenantId: newTenant.id,
-            schedule: DEFAULT_SCHEDULE as any,
-            settings: DEFAULT_ADVANCED as any,
+            schedule: DEFAULT_SCHEDULE as unknown as Prisma.InputJsonValue,
+            settings: DEFAULT_ADVANCED as unknown as Prisma.InputJsonValue,
           }
         })
 
