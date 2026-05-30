@@ -46,9 +46,9 @@ export default function DashboardShell({ children }: DashboardShellProps) {
         isMobileOpen={isMobileSidebarOpen}
         onCloseMobile={() => setMobileSidebarOpen(false)}
       />
-      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto custom-scrollbar">
+      <div className="flex-1 flex flex-col min-w-0 h-[100dvh] overflow-y-auto custom-scrollbar">
         <Topbar onOpenMobileSidebar={() => setMobileSidebarOpen(true)} />
-        <main className="flex-1 p-4 lg:p-8 w-full max-w-7xl mx-auto">
+        <main className="flex-1 p-3 md:p-4 lg:p-8 w-full max-w-7xl mx-auto">
           {children}
         </main>
       </div>

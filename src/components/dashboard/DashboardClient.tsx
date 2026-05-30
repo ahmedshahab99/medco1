@@ -78,7 +78,7 @@ export default function DashboardClient({
   return (
     <div className="min-h-full pb-8">
       {/* ── Hero Banner ── */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 mb-8 shadow-2xl shadow-indigo-500/25">
+      <div className="relative overflow-hidden rounded-xl md:rounded-3xl bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 mb-4 md:mb-8 shadow-lg md:shadow-2xl shadow-indigo-500/25">
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -top-24 -right-24 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
           <div className="absolute -bottom-32 -left-32 w-[500px] h-[500px] bg-blue-400/10 rounded-full blur-3xl" />
