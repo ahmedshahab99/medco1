@@ -44,7 +44,7 @@ export function Sidebar({ isCollapsed, onToggleCollapse, isMobileOpen, onCloseMo
 
       <aside className={`fixed lg:sticky top-0 bottom-0 z-50 flex flex-col bg-gradient-to-b from-slate-900 to-slate-800 transition-all duration-300 h-[100dvh]
         ${isCollapsed ? "w-[72px]" : "w-64"}
-        ${isMobileOpen ? "translate-x-0 right-0" : "-translate-x-full right-0 lg:translate-x-0"}
+        ${isMobileOpen ? "translate-x-0" : "translate-x-full"} lg:translate-x-0
       `}>
         {/* Header */}
         <div className="h-16 flex items-center justify-between px-4 border-b border-white/10 flex-shrink-0">
