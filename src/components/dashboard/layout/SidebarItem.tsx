@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { NavItem } from "../../../lib/types/dashboard";
 
-export function SidebarItem({ item, isCollapsed, dark }: { item: NavItem; isCollapsed: boolean; dark?: boolean }) {
+export function SidebarItem({ item, isCollapsed, dark, onClick }: { item: NavItem; isCollapsed: boolean; dark?: boolean; onClick?: () => void }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -48,6 +48,7 @@ export function SidebarItem({ item, isCollapsed, dark }: { item: NavItem; isColl
       href={item.disabled ? "#" : item.href}
       className={`${baseClasses} ${isActive ? activeClasses : inactiveClasses} ${item.disabled ? "opacity-50 pointer-events-none" : ""}`}
       title={isCollapsed ? item.title : undefined}
+      onClick={onClick}
     >
       <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? iconActiveClasses : iconInactiveClasses}`} />
       {!isCollapsed && <span className="text-sm truncate">{item.title}</span>}

@@ -88,7 +88,7 @@ export function Sidebar({ isCollapsed, onToggleCollapse, isMobileOpen, onCloseMo
                 )}
                 <div className="flex flex-col gap-0.5">
                   {patientLinks.map((item, idx) => (
-                    <SidebarItem key={idx} item={item} isCollapsed={isCollapsed} dark />
+                    <SidebarItem key={idx} item={item} isCollapsed={isCollapsed} dark onClick={onCloseMobile} />
                   ))}
                 </div>
                 {!isCollapsed && <div className="mt-4 border-t border-white/5 mx-2" />}
@@ -106,7 +106,7 @@ export function Sidebar({ isCollapsed, onToggleCollapse, isMobileOpen, onCloseMo
                 {isCollapsed && <div className="h-3" />}
                 <div className="flex flex-col gap-0.5">
                   {group.items.map((item, itemIdx) => (
-                    <SidebarItem key={itemIdx} item={item} isCollapsed={isCollapsed} dark />
+                    <SidebarItem key={itemIdx} item={item} isCollapsed={isCollapsed} dark onClick={onCloseMobile} />
                   ))}
                 </div>
               </div>
