@@ -79,13 +79,12 @@ export default function DashboardClient({
     <div className="min-h-full pb-8">
       {/* ── Hero Banner ── */}
       <div className="relative overflow-hidden rounded-xl md:rounded-3xl bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 mb-4 md:mb-8 shadow-lg md:shadow-2xl shadow-indigo-500/25">
-        <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute inset-0 overflow-hidden md:block hidden">
           <div className="absolute -top-24 -right-24 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
           <div className="absolute -bottom-32 -left-32 w-[500px] h-[500px] bg-blue-400/10 rounded-full blur-3xl" />
-          <div className="absolute top-1/2 left-1/3 w-64 h-64 bg-purple-400/10 rounded-full blur-3xl" />
           <svg className="absolute bottom-0 left-0 right-0 opacity-10" viewBox="0 0 1440 120"><path fill="#fff" d="M0,64L80,69.3C160,75,320,85,480,80C640,75,800,53,960,48C1120,43,1280,53,1360,58.7L1440,64L1440,120L1360,120C1280,120,1120,120,960,120C800,120,640,120,480,120C320,120,160,120,80,120L0,120Z"/></svg>
         </div>
-        <div className="relative px-4 py-5 md:py-10 md:px-10">
+        <div className="relative px-4 py-4 md:py-10 md:px-10">
           <div className={`transform transition-all duration-700 ${visible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"}`}>
             <div className="flex items-center gap-3 mb-2">
               <span className="text-2xl md:text-3xl">{greetingEmoji}</span>
@@ -115,7 +114,7 @@ export default function DashboardClient({
         <div className="xl:col-span-3 flex flex-col gap-4 md:gap-8">
 
           {/* ── Stats Grid ── */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
             {stats.map((stat, i) => {
               const colors = STAT_COLORS[i % STAT_COLORS.length];
               const Icon = STAT_ICONS[i % STAT_ICONS.length];
@@ -123,21 +122,19 @@ export default function DashboardClient({
               const displayVal = stat.value.includes("ر.س") ? stat.value : (countUp[i] || targetNum).toLocaleString("ar-SA");
               return (
                 <div key={i}
-                  className={`group relative bg-white rounded-xl md:rounded-2xl border border-slate-100 p-3 md:p-5 transition-all duration-500 hover:shadow-xl ${colors.shadow} ${visible ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0"}`}
+                  className={`bg-white rounded-lg md:rounded-2xl border border-slate-100 p-2.5 md:p-5 transition-all duration-500 ${colors.shadow} ${visible ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0"}`}
                   style={{ transitionDelay: `${i * 100}ms` }}>
-                  <div className="relative">
-                    <div className="flex items-center justify-between mb-2 md:mb-4">
-                      <div className={`w-8 h-8 md:w-11 md:h-11 rounded-lg md:rounded-xl ${colors.light} flex items-center justify-center`}>
-                        <Icon className={`w-4 h-4 md:w-5 md:h-5 ${colors.icon}`} />
-                      </div>
-                      <span className={`flex items-center gap-0.5 text-[10px] md:text-xs font-bold px-1.5 py-0.5 rounded-full ${stat.trend >= 0 ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>
-                        <TrendingUp className="w-2.5 h-2.5 md:w-3 md:h-3" />
-                        {Math.abs(stat.trend)}%
-                      </span>
+                  <div className="flex items-center justify-between mb-1.5 md:mb-4">
+                    <div className={`w-7 h-7 md:w-11 md:h-11 rounded-md md:rounded-xl ${colors.light} flex items-center justify-center`}>
+                      <Icon className={`w-3.5 h-3.5 md:w-5 md:h-5 ${colors.icon}`} />
                     </div>
-                    <h3 className="text-base md:text-2xl font-black text-slate-800 tracking-tight">{displayVal}</h3>
-                    <p className="text-[10px] md:text-xs text-slate-500 mt-0.5 md:mt-1 font-medium">{stat.title}</p>
+                    <span className={`flex items-center gap-0.5 text-[9px] md:text-xs font-bold px-1 md:px-1.5 py-0.5 rounded-full ${stat.trend >= 0 ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>
+                      <TrendingUp className="w-2 h-2 md:w-3 md:h-3" />
+                      {Math.abs(stat.trend)}%
+                    </span>
                   </div>
+                  <h3 className="text-sm md:text-2xl font-black text-slate-800 tracking-tight">{displayVal}</h3>
+                  <p className="text-[9px] md:text-xs text-slate-500 mt-0.5 font-medium">{stat.title}</p>
                 </div>
               );
             })}
@@ -162,7 +159,7 @@ export default function DashboardClient({
                   التقويم <ChevronLeft className="w-2.5 h-2.5 md:w-3 md:h-3" />
                 </button>
               </div>
-              <div className="px-4 py-3 max-h-[420px] overflow-y-auto custom-scrollbar">
+              <div className="px-3 py-2 md:px-4 md:py-3 max-h-[420px] overflow-y-auto custom-scrollbar">
                 {appsLoading ? (
                   <div className="flex items-center justify-center py-10"><Loader2 className="w-5 h-5 text-emerald-500 animate-spin" /></div>
                 ) : sorted.length === 0 ? (
@@ -182,7 +179,7 @@ export default function DashboardClient({
                         <div
                           key={appt.id}
                           onClick={() => router.push(`/dashboard/patients/${appt.patientId}`)}
-                          className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-all duration-200 cursor-pointer group"
+                          className="flex items-center gap-2 md:gap-3 p-2 md:p-3 rounded-lg md:rounded-xl hover:bg-slate-50 transition-all cursor-pointer group"
                         >
                           {/* Time */}
                           <div className="flex flex-col items-center shrink-0 w-14">
@@ -281,9 +278,9 @@ export default function DashboardClient({
         </div>
 
         {/* ── Right Sidebar ── */}
-        <div className="xl:col-span-1 flex flex-col gap-4 md:gap-6">
+        <div className="xl:col-span-1 flex flex-col gap-3 md:gap-6">
           {/* Quick Actions */}
-          <div className="bg-white rounded-xl md:rounded-2xl border border-slate-100 shadow-sm p-4 md:p-5">
+          <div className="bg-white rounded-lg md:rounded-2xl border border-slate-100 shadow-sm p-3 md:p-5">
             <h3 className="text-xs md:text-sm font-bold text-slate-800 mb-3 md:mb-4 flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-amber-500" />
               إجراءات سريعة
@@ -297,12 +294,12 @@ export default function DashboardClient({
           </div>
 
           {/* Today Summary */}
-          <div className="bg-gradient-to-br from-violet-50 to-purple-50 rounded-xl md:rounded-2xl border border-violet-100 p-4 md:p-5">
-            <h3 className="text-xs md:text-sm font-bold text-slate-800 mb-3 md:mb-4 flex items-center gap-2">
+          <div className="bg-gradient-to-br from-violet-50 to-purple-50 rounded-lg md:rounded-2xl border border-violet-100 p-3 md:p-5">
+            <h3 className="text-xs md:text-sm font-bold text-slate-800 mb-2 md:mb-4 flex items-center gap-2">
               <HeartPulse className="w-4 h-4 text-violet-600" />
               ملخص اليوم
             </h3>
-            <div className="space-y-3">
+            <div className="space-y-2 md:space-y-3">
               <SummaryRow icon={CalendarCheck} label="المواعيد" value={totalToday.toString()} color="text-emerald-600" bg="bg-emerald-100" />
               <SummaryRow icon={UserPlus} label="مرضى جدد" value={stats[2]?.value ?? "0"} color="text-blue-600" bg="bg-blue-100" />
               <SummaryRow icon={Activity} label="مكتملة" value={sorted.filter(a => a.status === "COMPLETED" || a.status === "ARRIVED").length.toString()} color="text-teal-600" bg="bg-teal-100" />
