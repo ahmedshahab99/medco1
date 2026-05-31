@@ -37,6 +37,7 @@ model Tenant {
   transactions  Transaction[]
   clinicAvailability ClinicAvailability?
   recurringExpenses  RecurringExpense[]
+  offers             Offer[]
 }
 
 model SocialLink {
@@ -344,4 +345,63 @@ model RecurringExpense {
   updatedAt   DateTime            @updatedAt
 
   @@index([tenantId, isActive])
+}
+
+model SalesRep {
+  id          String   @id @default(uuid())
+  email       String   @unique
+  password    String?
+  name        String
+  phone       String
+  company     String
+  whatsapp    String?
+  verified    Boolean  @default(false)
+  status      String   @default("pending") // pending, approved, rejected
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  products   SalesRepProduct[]
+  documents  SalesRepDocument[]
+  offers     Offer[]
+}
+
+model SalesRepProduct {
+  id          String   @id @default(uuid())
+  salesRepId  String
+  salesRep    SalesRep @relation(fields: [salesRepId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  price       Decimal?
+  createdAt   DateTime @default(now())
+  offers      Offer[]
+
+  @@index([salesRepId])
+}
+
+model SalesRepDocument {
+  id          String   @id @default(uuid())
+  salesRepId  String
+  salesRep    SalesRep @relation(fields: [salesRepId], references: [id], onDelete: Cascade)
+  type        String   // "id_card", "license", "company_registration"
+  url         String
+  createdAt   DateTime @default(now())
+
+  @@index([salesRepId])
+}
+
+model Offer {
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  salesRepId  String
+  salesRep    SalesRep @relation(fields: [salesRepId], references: [id], onDelete: Cascade)
+  productId   String
+  product     SalesRepProduct @relation(fields: [productId], references: [id])
+  notes       String?
+  status      String   @default("pending") // pending, viewed, accepted, rejected
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([salesRepId])
 }
