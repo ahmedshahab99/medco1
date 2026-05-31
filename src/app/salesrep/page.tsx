@@ -131,68 +131,24 @@ export default function SalesRepPortal(): React.ReactElement {
 
   useEffect(() => {
     let ignore = false;
-
-    const loadInitialData = async (): Promise<void> => {
-      let activeRep = rep;
-
-      if (!activeRep) {
-        const supabase = createClient();
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-
-        let sessionEmail = user?.email ?? "";
-        if (!sessionEmail) {
-          const sessionResponse = await fetch("/api/salesrep/session");
-          if (sessionResponse.ok) {
-            const session = (await sessionResponse.json()) as SalesRepSession;
-            sessionEmail = session.email;
-          }
-        }
-
-        if (sessionEmail) {
-          const repResponse = await fetch(
-            `/api/salesrep/register?email=${encodeURIComponent(sessionEmail)}`
-          );
-
-          if (repResponse.ok) {
-            activeRep = (await repResponse.json()) as SalesRep;
-            if (!ignore) {
-              setRep(activeRep);
-              localStorage.setItem("salesrep", JSON.stringify(activeRep));
-            }
-          } else if (!ignore) {
-            setEmail(sessionEmail);
-            router.replace("/signup/salesrep?auth=1");
-            return;
-          }
-        }
+    const loadInitialData = async () => {
+      if (!rep) { if (!ignore) setSessionResolving(false); return; }
+      const offersResponse = await fetch(`/api/salesrep/offers?salesRepId=${rep.id}`);
+      if (offersResponse.ok && !ignore) {
+        const data = (await offersResponse.json()) as Offer[];
+        setOffers(data);
       }
-
-      if (activeRep) {
-        const offersResponse = await fetch(`/api/salesrep/offers?salesRepId=${activeRep.id}`);
-        if (offersResponse.ok && !ignore) {
-          const data = (await offersResponse.json()) as Offer[];
-          setOffers(data);
-        }
-      }
-
       const doctorsResponse = await fetch("/api/salesrep/doctors");
       if (doctorsResponse.ok && !ignore) {
         const data = (await doctorsResponse.json()) as DoctorTenant[];
         setDoctors(data);
       }
-
       if (!ignore) setDoctorLoading(false);
       if (!ignore) setSessionResolving(false);
     };
-
     void loadInitialData();
-
-    return () => {
-      ignore = true;
-    };
-  }, [rep, router]);
+    return () => { ignore = true; };
+  }, [rep]);
 
   const filteredDoctors = useMemo(() => {
     const normalizedSearch = search.trim();
