@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import type { EmailOtpType } from '@supabase/supabase-js'
 import { acceptInvitation } from '@/lib/invite'
+import prisma from '@/lib/prisma'
 
 function getRedirectUrl(request: Request, origin: string, path: string): string {
   const forwardedHost = request.headers.get('x-forwarded-host')
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   // Create the redirect response first, then attach the supabase client to it
   // so cookies are set on the same response object that gets returned.
-  const redirectTo = getRedirectUrl(request, origin, next)
+  let redirectTo = getRedirectUrl(request, origin, next)
   const response = NextResponse.redirect(redirectTo)
 
   const supabase = createServerClient(
@@ -70,6 +71,15 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) {
       await handleAuthSuccess(supabase)
+      // Check if user is a SalesRep → redirect to their portal
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user?.email) {
+        const isRep = await prisma.salesRep.findUnique({ where: { email: user.email } })
+        if (isRep) {
+          const repUrl = getRedirectUrl(request, origin, '/salesrep')
+          return NextResponse.redirect(repUrl)
+        }
+      }
       return response
     }
     // Pass the error message to the error page
@@ -95,6 +105,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const { data: { user }, error } = await supabase.auth.getUser()
   if (user && !error) {
     await handleAuthSuccess(supabase)
+    // Check if user is a SalesRep → redirect to their portal
+    if (user?.email) {
+      const isRep = await prisma.salesRep.findUnique({ where: { email: user.email } })
+      if (isRep) {
+        const repUrl = getRedirectUrl(request, origin, '/salesrep')
+        return NextResponse.redirect(repUrl)
+      }
+    }
     return response
   }
 

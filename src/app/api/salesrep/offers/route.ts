@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { createClient } from "@/utils/supabase/server";
 import { z } from "zod";
 
 const offerSchema = z.object({
@@ -32,8 +33,18 @@ export async function POST(request: Request) {
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const tenantId = searchParams.get("tenantId");
+  let tenantId = searchParams.get("tenantId");
   const salesRepId = searchParams.get("salesRepId");
+
+  // Resolve "current" tenant for doctors
+  if (tenantId === "current") {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const profile = await prisma.profile.findUnique({ where: { id: user.id } });
+      if (profile?.tenantId) tenantId = profile.tenantId;
+    }
+  }
 
   const where: any = {};
   if (tenantId) where.tenantId = tenantId;
@@ -44,6 +55,7 @@ export async function GET(request: Request) {
     include: {
       salesRep: { select: { name: true, company: true, phone: true, whatsapp: true } },
       product: { select: { name: true, description: true, price: true } },
+      tenant: { select: { name: true } },
     },
     orderBy: { createdAt: "desc" },
   });

@@ -571,6 +571,9 @@ export default function DigitalClinicLanding() {
             <Link className="btn-shine" href="/signup" style={{ ...btnPrimary, padding: "9px 20px", fontSize: 14 }}>
               {t.nav.signup}
             </Link>
+            <Link href="/signup/salesrep" style={{ background: "linear-gradient(135deg,#059669,#0d9488)", border: "none", color: "#fff", padding: "9px 18px", borderRadius: 50, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "'Cairo','Syne',sans-serif" }}>
+              مندوب
+            </Link>
             <button onClick={() => setMobileOpen(!mobileOpen)} style={{ background: "none", border: `1px solid ${C.border}`, color: C.text, padding: "8px", borderRadius: 10, fontSize: 18, cursor: "pointer", display: "none" }} className="mobile-menu-btn">
               ☰
             </button>
@@ -630,6 +633,9 @@ export default function DigitalClinicLanding() {
                     <button onClick={() => nav("features")} style={btnGhost}>
                       {t.hero.cta2} {isRtl ? "←" : "→"}
                     </button>
+                    <Link href="/signup/salesrep" style={{ ...btnGhost, border: `2px solid #059669`, color: "#059669" }}>
+                      🏢 تسجيل كمندوب
+                    </Link>
                   </div>
 
                   {/* Stats */}
