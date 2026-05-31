@@ -155,14 +155,11 @@ function SalesRepSignupContent(): React.ReactElement {
     setError("");
 
     const supabase = createClient();
-    const callbackUrl = new URL(`${window.location.origin}/auth/callback`);
-    callbackUrl.searchParams.set("next", "/signup/salesrep?auth=1");
-
-    await supabase.auth.signOut();
+    const callbackUrl = `${window.location.origin}/auth/salesrep-callback`;
 
     const { error: signInError } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: callbackUrl.toString() },
+      options: { redirectTo: callbackUrl },
     });
 
     if (signInError) {
