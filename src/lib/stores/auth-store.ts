@@ -54,6 +54,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   performLogout: async () => {
+    if (typeof window !== "undefined") localStorage.removeItem("salesrep");
     await logout();
     set({
       user: null,
