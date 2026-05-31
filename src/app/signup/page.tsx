@@ -104,7 +104,7 @@ export default function SignUpPage(): React.ReactElement {
               افتح عيادتك الرقمية وابدأ بإدارة المرضى والمواعيد باحتراف.
             </h1>
             <p className="max-w-xl text-base leading-8 text-indigo-100">
-              هذا المسار مخصص للأطباء والعيادات فقط. إذا كنت مندوبا طبيا فستجد بوابة منفصلة لإضافة منتجاتك والوصول إلى العيادات المسجلة.
+              هذا المسار مخصص للأطباء والعيادات فقط.
             </p>
           </div>
           <div className="grid max-w-xl gap-3 sm:grid-cols-2">
@@ -201,16 +201,6 @@ export default function SignUpPage(): React.ReactElement {
               )}
               التسجيل بحساب Google
             </Button>
-
-            <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm leading-7 text-slate-500">
-              هل أنت مندوب طبي؟
-              <Button variant="link" asChild className="h-auto px-2">
-                <Link href="/signup/salesrep">
-                  انتقل إلى تسجيل المندوبين
-                  <ArrowLeft data-icon="inline-end" />
-                </Link>
-              </Button>
-            </div>
           </CardContent>
         </Card>
       </div>
