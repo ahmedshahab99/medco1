@@ -155,9 +155,14 @@ function SalesRepSignupContent(): React.ReactElement {
     setError("");
 
     const supabase = createClient();
+    const callbackUrl = new URL(`${window.location.origin}/auth/callback`);
+    callbackUrl.searchParams.set("next", "/signup/salesrep?auth=1");
+
+    await supabase.auth.signOut();
+
     const { error: signInError } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/salesrep-callback` },
+      options: { redirectTo: callbackUrl.toString() },
     });
 
     if (signInError) {
@@ -294,8 +299,21 @@ function SalesRepSignupContent(): React.ReactElement {
                 className="flex flex-col gap-6"
               >
                 {error && (
-                  <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                    {error}
+                  <div className="flex flex-col gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 px-3 py-3 text-sm text-destructive">
+                    <span>{error}</span>
+                    {isAuthed && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-fit border-destructive/30 bg-white text-destructive hover:bg-white/80"
+                        onClick={() => {
+                          void handleGoogleSignIn();
+                        }}
+                      >
+                        <Chrome data-icon="inline-start" />
+                        تبديل حساب Google
+                      </Button>
+                    )}
                   </div>
                 )}
 

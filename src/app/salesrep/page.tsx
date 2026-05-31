@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
@@ -87,6 +88,7 @@ const statusConfig: Record<
 };
 
 export default function SalesRepPortal(): React.ReactElement {
+  const router = useRouter();
   const [rep, setRep] = useState<SalesRep | null>(() => {
     if (typeof window === "undefined") return null;
 
@@ -160,6 +162,8 @@ export default function SalesRepPortal(): React.ReactElement {
             }
           } else if (!ignore) {
             setEmail(sessionEmail);
+            router.replace("/signup/salesrep?auth=1");
+            return;
           }
         }
       }
@@ -187,7 +191,7 @@ export default function SalesRepPortal(): React.ReactElement {
     return () => {
       ignore = true;
     };
-  }, [rep]);
+  }, [rep, router]);
 
   const filteredDoctors = useMemo(() => {
     const normalizedSearch = search.trim();
