@@ -91,58 +91,30 @@ function SalesRepSignupContent(): React.ReactElement {
 
   useEffect(() => {
     if (!isAuthed) return;
+    let ignore = false;
 
-    const resolveAuthenticatedRep = async (): Promise<void> => {
-      setMode("form");
-
+    const resolve = async () => {
       const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
+      const sessionEmail = user?.email ?? "";
+      
+      if (!sessionEmail) { setError("لم نتمكن من قراءة الجلسة"); return; }
 
-      let sessionEmail = user?.email ?? "";
-      let sessionName =
-        typeof user?.user_metadata?.full_name === "string"
-          ? user.user_metadata.full_name
-          : typeof user?.user_metadata?.name === "string"
-            ? user.user_metadata.name
-            : "";
+      setForm((c) => ({ ...c, email: sessionEmail }));
 
-      if (!sessionEmail) {
-        const sessionResponse = await fetch("/api/salesrep/session");
-        if (sessionResponse.ok) {
-          const session = (await sessionResponse.json()) as SalesRepSession;
-          sessionEmail = session.email;
-          sessionName = session.name;
-        }
-      }
-
-      if (!sessionEmail) {
-        setError("لم نتمكن من قراءة جلسة Google. يمكنك إكمال البيانات يدويا هنا.");
-        return;
-      }
-
-      setForm((current) => ({
-        ...current,
-        email: sessionEmail,
-        name: current.name || sessionName,
-      }));
-
-      const response = await fetch(
-        `/api/salesrep/register?email=${encodeURIComponent(sessionEmail)}`
-      );
-
-      if (response.ok) {
-        const rep = (await response.json()) as RegisteredSalesRep;
+      const res = await fetch(`/api/salesrep/register?email=${encodeURIComponent(sessionEmail)}`);
+      if (res.ok) {
+        const rep = await res.json();
         localStorage.setItem("salesrep", JSON.stringify(rep));
         router.replace("/salesrep");
         return;
       }
 
-      setMode("form");
+      if (!ignore) setMode("form");
     };
 
-    void resolveAuthenticatedRep();
+    void resolve();
+    return () => { ignore = true; };
   }, [isAuthed, router]);
 
   const filledProducts = useMemo(
@@ -250,7 +222,7 @@ function SalesRepSignupContent(): React.ReactElement {
     setRegisteredId(data.id);
     localStorage.setItem("salesrep", JSON.stringify(data));
     setMode("success");
-    window.setTimeout(() => router.push("/salesrep"), 1400);
+    window.setTimeout(() => router.push("/salesrep"), 3000);
   };
 
   if (mode === "success") {
