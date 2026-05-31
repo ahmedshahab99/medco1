@@ -12,6 +12,7 @@ import {
   Loader2,
   LogOut,
   Package,
+  Plus,
   RefreshCw,
   Search,
   Send,
@@ -416,19 +417,50 @@ export default function SalesRepPortal(): React.ReactElement {
           <Card className="rounded-3xl border-slate-100 bg-white shadow-sm">
             <CardHeader>
               <CardTitle className="font-black text-slate-800">منتجاتك</CardTitle>
-              <CardDescription>تظهر هذه المنتجات عند إرسال عرض خاص.</CardDescription>
+              <CardDescription>أضف المنتجات واحذفها وقت الحاجة.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-2">
               {(rep.products ?? []).map((product) => (
-                <div key={product.id} className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
-                  <p className="text-sm font-black text-slate-800">{product.name}</p>
-                  {product.price && (
-                    <p className="mt-1 text-xs text-emerald-700">
-                      {Number(product.price).toLocaleString("ar-IQ")} د.ع
-                    </p>
-                  )}
+                <div key={product.id} className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50 p-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-black text-slate-800">{product.name}</p>
+                    {product.price && (
+                      <p className="mt-1 text-xs text-emerald-700">
+                        {Number(product.price).toLocaleString("ar-IQ")} د.ع
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    onClick={async () => {
+                      await fetch(`/api/salesrep/products?id=${product.id}`, { method: "DELETE" });
+                      const updated = (rep.products ?? []).filter((p) => p.id !== product.id);
+                      const newRep = { ...rep, products: updated };
+                      setRep(newRep);
+                      localStorage.setItem("salesrep", JSON.stringify(newRep));
+                    }}
+                    className="shrink-0 rounded-lg p-1.5 text-red-400 hover:bg-red-50 hover:text-red-600"
+                    aria-label="حذف منتج"
+                  >
+                    <XCircle className="size-4" />
+                  </button>
                 </div>
               ))}
+              <AddProductForm
+                onAdd={async (name, desc, price) => {
+                  const res = await fetch("/api/salesrep/products", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ salesRepId: rep.id, name, description: desc, price }),
+                  });
+                  if (res.ok) {
+                    const newProduct = await res.json();
+                    const updated = [...(rep.products ?? []), newProduct];
+                    const newRep = { ...rep, products: updated };
+                    setRep(newRep);
+                    localStorage.setItem("salesrep", JSON.stringify(newRep));
+                  }
+                }}
+              />
             </CardContent>
           </Card>
         </aside>
@@ -696,6 +728,37 @@ function Metric({ label, value }: { label: string; value: string }): React.React
     <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-3 py-3">
       <span className="text-sm text-slate-500">{label}</span>
       <span className="font-black text-slate-800">{value}</span>
+    </div>
+  );
+}
+
+function AddProductForm({ onAdd }: { onAdd: (name: string, desc: string, price: string) => Promise<void> }) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [desc, setDesc] = useState("");
+  const [price, setPrice] = useState("");
+  const [adding, setAdding] = useState(false);
+
+  if (!open) {
+    return (
+      <button onClick={() => setOpen(true)} className="flex items-center gap-1.5 rounded-xl border border-dashed border-slate-200 px-3 py-2.5 text-sm font-bold text-slate-400 hover:border-emerald-300 hover:text-emerald-600">
+        <Plus className="size-4" /> إضافة منتج
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-2 rounded-2xl border border-emerald-200 bg-emerald-50/50 p-3">
+      <Input placeholder="اسم المنتج" value={name} onChange={(e) => setName(e.target.value)} className="h-9 border-slate-200 bg-white text-sm" />
+      <Input placeholder="السعر (اختياري)" value={price} onChange={(e) => setPrice(e.target.value)} className="h-9 border-slate-200 bg-white text-sm" />
+      <Textarea placeholder="وصف (اختياري)" value={desc} onChange={(e) => setDesc(e.target.value)} rows={2} className="text-sm" />
+      <div className="flex gap-2">
+        <Button size="sm" className="flex-1 bg-emerald-600 hover:bg-emerald-700" disabled={adding || !name}
+          onClick={async () => { setAdding(true); await onAdd(name, desc, price); setAdding(false); setOpen(false); setName(""); setDesc(""); setPrice(""); }}>
+          {adding ? <Loader2 className="size-4 animate-spin" /> : "حفظ"}
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => setOpen(false)} className="border-slate-200">إلغاء</Button>
+      </div>
     </div>
   );
 }
