@@ -15,7 +15,8 @@ import {
   Palette,
   ShieldCheck,
   UserPlus,
-  User
+  User,
+  Building2
 } from "lucide-react";
 import { NavGroup } from "../types/dashboard";
 
@@ -67,6 +68,7 @@ export const navigationGroups: NavGroup[] = [
     label: "العمليات والإدارة",
     items: [
       { title: "الدعوات", href: "/dashboard/invite", icon: UserPlus },
+      { title: "المندوبين", href: "/dashboard/salesreps", icon: Building2 },
     ],
   },
   {
