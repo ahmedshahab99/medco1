@@ -51,7 +51,7 @@ export async function POST(request: Request) {
     include: { products: true },
   });
 
-  return NextResponse.json({ success: true, id: rep.id, email: rep.email }, { status: 201 });
+  return NextResponse.json(rep, { status: 201 });
 }
 
 export async function GET(request: Request) {
