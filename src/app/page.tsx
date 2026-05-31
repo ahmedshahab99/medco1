@@ -55,18 +55,12 @@ function Header(): React.ReactElement {
           ))}
         </nav>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" asChild className="text-white hover:bg-white/10 hover:text-white">
-            <Link href="/login">
-              <span className="hidden sm:inline">تسجيل دخول طبيب</span>
-              <span className="sm:hidden">طبيب</span>
-            </Link>
-          </Button>
-          <Button variant="ghost" size="sm" asChild className="text-emerald-300 hover:bg-white/10 hover:text-emerald-200">
-            <Link href="/salesrep">مندوب</Link>
-          </Button>
+          <Link href="/login" className="text-sm font-medium text-white/80 hover:text-white transition-colors">
+            تسجيل الدخول
+          </Link>
           <Button size="sm" asChild className="bg-white text-slate-900 hover:bg-slate-100">
             <Link href="/signup">
-              طبيب
+              إنشاء حساب
               <ArrowLeft data-icon="inline-end" />
             </Link>
           </Button>
@@ -102,17 +96,6 @@ function HeroSection(): React.ReactElement {
               <Link href="/signup">
                 {landingContent.hero.doctorCta}
                 <ArrowLeft data-icon="inline-end" />
-              </Link>
-            </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              asChild
-              className="h-11 border-white/30 bg-white/10 px-5 text-base text-white hover:bg-white/15 hover:text-white"
-            >
-              <Link href="/signup/salesrep">
-                {landingContent.hero.repCta}
-                <ChevronLeft data-icon="inline-end" />
               </Link>
             </Button>
           </div>
@@ -370,17 +353,6 @@ function FinalCta(): React.ReactElement {
               تسجيل الأطباء
               <ArrowLeft data-icon="inline-end" />
             </Link>
-          </Button>
-          <Button
-            variant="outline"
-            size="lg"
-            asChild
-            className="h-11 border-white/30 bg-white/10 px-5 text-base text-white hover:bg-white/15 hover:text-white"
-          >
-            <Link href="/signup/salesrep">تسجيل المندوبين</Link>
-          </Button>
-          <Button variant="ghost" size="lg" asChild className="h-11 px-5 text-base text-white hover:bg-white/10 hover:text-white">
-            <Link href="/salesrep">دخول المندوبين</Link>
           </Button>
         </div>
       </div>
