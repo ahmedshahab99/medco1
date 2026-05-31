@@ -56,7 +56,13 @@ function Header(): React.ReactElement {
         </nav>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" asChild className="text-white hover:bg-white/10 hover:text-white">
-            <Link href="/login">{landingContent.hero.login}</Link>
+            <Link href="/login">
+              <span className="hidden sm:inline">تسجيل دخول طبيب</span>
+              <span className="sm:hidden">طبيب</span>
+            </Link>
+          </Button>
+          <Button variant="ghost" size="sm" asChild className="text-emerald-300 hover:bg-white/10 hover:text-emerald-200">
+            <Link href="/salesrep">مندوب</Link>
           </Button>
           <Button size="sm" asChild className="bg-white text-slate-900 hover:bg-slate-100">
             <Link href="/signup">
