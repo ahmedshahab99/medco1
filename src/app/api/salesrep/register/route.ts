@@ -22,14 +22,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
   }
 
+  // Keep doctor and sales-rep identities separated.
+  const doctorProfile = await prisma.profile.findUnique({ where: { email: parsed.data.email } });
+  if (doctorProfile) {
+    return NextResponse.json({ error: "هذا البريد مسجل كطبيب. لا يمكن التسجيل كمندوب بنفس البريد." }, { status: 400 });
+  }
+
   const existing = await prisma.salesRep.findUnique({ where: { email: parsed.data.email } });
   if (existing) {
-    const rep = await prisma.salesRep.findUnique({
-      where: { email: parsed.data.email },
-      include: { products: true },
-    });
-
-    return NextResponse.json(rep);
+    return NextResponse.json({ error: "البريد الإلكتروني مسجل مسبقاً كمندوب" }, { status: 400 });
   }
 
   const rep = await prisma.salesRep.create({
