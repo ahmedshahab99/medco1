@@ -39,8 +39,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   // Create the redirect response first, then attach the supabase client to it
   // so cookies are set on the same response object that gets returned.
-  let redirectTo = getRedirectUrl(request, origin, next)
-  const response = NextResponse.redirect(redirectTo)
+  const dispatchUrl = getRedirectUrl(request, origin, next)
+  const response = NextResponse.redirect(dispatchUrl)
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -76,14 +76,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       if (user?.email) {
         const isRep = await prisma.salesRep.findUnique({ where: { email: user.email } })
         if (isRep) {
-          const repUrl = getRedirectUrl(request, origin, '/salesrep')
-          return NextResponse.redirect(repUrl)
+          response.headers.set('Location', getRedirectUrl(request, origin, '/salesrep'))
+          return response
         }
-        // New user (not SalesRep, not doctor Profile) → send to salesrep signup
+        // New user (no doctor Profile) → send to salesrep signup
         const isDoctor = await prisma.profile.findUnique({ where: { email: user.email } })
         if (!isDoctor) {
-          const signupUrl = getRedirectUrl(request, origin, '/signup/salesrep?auth=1')
-          return NextResponse.redirect(signupUrl)
+          response.headers.set('Location', getRedirectUrl(request, origin, '/signup/salesrep?auth=1'))
+          return response
         }
       }
       return response
@@ -111,12 +111,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const { data: { user }, error } = await supabase.auth.getUser()
   if (user && !error) {
     await handleAuthSuccess(supabase)
-    // Check if user is a SalesRep → redirect to their portal
     if (user?.email) {
       const isRep = await prisma.salesRep.findUnique({ where: { email: user.email } })
       if (isRep) {
-        const repUrl = getRedirectUrl(request, origin, '/salesrep')
-        return NextResponse.redirect(repUrl)
+        response.headers.set('Location', getRedirectUrl(request, origin, '/salesrep'))
+        return response
       }
     }
     return response
