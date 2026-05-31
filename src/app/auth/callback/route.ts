@@ -79,6 +79,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           const repUrl = getRedirectUrl(request, origin, '/salesrep')
           return NextResponse.redirect(repUrl)
         }
+        // New user (not SalesRep, not doctor Profile) → send to salesrep signup
+        const isDoctor = await prisma.profile.findUnique({ where: { email: user.email } })
+        if (!isDoctor) {
+          const signupUrl = getRedirectUrl(request, origin, '/signup/salesrep?auth=1')
+          return NextResponse.redirect(signupUrl)
+        }
       }
       return response
     }
