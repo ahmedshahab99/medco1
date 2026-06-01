@@ -43,13 +43,14 @@ export default function AppointmentDetailModal({
   isUpdating,
   isDeleting,
   onStatusChange,
+  onMarkAsPaid,
   onDelete,
   onBookAnother,
   onReschedule,
-  onMarkAsPaid,
 }: AppointmentDetailModalProps) {
   const [panel, setPanel] = useState<"none" | "payment" | "notes" | "reschedule">("none");
   const [isDeleteOpen, setDeleteOpen] = useState(false);
+  const [showPaymentConfirm, setShowPaymentConfirm] = useState(false);
 
   useEffect(() => {
     if (appointment) {
@@ -186,7 +187,7 @@ export default function AppointmentDetailModal({
                   </span>
                   {appointment.paymentStatus !== "PAID" && (
                     <button
-                      onClick={() => onMarkAsPaid?.(appointment.id)}
+                      onClick={() => setShowPaymentConfirm(true)}
                       disabled={isUpdating}
                       className="px-3 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-all disabled:opacity-50 shadow-sm shadow-emerald-200"
                     >
@@ -271,6 +272,21 @@ export default function AppointmentDetailModal({
         }}
         onCancel={() => setDeleteOpen(false)}
       />
+      {appointment?.consultationFee && appointment.paymentStatus !== "PAID" && (
+        <ConfirmDialog
+          isOpen={showPaymentConfirm}
+          title="تأكيد الدفع"
+          message={`سيتم تسجيل مبلغ ${Number(appointment.consultationFee).toLocaleString("ar-IQ")} د.ع كإيراد للعيادة. هل أنت متأكد؟`}
+          confirmLabel="قبول الدفع"
+          cancelLabel="إلغاء"
+          type="info"
+          onConfirm={() => {
+            onMarkAsPaid?.(appointment.id);
+            setShowPaymentConfirm(false);
+          }}
+          onCancel={() => setShowPaymentConfirm(false)}
+        />
+      )}
     </>
   );
 }

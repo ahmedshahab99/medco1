@@ -135,13 +135,10 @@ const THEMES: Theme[] = [
 ];
 
 // ── Constants ─────────────────────────────────────────────────────────
-const useDoctorProfile = (): DoctorProfile => ({
-  name: "Dr. Ahmed Al-Rashidi", nameAr: "د. أحمد الراشدي",
-  specialization: "Internal Medicine", specializationAr: "الطب الباطني",
-  license: "IQ-MD-2021-4872", clinic: "Al-Rashidi Medical Clinic",
-  clinicAr: "عيادة الراشدي الطبية", phone: "+964 771 234 5678",
-  address: "Baghdad, Al-Mansour District", addressAr: "بغداد، حي المنصور",
-});
+const fallbackProfile: DoctorProfile = {
+  name: "", nameAr: "", specialization: "", specializationAr: "",
+  license: "", clinic: "", clinicAr: "", phone: "", address: "", addressAr: "",
+};
 
 let _idCounter = 0;
 const uid = () => `${Date.now().toString(36)}_${++_idCounter}_${Math.random().toString(36).slice(2, 7)}`;
@@ -240,23 +237,22 @@ interface PrescriptionPageProps {
 
 export default function PrescriptionPage({ initialDoctor, initialPatientId, initialPatientName }: PrescriptionPageProps = {}): React.ReactElement {
   const router = useRouter();
-  const fallbackProfile = useDoctorProfile();
-  let savedProfile: DoctorProfile | null = null;
-  try {
-    const raw = typeof window !== 'undefined' ? localStorage.getItem('doctorProfile') : null;
-    if (raw) savedProfile = JSON.parse(raw);
-  } catch { /* ignore malformed localStorage */ }
-  const profile = savedProfile || initialDoctor || fallbackProfile;
-
-  const [doctor, setDoctor]     = useState<DoctorProfile>(profile);
+  const [doctor, setDoctor] = useState<DoctorProfile>(fallbackProfile);
+  const [doctorLoaded, setDoctorLoaded] = useState(false);
   const [editDoctor, setEditDoctor] = useState(false);
-  const [draft, setDraft]       = useState<DoctorProfile>({...profile});
+  const [draft, setDraft] = useState<DoctorProfile>({...fallbackProfile});
   const [patient, setPatient]   = useState<Patient>({name:initialPatientName||"",age:"",gender:"",diagnosis:""});
   const [meds, setMeds]         = useState<Medication[]>([newMed()]);
   const [notes, setNotes]       = useState("");
-  const [sections, setSections] = useState<Sections>(DEFAULT_SECTIONS);
+  const [sections, setSections] = useState<Sections>(() => {
+    if (typeof window === 'undefined') return DEFAULT_SECTIONS;
+    try { const s = localStorage.getItem('rxSections'); return s ? JSON.parse(s) : DEFAULT_SECTIONS; } catch { return DEFAULT_SECTIONS; }
+  });
   const [showCustomizer, setShowCustomizer] = useState(false);
-  const [themeId, setThemeId]   = useState<ThemeId>("classic");
+  const [themeId, setThemeId]   = useState<ThemeId>(() => {
+    if (typeof window === 'undefined') return "classic";
+    return (localStorage.getItem('rxTheme') as ThemeId) || "classic";
+  });
   const [showThemes, setShowThemes] = useState(false);
   const [saving, setSaving]     = useState(false);
   const [medSuggestions, setMedSuggestions] = useState<string[]>([]);
@@ -273,13 +269,66 @@ export default function PrescriptionPage({ initialDoctor, initialPatientId, init
       .catch(() => {});
   }, [initialPatientId]);
 
+  // Load real doctor profile from API + localStorage
+  useEffect(() => {
+    if (doctorLoaded) return;
+
+    // Try localStorage first
+    try {
+      const raw = localStorage.getItem('doctorProfile');
+      if (raw) {
+        const saved = JSON.parse(raw) as DoctorProfile;
+        if (saved.name || saved.nameAr) { setDoctor(saved); setDraft({...saved}); setDoctorLoaded(true); return; }
+      }
+    } catch {}
+
+    // Try initialDoctor prop
+    if (initialDoctor?.name || initialDoctor?.nameAr) {
+      setDoctor(initialDoctor); setDraft({...initialDoctor}); setDoctorLoaded(true); return;
+    }
+
+    // Fetch from API
+    (async () => {
+      try {
+        const [tenantRes, doctorsRes] = await Promise.all([
+          fetch("/api/tenant"), fetch("/api/doctors")
+        ]);
+        let clinic = "", clinicAr = "", phone = "", address = "", addressAr = "";
+        let doctorName = "", doctorNameAr = "";
+        if (tenantRes.ok) {
+          const t = await tenantRes.json();
+          clinic = t.name || ""; clinicAr = t.name || "";
+          phone = t.phone || ""; address = t.address || ""; addressAr = t.address || "";
+        }
+        if (doctorsRes.ok) {
+          const docs = await doctorsRes.json();
+          if (docs.length > 0) {
+            doctorName = docs[0].firstName && docs[0].lastName ? `${docs[0].firstName} ${docs[0].lastName}` : (docs[0].name || "");
+            doctorNameAr = doctorName;
+          }
+        }
+        if (clinic || doctorName) {
+          const realProfile: DoctorProfile = {
+            name: doctorName, nameAr: doctorNameAr || doctorName,
+            specialization: "", specializationAr: "",
+            license: "", clinic, clinicAr: clinic || clinicAr,
+            phone, address, addressAr: addressAr || address,
+          };
+          setDoctor(realProfile); setDraft({...realProfile});
+          localStorage.setItem('doctorProfile', JSON.stringify(realProfile));
+        }
+      } catch {}
+      setDoctorLoaded(true);
+    })();
+  }, [initialDoctor, doctorLoaded]);
+
   const theme = THEMES.find(t => t.id === themeId) ?? THEMES[0];
 
   const persistDoctor = (doc: DoctorProfile) => {
     if (typeof window !== 'undefined') localStorage.setItem('doctorProfile', JSON.stringify(doc));
   };
 
-  const toggle = (k: SectionKey) => setSections(s => ({...s,[k]:!s[k]}));
+  const toggle = (k: SectionKey) => setSections(s => { const n = {...s,[k]:!s[k]}; localStorage.setItem('rxSections', JSON.stringify(n)); return n; });
   const show = (k: SectionKey) => sections[k];
 
   const today = new Date().toLocaleDateString("ar-IQ",{day:"2-digit",month:"long",year:"numeric"});
@@ -340,11 +389,11 @@ export default function PrescriptionPage({ initialDoctor, initialPatientId, init
     doc.open();
     doc.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"><title>وصفة طبية</title>${styleTags}
 <style>
-@page{size:A4 portrait;margin:20mm 18mm 25mm}
+@page{size:A4 portrait;margin:12mm 10mm 12mm 10mm}
 *{box-sizing:border-box;margin:0;padding:0}
-body{margin:0;padding:0;background:#fff;display:flex;justify-content:center;font-family:'Noto Naskh Arabic',serif;color:var(--ink)}
-.pg{width:100%;min-height:100%;padding:0!important;background:#fff!important;background-image:none!important}
-.rx{width:100%;margin:0;border:none!important;border-radius:0!important;box-shadow:none!important;background:#fff!important;display:flex;flex-direction:column}
+body{margin:0;padding:0;background:#fff;display:flex;justify-content:center;font-family:'Noto Naskh Arabic',serif;color:var(--ink);width:210mm}
+.pg{width:190mm;min-height:100%;padding:0!important;background:#fff!important;background-image:none!important;margin:0 auto}
+.rx{width:190mm;margin:0;border:none!important;border-radius:0!important;box-shadow:none!important;background:#fff!important;display:flex;flex-direction:column}
 .no-print,.no-print *,.toolbar,.theme-bar,.cust,.ep,.rx-edit-btn,.rx-add-wrap{display:none!important}
 .rx-wm{display:block!important}
 .rx-wm-txt{opacity:.035!important}
@@ -578,7 +627,7 @@ body{margin:0;padding:0;background:#fff;display:flex;justify-content:center;font
             </div>
             <div className="theme-grid">
               {THEMES.map(t => (
-                <div key={t.id} className={`theme-card${themeId===t.id?" active":""}`} onClick={()=>setThemeId(t.id)}>
+                <div key={t.id} className={`theme-card${themeId===t.id?" active":""}`} onClick={()=>{ setThemeId(t.id); localStorage.setItem('rxTheme', t.id); }}>
                   <div className="theme-preview-wrap">
                     <div className="theme-preview-bar" style={{background:t.preview.bar}}/>
                     <div className="theme-preview-band" style={{background:t.preview.band}}>

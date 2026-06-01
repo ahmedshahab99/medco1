@@ -85,6 +85,10 @@ export async function submitSetupWizard(formData: FormData) {
   }
 
   const { name, slug, phone, bio, logo, address, latitude, longitude, consultationFee } = validation.data;
+  const doctorName = formData.get("doctorName")?.toString() || "";
+  const nameParts = doctorName.replace(/^د\.?\s*/i, "").split(" ");
+  const firstName = nameParts[0] || doctorName;
+  const lastName = nameParts.slice(1).join(" ") || "";
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const clinicUrl = `${baseUrl}/${slug}`;
@@ -165,7 +169,9 @@ export async function submitSetupWizard(formData: FormData) {
             data: {
               id: user.id,
               email: user.email!,
-              role: "ADMIN"
+              role: "ADMIN",
+              firstName,
+              lastName,
             }
           });
         }

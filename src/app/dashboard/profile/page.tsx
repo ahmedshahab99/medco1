@@ -34,9 +34,7 @@ function decodeJwtClaims(accessToken: string | undefined): { user_role: string |
       user_role: JSON.parse(Buffer.from(parts[1], "base64").toString()).user_role ?? null,
       tenant_id: JSON.parse(Buffer.from(parts[1], "base64").toString()).tenant_id ?? null,
     };
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
 export default async function ProfilePage() {
@@ -48,10 +46,15 @@ export default async function ProfilePage() {
     const jwtClaims = decodeJwtClaims(session.access_token);
     if (!jwtClaims?.tenant_id) redirect("/setup");
 
-    const tenant = await prisma.tenant.findUnique({
-      where: { id: jwtClaims.tenant_id },
-      include: { socialLinks: true },
-    });
+    const [tenant, profile] = await Promise.all([
+      prisma.tenant.findUnique({
+        where: { id: jwtClaims.tenant_id },
+        include: { socialLinks: true },
+      }),
+      prisma.profile.findUnique({
+        where: { id: session.user.id },
+      }),
+    ]);
     if (!tenant) redirect("/setup");
 
     const tenantData: TenantProfile = {
@@ -59,7 +62,7 @@ export default async function ProfilePage() {
       defaultConsultationFee: tenant.defaultConsultationFee ? Number(tenant.defaultConsultationFee) : null,
     };
 
-    return <ProfileForm initialData={tenantData} isAdmin={jwtClaims.user_role === "ADMIN"} />;
+    return <ProfileForm initialData={tenantData} isAdmin={jwtClaims.user_role === "ADMIN"} doctorProfile={profile ? { firstName: profile.firstName, lastName: profile.lastName, email: profile.email, role: profile.role } : undefined} />;
   } catch {
     redirect("/setup");
   }

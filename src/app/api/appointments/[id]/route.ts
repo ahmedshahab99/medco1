@@ -71,6 +71,19 @@ export async function PATCH(
     });
   }
 
+  // If payment reverted, delete the associated transaction
+  if (data.paymentStatus === "PENDING" && existing.paymentStatus === "PAID" && existing.consultationFee) {
+    await prisma.transaction.deleteMany({
+      where: {
+        tenantId: actor.tenantId,
+        patientId: existing.patientId,
+        type: "INCOME",
+        category: "CONSULTATION",
+        description: "الكشفية",
+      },
+    });
+  }
+
   const updated = await prisma.appointment.update({
     where: { id },
     data: {

@@ -39,7 +39,7 @@ export const navigationGroups: NavGroup[] = [
     items: [
       { title: "التقويم", href: "/dashboard/calendar", icon: Calendar },
       { title: "أوقات العمل", href: "/dashboard/availability", icon: Clock },
-      { title: "قائمة الانتظار", href: "/dashboard/waitlist", icon: Users, disabled: true },
+      { title: "قائمة الانتظار", href: "/dashboard/waitlist", icon: Users },
     ],
   },
   {

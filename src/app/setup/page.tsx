@@ -138,6 +138,8 @@ export default function SetupWizard() {
     if (data.latitude) formData.append("latitude", data.latitude.toString());
     if (data.longitude) formData.append("longitude", data.longitude.toString());
     if (data.consultationFee) formData.append("consultationFee", data.consultationFee);
+    const docName = typeof window !== 'undefined' ? sessionStorage.getItem('doctorName') : null;
+    if (docName) { formData.append("doctorName", docName); sessionStorage.removeItem('doctorName'); }
 
     const result = await submitSetupWizard(formData);
 
