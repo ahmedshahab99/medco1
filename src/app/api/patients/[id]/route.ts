@@ -4,40 +4,6 @@ import prisma from "@/lib/prisma";
 import { formatName } from "@/lib/patient-utils";
 import { patientUpdateSchema } from "@/lib/schemas/patient";
 
-function mapPatient(p: {
-  id: string;
-  firstName: string;
-  lastName: string;
-  phone: string | null;
-  email: string | null;
-  dateOfBirth: Date | null;
-  gender: "MALE" | "FEMALE" | null;
-  status: string;
-  address: string | null;
-  cases: { id: string; title: string; createdAt: Date }[];
-  createdAt: Date;
-  updatedAt: Date;
-}, nextAppt?: { startTime: Date } | null) {
-  return {
-    id: p.id,
-    name: formatName(p.firstName, p.lastName),
-    phone: p.phone,
-    email: p.email,
-    dateOfBirth: p.dateOfBirth?.toISOString() ?? null,
-    gender: p.gender,
-    status: p.status,
-    address: p.address,
-    cases: p.cases.map((c) => ({
-      id: c.id,
-      title: c.title,
-      createdAt: c.createdAt.toISOString(),
-    })),
-    nextAppointment: nextAppt?.startTime?.toISOString() ?? null,
-    createdAt: p.createdAt.toISOString(),
-    updatedAt: p.updatedAt.toISOString(),
-  };
-}
-
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -63,10 +29,7 @@ export async function GET(
   }
 
   const patient = await prisma.patient.findFirst({
-    where: {
-      id,
-      tenantId: actor.tenantId,
-    },
+    where: { id, tenantId: actor.tenantId },
     include: { cases: true },
   });
 
@@ -76,8 +39,7 @@ export async function GET(
 
   const nextAppt = await prisma.appointment.findFirst({
     where: {
-      patientId: id,
-      tenantId: actor.tenantId,
+      patientId: id, tenantId: actor.tenantId,
       startTime: { gte: new Date() },
       status: { in: ["SCHEDULED", "CONFIRMED"] },
     },
@@ -85,7 +47,67 @@ export async function GET(
     select: { startTime: true },
   });
 
-  return NextResponse.json(mapPatient(patient, nextAppt));
+  // Visit history: past appointments with service + doctor info
+  const pastAppointments = await prisma.appointment.findMany({
+    where: {
+      patientId: id, tenantId: actor.tenantId,
+      status: { in: ["COMPLETED", "ARRIVED"] },
+    },
+    orderBy: { startTime: "desc" },
+    take: 50,
+    include: {
+      service: { select: { name: true } },
+      doctor: { select: { firstName: true, lastName: true } },
+    },
+  });
+
+  // Payment history
+  const transactions = await prisma.transaction.findMany({
+    where: { patientId: id, tenantId: actor.tenantId, type: "INCOME" },
+    orderBy: { date: "desc" },
+    take: 50,
+  });
+
+  const totalVisits = await prisma.appointment.count({
+    where: { patientId: id, tenantId: actor.tenantId, status: "COMPLETED" },
+  });
+
+  return NextResponse.json({
+    id: patient.id,
+    name: formatName(patient.firstName, patient.lastName),
+    firstName: patient.firstName,
+    lastName: patient.lastName,
+    phone: patient.phone,
+    email: patient.email,
+    dateOfBirth: patient.dateOfBirth?.toISOString() ?? null,
+    gender: patient.gender,
+    status: patient.status,
+    address: patient.address,
+    consultationFee: patient.consultationFee?.toString() ?? null,
+    cases: patient.cases.map((c) => ({
+      id: c.id, title: c.title, createdAt: c.createdAt.toISOString(),
+    })),
+    nextAppointment: nextAppt?.startTime?.toISOString() ?? null,
+    totalVisits,
+    visitHistory: pastAppointments.map((a) => ({
+      id: a.id,
+      date: a.startTime.toISOString(),
+      service: a.service?.name ?? "",
+      doctor: a.doctor ? formatName(a.doctor.firstName, a.doctor.lastName) : "",
+      status: a.status,
+      consultationFee: a.consultationFee?.toString() ?? null,
+      paymentStatus: a.paymentStatus,
+    })),
+    transactions: transactions.map((t) => ({
+      id: t.id,
+      amount: t.amount.toString(),
+      category: t.category,
+      date: t.date.toISOString(),
+      description: t.description,
+    })),
+    createdAt: patient.createdAt.toISOString(),
+    updatedAt: patient.updatedAt.toISOString(),
+  });
 }
 
 export async function PATCH(
@@ -155,7 +177,19 @@ export async function PATCH(
     include: { cases: true },
   });
 
-  return NextResponse.json(mapPatient(updatedPatient));
+  return NextResponse.json({
+    id: updatedPatient.id,
+    name: formatName(updatedPatient.firstName, updatedPatient.lastName),
+    phone: updatedPatient.phone,
+    email: updatedPatient.email,
+    dateOfBirth: updatedPatient.dateOfBirth?.toISOString() ?? null,
+    gender: updatedPatient.gender,
+    status: updatedPatient.status,
+    address: updatedPatient.address,
+    cases: updatedPatient.cases.map((c: any) => ({ id: c.id, title: c.title, createdAt: c.createdAt.toISOString() })),
+    createdAt: updatedPatient.createdAt.toISOString(),
+    updatedAt: updatedPatient.updatedAt.toISOString(),
+  });
 }
 
 export async function DELETE(

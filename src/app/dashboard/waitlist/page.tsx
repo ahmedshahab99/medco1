@@ -274,12 +274,12 @@ export default function DailyOpsBoard() {
                         <div className="flex items-center gap-2 mt-2">
                           {p.paid === "PAID" ? (
                             <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1"><Check className="w-3 h-3" /> مدفوع</span>
-                          ) : (
+                          ) : p.src === "appt" ? (
                             <>
                               <span className="text-[10px] font-bold text-rose-400 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full">غير مدفوع</span>
                               <button onClick={() => sPI(p.id)} className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full hover:bg-emerald-100 transition-all"><Wallet className="w-3 h-3 inline ml-0.5" />تسديد</button>
                             </>
-                          )}
+                          ) : null}
                         </div>
                         {p.notes && <p className="text-[10px] text-slate-400 mt-1.5 bg-slate-50 p-1.5 rounded-lg">{p.notes}</p>}
                       </div>
@@ -324,18 +324,18 @@ export default function DailyOpsBoard() {
                           <div className="flex items-center gap-2 mt-2">
                           {p.paid === "PAID" ? (
                             <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1"><Check className="w-3 h-3" /> مدفوع</span>
-                          ) : (
+                          ) : p.src === "appt" ? (
                             <>
                               <span className="text-[10px] font-bold text-rose-400 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full">غير مدفوع</span>
                               <button onClick={() => sPI(p.id)} className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full hover:bg-emerald-100 transition-all"><Wallet className="w-3 h-3 inline ml-0.5" />تسديد</button>
                             </>
-                          )}
+                          ) : null}
                         </div>
                       </div>
                     </div>
                     <div className="flex gap-1.5 mt-3 pt-3 border-t border-slate-50">
-                      <button onClick={() => { if (p.paid !== "PAID") sPI(p.id); else move(p, "completed"); }} className="flex-1 py-2 bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-700 rounded-lg text-xs font-bold hover:from-emerald-100 transition-all active:scale-[0.98]">
-                           {p.paid !== "PAID" ? <><Wallet className="w-3.5 h-3.5 inline ml-0.5" />تسديد أولاً</> : <><Check className="w-3.5 h-3.5 inline ml-0.5" />إتمام</>}</button>
+                      <button onClick={() => { if (p.src === "wl") move(p, "completed"); else if (p.paid !== "PAID") sPI(p.id); else move(p, "completed"); }} className="flex-1 py-2 bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-700 rounded-lg text-xs font-bold hover:from-emerald-100 transition-all active:scale-[0.98]">
+                           {p.src === "wl" ? <><Check className="w-3.5 h-3.5 inline ml-0.5" />إتمام</> : p.paid !== "PAID" ? <><Wallet className="w-3.5 h-3.5 inline ml-0.5" />تسديد أولاً</> : <><Check className="w-3.5 h-3.5 inline ml-0.5" />إتمام</>}</button>
                       <button onClick={() => move(p, "waiting")} className="flex-1 py-2 bg-gradient-to-r from-amber-50 to-orange-50 text-amber-700 rounded-lg text-xs font-bold hover:from-amber-100 transition-all"><ArrowLeft className="w-3.5 h-3.5 inline" /> إرجاع</button>
                     </div>
                   </div>

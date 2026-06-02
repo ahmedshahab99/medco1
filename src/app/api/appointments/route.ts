@@ -135,18 +135,41 @@ export async function POST(request: Request) {
     });
   }
 
-  // ─── NEW PATIENT CREATION ───
+  // ─── NEW PATIENT CREATION (with duplicate check) ───
   if (!patientId && data.newPatient) {
-    const newPatient = await prisma.patient.create({
-      data: {
-        tenantId: actor.tenantId,
-        firstName: data.newPatient.firstName,
-        lastName: data.newPatient.lastName,
-        phone: data.newPatient.phone,
-        consultationFee: data.consultationFee || undefined,
-      },
-    });
-    patientId = newPatient.id;
+    // Search for existing patient by phone first
+    let existingPatient = null;
+    if (data.newPatient.phone) {
+      existingPatient = await prisma.patient.findFirst({
+        where: { tenantId: actor.tenantId, phone: data.newPatient.phone },
+      });
+    }
+    // Then by full name
+    if (!existingPatient && data.newPatient.firstName) {
+      const fullName = `${data.newPatient.firstName} ${data.newPatient.lastName || ""}`.trim();
+      const patients = await prisma.patient.findMany({
+        where: { tenantId: actor.tenantId },
+        take: 50,
+      });
+      existingPatient = patients.find(
+        (p) => `${p.firstName} ${p.lastName || ""}`.trim().toLowerCase() === fullName.toLowerCase()
+      );
+    }
+
+    if (existingPatient) {
+      patientId = existingPatient.id;
+    } else {
+      const newPatient = await prisma.patient.create({
+        data: {
+          tenantId: actor.tenantId,
+          firstName: data.newPatient.firstName,
+          lastName: data.newPatient.lastName,
+          phone: data.newPatient.phone,
+          consultationFee: data.consultationFee || undefined,
+        },
+      });
+      patientId = newPatient.id;
+    }
   }
 
   if (!patientId) {
