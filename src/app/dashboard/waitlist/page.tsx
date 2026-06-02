@@ -157,6 +157,23 @@ export default function DailyOpsBoard() {
   const avgWait = col1.reduce((s: number, p: any) => s + (Date.now() - new Date(p.added).getTime()), 0) / Math.max(col1.length, 1);
   const avgWaitMin = Math.round(avgWait / 60000);
 
+  // Auto-select next available time slot when form opens
+  useEffect(() => {
+    if (sAdd && !nTime) {
+      const now = new Date();
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      // Round up to next 30-min slot, skip past
+      let nextSlot = Math.ceil(currentMinutes / 30) * 30;
+      if (nextSlot < 9 * 60) nextSlot = 9 * 60;
+      if (nextSlot > 20 * 60) nextSlot = 9 * 60;
+      const h = Math.floor(nextSlot / 60);
+      const m = nextSlot % 60;
+      const t = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+      sNT(t);
+      setTimeout(() => checkAvail(t), 100);
+    }
+  }, [sAdd]);
+
   const fDoc = docs?.[0];
   const dDoc = nDoc || fDoc?.id || "";
 
@@ -203,18 +220,44 @@ export default function DailyOpsBoard() {
       {sAdd && (
         <div className="bg-white rounded-2xl border border-indigo-100 p-5 shadow-sm animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="flex items-center gap-2 mb-4"><Calendar className="w-4 h-4 text-indigo-500" /><h3 className="font-bold text-slate-800">إضافة موعد جديد</h3><span className="text-[10px] text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full">سيظهر في التقويم</span></div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 mb-3">
             <div className="sm:col-span-2"><label className="text-xs font-bold text-slate-500 mb-1 block">المريض</label><input value={nName} onChange={(e) => sNN(e.target.value)} placeholder="اسم المريض" className="w-full px-3 py-2.5 border border-slate-200 rounded-xl outline-none text-sm focus:ring-2 focus:ring-indigo-500/30" /></div>
             <div><label className="text-xs font-bold text-slate-500 mb-1 block">الهاتف</label><input value={nPhone} onChange={(e) => sNP(e.target.value)} placeholder="اختياري" className="w-full px-3 py-2.5 border border-slate-200 rounded-xl outline-none text-sm focus:ring-2 focus:ring-indigo-500/30" /></div>
             <div><label className="text-xs font-bold text-slate-500 mb-1 block">العمر</label><input type="number" value={nAge} onChange={(e) => sNA(e.target.value)} placeholder="سنة" className="w-full px-3 py-2.5 border border-slate-200 rounded-xl outline-none text-sm focus:ring-2 focus:ring-indigo-500/30" /></div>
             <div><label className="text-xs font-bold text-slate-500 mb-1 block">الوزن</label><input type="number" value={nWeight} onChange={(e) => sNW(e.target.value)} placeholder="كغم" className="w-full px-3 py-2.5 border border-slate-200 rounded-xl outline-none text-sm focus:ring-2 focus:ring-indigo-500/30" /></div>
-            <div><label className="text-xs font-bold text-slate-500 mb-1 block">الوقت</label><input type="time" value={nTime} onChange={(e) => { sNT(e.target.value); checkAvail(e.target.value); }} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl outline-none text-sm focus:ring-2 focus:ring-indigo-500/30" />
-              {nTime && avail === "checking" && <span className="text-[10px] text-slate-400 mt-0.5 block"><Loader2 className="w-3 h-3 inline animate-spin" /> جاري...</span>}
-              {avail === "free" && <span className="text-[10px] text-emerald-600 mt-0.5 block flex items-center gap-1"><Check className="w-3 h-3" /> متاح</span>}
-              {avail === "taken" && <span className="text-[10px] text-rose-600 mt-0.5 block">❌ غير متاح (خارج الدوام أو محجوز)</span>}
-            </div>
             <div><label className="text-xs font-bold text-slate-500 mb-1 block">الخدمة</label><select value={nSvc} onChange={(e) => sNS(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl outline-none text-sm bg-white focus:ring-2 focus:ring-indigo-500/30"><option value="">اختر</option>{(svcs ?? []).map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
             <div><label className="text-xs font-bold text-slate-500 mb-1 block">الطبيب</label><select value={dDoc} onChange={(e) => sND(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl outline-none text-sm bg-white focus:ring-2 focus:ring-indigo-500/30">{(docs ?? []).map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}</select></div>
+          </div>
+          {/* Time slot picker */}
+          <div className="mb-3">
+            <label className="text-xs font-bold text-slate-500 mb-1.5 block">اختر الوقت</label>
+            <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-2 bg-slate-50/50 rounded-xl border border-slate-100">
+              {(() => {
+                const slots = [];
+                for (let h = 9; h <= 20; h++) {
+                  for (let m = 0; m < 60; m += 30) {
+                    const t = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+                    const [hh, mm] = t.split(":").map(Number);
+                    const slotTime = new Date(today); slotTime.setHours(hh, mm, 0, 0);
+                    const past = slotTime <= new Date();
+                    slots.push(t);
+                  }
+                }
+                return slots.map((t) => {
+                  const [hh, mm] = t.split(":").map(Number);
+                  const slotTime = new Date(today); slotTime.setHours(hh, mm, 0, 0);
+                  const past = slotTime <= new Date();
+                  const isFree = avail === "free" && nTime === t;
+                  const isTaken = avail === "taken" && nTime === t;
+                  return (
+                    <button key={t} type="button" onClick={() => { sNT(t); checkAvail(t); }} disabled={past}
+                      className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all ${nTime === t ? (isFree ? "bg-emerald-50 border-emerald-300 text-emerald-700 shadow-sm" : isTaken ? "bg-rose-50 border-rose-300 text-rose-700" : "bg-indigo-50 border-indigo-300 text-indigo-700 shadow-sm") : past ? "bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed" : "bg-white border-slate-200 text-slate-600 hover:border-indigo-300 hover:bg-indigo-50/50"}`}>
+                      {t}
+                    </button>
+                  );
+                });
+              })()}
+            </div>
           </div>
           <div className="flex gap-2 justify-end">
             <button onClick={() => sSA(false)} className="px-4 py-2 border border-slate-200 rounded-xl text-sm font-bold text-slate-600">إلغاء</button>
