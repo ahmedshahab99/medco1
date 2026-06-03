@@ -1,106 +1,161 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { createClient } from "@/utils/supabase/client";
+import { useState, useTransition } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { signup } from './actions'
+import { CheckCircle2, AlertCircle, Loader2, UserPlus, ArrowLeft } from 'lucide-react'
+import Link from 'next/link'
+import { signupWithGoogle } from '@/utils/supabase/signInGoogle'
 
-export default function SignupPage() {
-  const [name, setName] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+const signUpSchema = z.object({
+  email: z.string().email({ message: 'Please enter a valid email address' }),
+})
 
-  const handleGoogle = async () => {
-    if (!name.trim()) { setError("يرجى إدخال الاسم الكامل"); return; }
-    setLoading(true); setError("");
-    // Store name in sessionStorage so setup page can use it
-    sessionStorage.setItem("doctorName", name.trim());
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    });
-    if (error) setLoading(false);
-  };
+type SignUpFormValues = z.infer<typeof signUpSchema>
+
+export default function SignUpPage() {
+  const [isPending, startTransition] = useTransition()
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<SignUpFormValues>({
+    resolver: zodResolver(signUpSchema),
+    defaultValues: { email: '' },
+  })
+
+  const onSubmit = (data: SignUpFormValues) => {
+    setError(null)
+    setSuccess(false)
+
+    startTransition(async () => {
+      const formData = new FormData()
+      formData.append('email', data.email)
+
+      const result = await signup(formData)
+
+      if (result?.error) {
+        setError(result.error)
+      } else if (result?.success) {
+        setSuccess(true)
+      }
+    })
+  }
+
+  const handleSignupWithGoogle = async () => {
+    await signupWithGoogle()
+  }
 
   return (
-    <div style={{
-      minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
-      background: "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)",
-      fontFamily: "'Cairo', sans-serif", direction: "rtl", padding: 20, position: "relative", overflow: "hidden"
-    }}>
-      <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
-        <div style={{ position: "absolute", top: "-20%", right: "-10%", width: "55%", height: "55%", background: "radial-gradient(circle, rgba(16,185,129,0.12) 0%, transparent 70%)", borderRadius: "50%", animation: "float 8s ease-in-out infinite" }} />
-        <div style={{ position: "absolute", bottom: "-20%", left: "-10%", width: "50%", height: "50%", background: "radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%)", borderRadius: "50%", animation: "float 10s ease-in-out infinite" }} />
+    <div
+      className="min-h-screen w-full flex items-center justify-center bg-gray-50 relative overflow-hidden"
+      dir="rtl"
+      style={{ fontFamily: 'var(--font-almarai)' }}
+    >
+      {/* Background design elements */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob" />
+        <div className="absolute top-[20%] right-[-10%] w-[40%] h-[40%] bg-teal-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000" />
+        <div className="absolute bottom-[-20%] left-[20%] w-[40%] h-[40%] bg-indigo-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000" />
       </div>
 
-      <div style={{
-        position: "relative", width: "100%", maxWidth: 440, background: "rgba(30,41,59,0.8)", backdropFilter: "blur(20px)",
-        borderRadius: 24, border: "1px solid rgba(255,255,255,0.06)", padding: "48px 40px", boxShadow: "0 25px 80px rgba(0,0,0,0.5)"
-      }}>
-        <div style={{ textAlign: "center", marginBottom: 36 }}>
-          <div style={{
-            width: 72, height: 72, margin: "0 auto 16px", borderRadius: 20,
-            background: "linear-gradient(135deg, #10b981, #059669)", display: "flex", alignItems: "center", justifyContent: "center",
-            boxShadow: "0 8px 32px rgba(16,185,129,0.4)"
-          }}>
-            <svg width={36} height={36} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2a6 6 0 0 1 6 6c0 3.5-2 6.5-4 8.5V20a2 2 0 0 1-4 0v-3.5C8 14.5 6 11.5 6 8a6 6 0 0 1 6-6Z" />
-              <circle cx="12" cy="8" r="2" />
-              <path d="M9 22h6" />
-            </svg>
+      <div className="w-full max-w-md p-8 md:p-10 bg-white/70 backdrop-blur-xl rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/50 z-10 relative">
+        <div className="flex flex-col items-center mb-8">
+          <div className="inline-flex items-center gap-2 px-3 py-1 mb-3 text-xs font-bold tracking-wider uppercase bg-blue-50 text-blue-600 rounded-lg">
+            سجل حساب
           </div>
-          <h1 style={{ color: "#fff", fontSize: 26, fontWeight: 900, letterSpacing: "-0.5px" }}>إنشاء حساب جديد</h1>
-          <p style={{ color: "#94a3b8", fontSize: 14, marginTop: 6, lineHeight: 1.6 }}>أدخل اسمك ثم سجل بحساب Google</p>
+          <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center mb-3 shadow-lg shadow-blue-600/30">
+            <UserPlus className="w-6 h-6 text-white" />
+          </div>
+          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight mb-2">انضم إلى ميدكو</h1>
+          <p className="text-sm text-gray-500 text-center">
+            أنشئ حسابًا لإدارة عيادتك بسهولة.
+            <br />
+            او سجل دخول
+          </p>
         </div>
+        <div>
+          {success ? (
+            <div className="bg-emerald-50 text-emerald-800 p-6 rounded-2xl flex flex-col items-center text-center animate-in fade-in zoom-in duration-300">
+              <CheckCircle2 className="w-12 h-12 text-emerald-500 mb-3" />
+              <h3 className="font-semibold text-lg mb-2">تحقق من بريدك الإلكتروني</h3>
+              <p className="text-sm text-emerald-600 mb-6">
+                أرسلنا رابط تأكيد إلى عنوان بريدك الإلكتروني. يرجى النقر عليه لتفعيل حسابك.
+              </p>
+              <Link
+                onClick={() => setSuccess(false)}
+                href="/signup"
+                className="inline-flex items-center justify-center w-full px-4 py-2.5 text-sm font-medium text-emerald-700 bg-emerald-100 hover:bg-emerald-200 rounded-xl transition-colors"
+              >
+                العودة لتسجيل الدخول
+              </Link>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+              {error && (
+                <div className="bg-red-50 text-red-600 p-4 rounded-xl flex items-start text-sm border border-red-100 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <AlertCircle className="w-5 h-5 me-3 flex-shrink-0 mt-0.5" />
+                  <p>{error}</p>
+                </div>
+              )}
 
-        <div style={{ marginBottom: 20 }}>
-          <label style={{ display: "block", color: "#cbd5e1", fontSize: 13, fontWeight: 700, marginBottom: 6 }}>الاسم الكامل للطبيب</label>
-          <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="مثال: د. أحمد الزهراني"
-            style={{
-              width: "100%", padding: "12px 16px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.08)",
-              background: "rgba(255,255,255,0.03)", color: "#fff", fontSize: 14, outline: "none", textAlign: "right"
-            }}
-            onFocus={(e) => e.currentTarget.style.borderColor = "rgba(16,185,129,0.4)"}
-            onBlur={(e) => e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"}
-          />
-        </div>
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-gray-700">البريد الإلكتروني</label>
+                  <input
+                    {...register('email')}
+                    type="email"
+                    placeholder="you@example.com"
+                    className={`w-full px-4 py-2.5 bg-white/50 border rounded-xl text-sm transition-all outline-none text-gray-800 focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600 placeholder:text-gray-400 ${errors.email ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' : 'border-gray-200'
+                      }`}
+                    style={{ textAlign: 'right', paddingRight: '16px' }}
+                  />
+                  {errors.email && (
+                    <p className="text-xs text-red-500 px-1 animate-in slide-in-from-top-1">
+                      {errors.email.message}
+                    </p>
+                  )}
+                </div>
+              </div>
 
-        {error && <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 12, padding: "10px 14px", fontSize: 13, color: "#fca5a5", marginBottom: 16, textAlign: "center" }}>{error}</div>}
-
-        <button onClick={handleGoogle} disabled={loading || !name.trim()} style={{
-          width: "100%", padding: "14px 20px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.1)",
-          background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer",
-          display: "flex", alignItems: "center", justifyContent: "center", gap: 10, transition: "all .2s",
-          marginBottom: 20, opacity: (!name.trim() || loading) ? 0.6 : 1
-        }}
-          onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.1)"}
-          onMouseLeave={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
-        >
-          <svg width={20} height={20} viewBox="0 0 24 24">
-            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
-            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-          </svg>
-          {loading ? "جاري..." : "التسجيل بحساب Google"}
-        </button>
-
-        <p style={{ textAlign: "center", color: "#64748b", fontSize: 13 }}>
-          لديك حساب بالفعل؟{" "}
-          <a href="/login" style={{ color: "#818cf8", fontWeight: 700, textDecoration: "none" }}>تسجيل الدخول</a>
-        </p>
-
-        <div style={{ display: "flex", justifyContent: "center", gap: 16, marginTop: 28, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-          {["💳 مجاني", "🔒 مشفر", "☁️ سحابي"].map((badge, i) => (
-            <span key={i} style={{ color: "#64748b", fontSize: 11, fontWeight: 600 }}>{badge}</span>
-          ))}
+              <button
+                type="submit"
+                disabled={isPending}
+                className="w-full flex items-center justify-center px-4 py-3 bg-gray-900 hover:bg-gray-800 text-white font-medium rounded-xl text-sm transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed group"
+              >
+                {isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 me-2 animate-spin" />
+                    جارٍ إنشاء الحساب...
+                  </>
+                ) : (
+                  <>
+                    دخول عبر البريد الإلكتروني
+                    <ArrowLeft className="w-4 h-4 ms-2 opacity-70 group-hover:-translate-x-1 transition-transform" />
+                  </>
+                )}
+              </button>
+            </form>
+          )}
+          {/* sign up with google button */}
+          <div className="mt-6">
+            <button
+              onClick={handleSignupWithGoogle}
+              className="w-full flex items-center justify-center px-4 py-3 bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 font-medium rounded-xl text-sm transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed group"
+            >
+              التسجيل مع Google
+              <svg className='w-6 mx-2' xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" viewBox="0 0 48 48">
+                <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"></path><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"></path>
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
-
-      <style>{`
-        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
-        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap');
-        *{font-family:'Cairo',sans-serif}
-      `}</style>
     </div>
-  );
+  )
 }

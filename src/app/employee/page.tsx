@@ -11,7 +11,7 @@ export default function EmployeePage() {
   useEffect(() => {
     const auth = localStorage.getItem("medco_auth");
     if (!auth) {
-      router.push('/login?redirect=/employee');
+      router.push('/signup?redirect=/employee');
     } else {
       setIsAuth(true);
     }

@@ -41,7 +41,7 @@ export default async function ProfilePage() {
   try {
     const supabase = await createClient();
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) redirect("/login");
+    if (!session?.access_token) redirect("/signup");
 
     const jwtClaims = decodeJwtClaims(session.access_token);
     if (!jwtClaims?.tenant_id) redirect("/setup");
