@@ -12,7 +12,7 @@ import { arSA } from "date-fns/locale/ar-SA";
 import {
   Clock, Phone, User, Plus, X, Check, ArrowRight, Loader2, Users, Search, Stethoscope,
   AlertCircle, CheckCircle2, ArrowLeft, DollarSign, Wallet, Calendar, RefreshCw, TrendingUp,
-  Hourglass, Sparkles
+  Hourglass, Sparkles, ShoppingCart, ArrowDownRight
 } from "lucide-react";
 
 function ft(d: string) { return format(new Date(d), "hh:mm a", { locale: arSA }); }
@@ -53,6 +53,10 @@ export default function DailyOpsBoard() {
   const [search, sS] = useState("");
   const [payId, sPI] = useState<string | null>(null);
   const [avail, sAv] = useState<"idle" | "checking" | "free" | "taken">("idle");
+  const [showExpense, sSE] = useState(false);
+  const [expCat, sEC] = useState("SUPPLIES");
+  const [expAmt, sEA] = useState("");
+  const [expDesc, sED] = useState("");
   const [refreshing, sRef] = useState(false);
   const [justMoved, sJM] = useState<string | null>(null);
 
@@ -194,6 +198,7 @@ export default function DailyOpsBoard() {
                 <input value={search} onChange={(e) => sS(e.target.value)} placeholder="ابحث عن مريض..." className="w-full px-9 py-2 border border-slate-200 rounded-xl outline-none text-sm focus:ring-2 focus:ring-indigo-500/30 bg-white/80" />
               </div>
               <button onClick={refresh} className="p-2.5 border border-slate-200 rounded-xl hover:bg-slate-50 transition-all"><RefreshCw className={`w-4 h-4 text-slate-500 ${refreshing ? "animate-spin" : ""}`} /></button>
+              <button onClick={() => { sSE(true); sEA(""); sED(""); }} className="flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-xl font-bold text-sm hover:from-amber-500 hover:to-orange-600 transition-all shadow-lg shadow-amber-200"><ShoppingCart className="w-4 h-4" /> مصروف</button>
               <button onClick={() => sSA(!sAdd)} className="flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-l from-indigo-500 to-purple-600 text-white rounded-xl font-bold text-sm hover:from-indigo-600 hover:to-purple-700 transition-all shadow-lg shadow-indigo-200"><Plus className="w-4 h-4" /> موعد</button>
             </div>
           </div>
@@ -278,6 +283,47 @@ export default function DailyOpsBoard() {
               <button onClick={() => sPI(null)} className="px-4 py-2 border border-slate-200 rounded-xl text-sm font-bold text-slate-600">إلغاء</button>
               <button onClick={() => mkPaid(payId)} className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 flex items-center gap-1"><Check className="w-4 h-4" /> قبول الدفع</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quick Expense */}
+      {showExpense && (
+        <div className="bg-white rounded-2xl border-2 border-amber-200 p-5 shadow-sm animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center"><ShoppingCart className="w-5 h-5 text-amber-600" /></div>
+            <div>
+              <p className="font-bold text-slate-800">إضافة مصروف طارئ</p>
+              <p className="text-xs text-slate-400">مصروفات غير ثابتة تحدث خلال اليوم</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-3">
+            <div><label className="text-xs font-bold text-slate-500 mb-1 block">التصنيف</label>
+              <select value={expCat} onChange={(e) => sEC(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl outline-none text-sm bg-white focus:ring-2 focus:ring-amber-500/30">
+                <option value="SUPPLIES">مستلزمات</option>
+                <option value="MAINTENANCE">صيانة</option>
+                <option value="MARKETING">تسويق</option>
+                <option value="UTILITIES">فواتير</option>
+                <option value="OTHER">أخرى</option>
+              </select></div>
+            <div><label className="text-xs font-bold text-slate-500 mb-1 block">المبلغ</label>
+              <input type="number" value={expAmt} onChange={(e) => sEA(e.target.value)} placeholder="دينار" className="w-full px-3 py-2.5 border border-slate-200 rounded-xl outline-none text-sm focus:ring-2 focus:ring-amber-500/30" /></div>
+            <div className="sm:col-span-2"><label className="text-xs font-bold text-slate-500 mb-1 block">الوصف</label>
+              <input value={expDesc} onChange={(e) => sED(e.target.value)} placeholder="مثلاً: أدوات تعقيم، قرطاسية..." className="w-full px-3 py-2.5 border border-slate-200 rounded-xl outline-none text-sm focus:ring-2 focus:ring-amber-500/30" /></div>
+          </div>
+          <div className="flex gap-2 justify-end">
+            <button onClick={() => sSE(false)} className="px-4 py-2 border border-slate-200 rounded-xl text-sm font-bold text-slate-600">إلغاء</button>
+            <button onClick={async () => {
+              if (!expAmt || !expDesc) return;
+              await fetch("/api/transactions", {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  type: "EXPENSE", category: expCat, amount: expAmt, description: expDesc, date: new Date().toISOString(),
+                }),
+              });
+              sSE(false); sEA(""); sED("");
+              qc.invalidateQueries({ queryKey: ["transactions"] });
+            }} disabled={!expAmt || !expDesc} className="px-4 py-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-xl text-sm font-bold disabled:opacity-50 flex items-center gap-1"><ArrowDownRight className="w-4 h-4" /> إضافة مصروف</button>
           </div>
         </div>
       )}
