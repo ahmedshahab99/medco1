@@ -17,7 +17,7 @@ function decodeJwtClaims(accessToken: string | undefined): { tenant_id: string |
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
   const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.access_token) redirect("/login");
+  if (!session?.access_token) redirect("/signup");
 
   const jwtClaims = decodeJwtClaims(session.access_token);
   if (jwtClaims?.tenant_id) return <DashboardShell>{children}</DashboardShell>;

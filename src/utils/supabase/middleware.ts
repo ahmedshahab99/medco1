@@ -41,13 +41,13 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Protected routes: redirect to /login if no user
+  // Protected routes: redirect to /signup if no user
   const protectedRoutes = ['/dashboard', '/admin', '/doctor', '/hr']
   const isProtectedRoute = protectedRoutes.some(route => request.nextUrl.pathname.startsWith(route))
 
   if (!user && isProtectedRoute) {
     const url = request.nextUrl.clone()
-    url.pathname = '/login'
+    url.pathname = '/signup'
     return NextResponse.redirect(url)
   }
 
@@ -58,7 +58,7 @@ export async function updateSession(request: NextRequest) {
 
   // Auth routes: redirect clinic users to /dashboard if already logged in.
   // Sales reps complete onboarding under /signup/salesrep and do not have a clinic tenant.
-  const authRoutes = ['/login', '/signup']
+  const authRoutes = ['/signup']
   const isAuthRoute = authRoutes.some(route => request.nextUrl.pathname.startsWith(route))
 
   if (user && isAuthRoute && !isSalesRepRoute) {

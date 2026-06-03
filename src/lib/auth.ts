@@ -50,7 +50,7 @@ export async function getAuthState(): Promise<AuthProfile | null> {
 
 export async function requireAuth(): Promise<AuthProfile> {
   const profile = await getAuthState();
-  if (!profile) redirect("/login");
+  if (!profile) redirect("/signup");
   return profile;
 }
 

@@ -565,7 +565,7 @@ export default function DigitalClinicLanding() {
 
           {/* Actions */}
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-            <Link href="/login" style={{ background: "transparent", border: `1px solid ${C.border}`, color: C.text, padding: "9px 18px", borderRadius: 50, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "'Cairo','Syne',sans-serif" }}>
+            <Link href="/signup" style={{ background: "transparent", border: `1px solid ${C.border}`, color: C.text, padding: "9px 18px", borderRadius: 50, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "'Cairo','Syne',sans-serif" }}>
               {t.nav.login}
             </Link>
             <Link className="btn-shine" href="/signup" style={{ ...btnPrimary, padding: "9px 20px", fontSize: 14 }}>

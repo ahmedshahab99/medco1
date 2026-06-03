@@ -11,7 +11,7 @@ export default function FinancePage() {
   useEffect(() => {
     const auth = localStorage.getItem("medco_auth");
     if (!auth) {
-      router.push('/login?redirect=/finance');
+      router.push('/signup?redirect=/finance');
     } else {
       setIsAuth(true);
     }

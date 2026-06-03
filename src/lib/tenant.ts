@@ -29,7 +29,7 @@ export async function getTenantId(): Promise<string> {
   const { data: { session } } = await supabase.auth.getSession();
 
   if (!session?.access_token) {
-    redirect("/login");
+    redirect("/signup");
   }
 
   const jwtClaims = decodeJwtClaims(session.access_token);
@@ -73,7 +73,7 @@ export async function getUserId(): Promise<string> {
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login");
+    redirect("/signup");
   }
 
   return user.id;

@@ -15,7 +15,7 @@ interface SessionWatchResult {
 /**
  * Watches the current session for revocation by polling /api/session-check.
  * If the session was revoked (e.g., admin changed role or deleted user),
- * it shows a toast, signs the user out locally, and redirects to /login.
+ * it shows a toast, signs the user out locally, and redirects to /signup.
  *
  * Mount this inside the dashboard shell so it runs for all protected pages.
  * Render the <Toast /> component using the returned toast state.
@@ -43,7 +43,7 @@ export function useSessionWatch(): SessionWatchResult {
           setTimeout(async () => {
             const supabase = createClient();
             await supabase.auth.signOut({ scope: "local" });
-            router.push("/login");
+            router.push("/signup");
           }, 3500);
         }
       } catch {

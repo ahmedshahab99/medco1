@@ -43,7 +43,7 @@ export function Topbar({ onOpenMobileSidebar }: TopbarProps) {
           onClick={async () => {
             localStorage.removeItem("salesrep");
             try { await logout(); } catch {}
-            window.location.href = "/login";
+            window.location.href = "/signup";
           }}
           className="p-2.5 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-all group"
         >
