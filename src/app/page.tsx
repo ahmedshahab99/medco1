@@ -1,96 +1,66 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  Stethoscope, CalendarPlus, Users, FileText, Receipt, Building2,
-  ChevronDown, ArrowLeft, ArrowRight, Check, Star, Shield, Clock,
-  Phone, Mail, MapPin, MessageSquare, Menu, X, HeartPulse, Activity,
-  ClipboardList, Pill, TrendingUp, Award, Zap, Globe, Lock,
-  Smartphone, BarChart3, Layers, BadgeCheck, Sparkles, CircleDot,
-} from "lucide-react";
 
+// ─── TYPES ──────────────────────────────────────────────────────────────────
 type Lang = "ar" | "en";
 type Page = "home" | "features" | "pricing" | "contact" | "faq";
 
+// ─── TRANSLATIONS ────────────────────────────────────────────────────────────
 const T = {
   ar: {
-    dir: "rtl" as const,
-    nav: { home: "الرئيسية", features: "المميزات", pricing: "الباقات", contact: "تواصل", faq: "أسئلة", login: "دخول", signup: "ابدأ مجاناً" },
+    dir: "rtl" as any,
+    topbar: { email: "info@digitalclinic.iq", phone: "+964 770 281 4484", location: "العراق، بغداد" },
+    nav: { home: "الرئيسية", features: "المميزات", pricing: "الباقات", contact: "الدعم", faq: "الأسئلة", login: "تسجيل الدخول", signup: "إنشاء حساب" },
     hero: {
-      badge: "النظام الأول من نوعه في العراق",
-      title1: "عيادتك،",
-      title2: "ب نبضٍ رقمي",
-      title3: "جديد",
-      subtitle: "منصة ذكية تُدير عيادتك بالكامل — المرضى، المواعيد، الوصفات، والمال — كل شيء في مكان واحد بسلاسة مطلقة.",
-      cta1: "ابدأ مجاناً الآن",
+      badge: "⚕️ تكنولوجيا الرعاية الصحية العراقية",
+      title1: "المستقبل الرقمي",
+      title2: "لعيادتك",
+      subtitle: "نظام إدارة العيادات الأكثر تطوراً في العراق. إدارة المرضى، المواعيد، السجلات الطبية، والفواتير في منصة واحدة ذكية.",
+      cta1: "🚀 سجّل عيادتك مجاناً",
       cta2: "شاهد كيف يعمل",
+      stat1val: "2,500+", stat1lbl: "مريض نشط",
+      stat2val: "150+", stat2lbl: "عيادة تثق بنا",
+      stat3val: "99.9%", stat3lbl: "وقت التشغيل",
+      stat4val: "24/7", stat4lbl: "دعم فني",
     },
-    pulse: {
-      label: "نبض العيادة الرقمية",
-      stats: [
-        { val: "2500+", lbl: "مريض نشط", icon: Users },
-        { val: "150+", lbl: "عيادة تثق بنا", icon: Building2 },
-        { val: "99.9%", lbl: "وقت التشغيل", icon: Activity },
-        { val: "24/7", lbl: "دعم فني", icon: HeartPulse },
-      ],
-    },
-    pain: {
-      badge: "المشكلة",
-      title: "عيادتك تستحق أفضل من الورق والفوضى",
+    trust: ["🔒 آمن وخاص", "☁️ سحابي 100%", "🌐 متعدد اللغات", "📞 دعم 24/7", "✅ جاهز للبدء الفوري"],
+    features: {
+      badge: "⚡ مميزاتنا",
+      title: "كل ما تحتاجه عيادتك",
+      sub: "أدوات شاملة لإدارة جميع جوانب ممارستك الطبية بكفاءة وذكاء.",
       items: [
-        { icon: CalendarPlus, title: "مواعيد ضائعة", desc: "مواعيد تُنسى أو تتضارب لأنك تعتمد على الورق أو الدفتر" },
-        { icon: FileText, title: "سجلات مبعثرة", desc: "ملفات المرضى بين أدراج مختلفة، وصفات مكتوبة بخط اليد لا تُقرأ" },
-        { icon: Receipt, title: "ماليات غير واضحة", desc: "لا تعرف بالضبط كم دخّلت وكم صرفت في آخر شهر" },
-        { icon: Clock, title: "وقت يضيع هباءً", desc: "ساعات تضيع يومياً في التنظيم بدلاً من تركيزك على المريض" },
-      ],
+        { icon: "👥", badge: "أساسي", title: "إدارة المرضى", desc: "سجلات مرضى كاملة مع التاريخ الطبي والحساسية والأدوية.", list: ["سجلات مرضى كاملة", "تتبع التاريخ الطبي", "الحساسية والأدوية"] },
+        { icon: "📅", badge: "شائع", title: "جدولة المواعيد", desc: "نظام مواعيد ذكي مع تذكيرات تلقائية وتتبع الحالة.", list: ["نظام حجز سهل", "توفر الطبيب", "تذكيرات واتساب"] },
+        { icon: "🩺", badge: "رئيسي", title: "الجلسات الطبية", desc: "سجل التشخيصات والعلاجات وأنشئ سلاسل جلسات المتابعة.", list: ["تسجيل التشخيصات", "تتبع العلاجات", "سلاسل المتابعة"] },
+        { icon: "💊", badge: "طبي", title: "الوصفات الطبية", desc: "وصفات رقمية احترافية مع طباعة وتتبع الأدوية.", list: ["وصفات رقمية", "طباعة احترافية", "تتبع الأدوية"] },
+        { icon: "💰", badge: "★ الأكثر استخداماً", title: "الإدارة المالية", desc: "تتبع المدفوعات وإدارة المصروفات والتقارير المالية.", list: ["تتبع المدفوعات", "إدارة المصروفات", "التقارير المالية"] },
+        { icon: "🏢", badge: "قابل للتوسع", title: "عيادات متعددة", desc: "إدارة فروع متعددة ببيانات معزولة وتحكم مركزي.", list: ["إدارة عيادات متعددة", "بيانات معزولة", "تحكم مركزي"] },
+      ]
     },
-    solution: {
-      badge: "الحل",
-      title: "نظام واحد يحوّل فوضى عيادتك إلى سلاسة رقمية",
-      subtitle: "كل ما تحتاجه لإدارة عيادتك بذكاء وكفاءة — من أول موعد إلى آخر فاتورة.",
+    why: {
+      badge: "💡 لماذا نحن؟",
+      title: "مصمم للعيادات العراقية",
+      sub: "نفهم السياق المحلي ونبني حلولاً تناسب احتياجاتكم الفعلية.",
       items: [
-        { icon: Users, title: "إدارة المرضى", desc: "سجلات كاملة مع التاريخ الطبي والحساسية والأدوية المتفاعلة", color: "from-blue-500 to-cyan-400" },
-        { icon: CalendarPlus, title: "جدولة ذكية", desc: "مواعيد تلقائية مع تذكيرات واتساب وتتبع حالة كل زيارة", color: "from-emerald-500 to-teal-400" },
-        { icon: Stethoscope, title: "الجلسات الطبية", desc: "سجّل التشخيصات والعلاجات وأنشئ سلاسل متابعة متكاملة", color: "from-violet-500 to-purple-400" },
-        { icon: Pill, title: "الوصفات الرقمية", desc: "وصفات احترافية بطباعة نظيفة وقابلة للتخصيص بالكامل", color: "from-amber-500 to-orange-400" },
-        { icon: BarChart3, title: "الإدارة المالية", desc: "تتبع المدفوعات والمصروفات مع تقارير شهرية واضحة", color: "from-rose-500 to-pink-400" },
-        { icon: Building2, title: "متعدد الفروع", desc: "أدر أكثر من عيادة ببيانات معزولة وتحكم مركزي كامل", color: "from-indigo-500 to-blue-400" },
-      ],
-    },
-    dayInLife: {
-      badge: "يوم في عيادتك",
-      title: "من الصباح حتى المساء، كل شيء رقمي",
-      steps: [
-        { time: "8:00 ص", title: "فتحت العيادة", desc: "لوحة التحكم تعرض لك مواعيد اليوم والإحصائيات فوراً", icon: Activity },
-        { time: "8:30 ص", title: "أول مريض وصل", desc: "بطاقة الانتظار تتحرك تلقائياً من العمود للأخرى عند كل مرحلة", icon: Users },
-        { time: "9:15 ص", title: "كشف وتشخيص", desc: "سجّل التشخيص والوصفة بنقرات قليلة، وشاهد تاريخ المريض كاملاً", icon: Stethoscope },
-        { time: "10:00 ص", title: "وصفة طباعة", desc: "وصفة احترافية جاهزة للطباعة بتنسيق العيادة وشعارها", icon: FileText },
-        { time: "11:30 ص", title: "تسديد دفع", desc: "سجّل الدفع بنقرة واحدة، والإيرادات تتحدث تلقائياً في التقارير", icon: Receipt },
-        { time: "2:00 م", title: "نهاية اليوم", desc: "تقرير يومي شامل: كم مريض، كم إيراد، كم مصروف — كل شيء واضح", icon: TrendingUp },
-      ],
-    },
-    whyUs: {
-      badge: "لماذا نحن؟",
-      title: "مصممون خصيصاً للعيادات العراقية",
-      items: [
-        { icon: Globe, title: "عربي وكوردي وإنجليزي", desc: "واجهة متعددة اللغات تناسب جميع الكوادر الطبية في العراق" },
-        { icon: Shield, title: "لا حاجة لبطاقة ائتمان", desc: "ابدأ مجاناً وادفع عندما تكون جاهزاً. بدون أي التزامات" },
-        { icon: MessageSquare, title: "تكامل واتساب وزين كاش", desc: "تذكيرات تلقائية عبر واتساب ودفع إلكتروني عراقي" },
-        { icon: Lock, title: "بيانات آمنة في أوروبا", desc: "خوادم أوروبية بتشفير مصرفي لحماية بيانات مرضاك" },
+        { title: "دعم عربي وكردي وإنجليزي", desc: "واجهة متعددة اللغات تناسب جميع الكوادر الطبية في العراق." },
+        { title: "لا حاجة لبطاقة ائتمان", desc: "ابدأ مجاناً وادفع عندما تكون مستعداً. بدون أي التزامات مسبقة." },
+        { title: "تكامل مع واتساب وزين كاش", desc: "تذكيرات تلقائية عبر واتساب ودفع إلكتروني عراقي محلي." },
+        { title: "بيانات آمنة في العراق", desc: "خوادم موثوقة وتشفير عالي المستوى لحماية بيانات مرضاك." },
       ],
       stats: [
         { val: "500+", lbl: "عيادة نشطة" },
         { val: "50K+", lbl: "مريض مسجل" },
         { val: "99.9%", lbl: "وقت التشغيل" },
         { val: "4.9★", lbl: "تقييم العملاء" },
-      ],
+      ]
     },
     pricing: {
-      badge: "الباقات",
-      title: "أسعار شفافة لكل حجم عيادة",
-      sub: "ابدأ مجاناً. وسع عندما تحتاج. بدون رسوم خفية.",
+      badge: "💎 الباقات",
+      title: "أسعار شفافة لكل حجم",
+      sub: "اختر الباقة التي تناسب عيادتك. بدون رسوم خفية.",
       toggle: ["شهري", "سنوي"],
       save: "وفر 17%",
       plans: [
@@ -98,55 +68,75 @@ const T = {
         { name: "الأساسية", tagline: "للممارسين المنفردين", monthlyPrice: "25,000", yearlyPrice: "250,000", doctors: "1-2 طبيب", highlight: false, features: ["سجلات غير محدودة", "مواعيد غير محدودة", "وصفات طبية", "تقارير مالية", "دعم هاتفي"], cta: "ابدأ الآن" },
         { name: "الفضية", tagline: "للعيادات الصغيرة", monthlyPrice: "60,000", yearlyPrice: "600,000", doctors: "3-5 أطباء", highlight: false, features: ["كل مميزات الأساسية", "عيادات متعددة", "تذكيرات واتساب", "تقارير متقدمة", "دعم أولوية"], cta: "ابدأ الآن" },
         { name: "الذهبية", tagline: "الأكثر شعبية", monthlyPrice: "120,000", yearlyPrice: "1,200,000", doctors: "6-15 طبيب", highlight: true, features: ["كل مميزات الفضية", "تكامل المختبر", "تطبيق موبايل", "مدير حساب مخصص", "دعم 24/7"], cta: "ابدأ الآن" },
-        { name: "البلاتينية", tagline: "لسلاسل العيادات", monthlyPrice: "300,000", yearlyPrice: "3,000,000", doctors: "غير محدود", highlight: false, features: ["كل مميزات الذهبية", "API مخصص", "تدريب في الموقع", "SLA مضمون 99.99%", "دعم VIP"], cta: "تواصل معنا" },
+        { name: "البلاتينية", tagline: "لسلاسل العيادات", monthlyPrice: "300,000", yearlyPrice: "3,000,000", doctors: "أطباء غير محدود", highlight: false, features: ["كل مميزات الذهبية", "API مخصص", "تدريب في الموقع", "SLA مضمون 99.99%", "دعم VIP"], cta: "تواصل معنا" },
       ],
       currency: "د.ع",
       period: "/شهر",
       yearNote: "تُدفع سنوياً",
     },
     contact: {
-      badge: "تواصل معنا",
-      title: "فريقنا جاهز لمساعدتك",
-      sub: "نحن هنا للإجابة على جميع استفساراتك — أي وقت.",
+      badge: "📬 تواصل معنا",
+      title: "نحن هنا لمساعدتك",
+      sub: "فريقنا المحلي متاح للإجابة على جميع استفساراتك.",
       info: [
-        { icon: Mail, label: "البريد الإلكتروني", value: "info@digitalclinic.iq" },
-        { icon: Phone, label: "الهاتف", value: "+964 770 281 4484" },
-        { icon: MessageSquare, label: "واتساب", value: "+964 770 281 4484" },
-        { icon: MapPin, label: "الموقع", value: "العراق، بغداد" },
+        { icon: "📧", label: "البريد الإلكتروني", value: "info@digitalclinic.iq" },
+        { icon: "📞", label: "الهاتف", value: "+964 770 281 4484" },
+        { icon: "💬", label: "واتساب", value: "+964 770 281 4484" },
+        { icon: "📍", label: "الموقع", value: "العراق، بغداد" },
+        { icon: "🕐", label: "ساعات العمل", value: "السبت–الخميس: 9 ص – 6 م" },
       ],
-      form: { title: "أرسل رسالة", name: "الاسم الكامل", namePh: "اسمك الكريم", email: "البريد الإلكتروني", emailPh: "example@email.com", phone: "رقم الهاتف", phonePh: "07xxxxxxxxx", subject: "الموضوع", subjectPh: "موضوع الرسالة", clinic: "اسم العيادة (اختياري)", clinicPh: "اسم عيادتك", message: "رسالتك", messagePh: "اكتب رسالتك هنا...", submit: "إرسال الرسالة", success: "تم إرسال رسالتك بنجاح! سيتواصل معك فريقنا خلال 24 ساعة." },
+      form: {
+        title: "أرسل رسالة",
+        name: "الاسم الكامل", namePh: "اسمك الكريم",
+        email: "البريد الإلكتروني", emailPh: "example@email.com",
+        phone: "رقم الهاتف", phonePh: "07xxxxxxxxx",
+        subject: "الموضوع", subjectPh: "موضوع الرسالة",
+        clinic: "اسم العيادة (اختياري)", clinicPh: "اسم عيادتك",
+        message: "رسالتك", messagePh: "اكتب رسالتك هنا...",
+        submit: "📨 إرسال الرسالة",
+        success: "✅ تم إرسال رسالتك بنجاح! سيتواصل معك فريقنا خلال 24 ساعة.",
+      }
     },
     faq: {
-      badge: "أسئلة شائعة",
-      title: "إجابات لأسئلتك",
-      sub: "لم تجد ما تبحث عنه؟",
+      badge: "❓ الأسئلة الشائعة",
+      title: "الأسئلة المتكررة",
+      sub: "اعثر على إجابات للأسئلة الشائعة. لم تجد ما تبحث عنه؟",
       contact: "تواصل مع فريق الدعم",
       groups: [
-        { title: "البدء", items: [
-          { q: "هل يمكنني ترقية أو تخفيض باقتي؟", a: "نعم! يمكنك الترقية أو التخفيض في أي وقت. عند الترقية، تحصل على وصول فوري. عند التخفيض، تسري التغييرات في نهاية فترة الفوترة." },
-          { q: "هل تتوفر فترة تجريبية مجانية؟", a: "نعم، نقدم فترة تجريبية مجانية مع وصول كامل للنظام بدون أي التزامات." },
-          { q: "هل يمكنني إلغاء اشتراكي؟", a: "نعم، يمكنك الإلغاء في أي وقت. ستظل بياناتك متاحة حتى نهاية فترة الفوترة مع خيارات تصدير." },
-        ]},
-        { title: "الأمان والمدفوعات", items: [
-          { q: "ما هي طرق الدفع المقبولة؟", a: "نقبل الدفع النقدي والتحويلات البنكية وخدمات الأموال المتنقلة مثل زين كاش وفاست باي." },
-          { q: "هل بيانات مرضاي آمنة؟", a: "نعم، نستخدم تشفيراً مصرفياً من الدرجة الأولى. لا يمكن لأي طرف ثالث الوصول إلى بيانات مرضاك." },
-        ]},
-        { title: "الميزات", items: [
-          { q: "هل يمكنني الوصول من الهاتف؟", a: "نعم! النظام متجاوب بالكامل ويعمل على جميع الأجهزة. يمكنك إدارة المواعيد والسجلات من أي مكان." },
-          { q: "هل يرسل النظام تذكيرات بالمواعيد؟", a: "نعم، النظام يرسل تذكيرات آلية عبر واتساب والرسائل النصية لتقليل حالات عدم الحضور." },
-          { q: "هل يمكنني إنشاء تقارير؟", a: "بالتأكيد! تقارير مالية شاملة، إحصائيات المرضى، وتحليلات المواعيد — كلها قابلة للتصدير." },
-        ]},
-      ],
+        {
+          title: "🚀 البدء",
+          items: [
+            { q: "هل يمكنني ترقية أو تخفيض باقتي؟", a: "نعم! يمكنك ترقية أو تخفيض باقتك في أي وقت. عند الترقية، ستحصل على وصول فوري للميزات الجديدة. عند التخفيض، تسري التغييرات في نهاية فترة الفوترة." },
+            { q: "هل تتوفر فترة تجريبية مجانية؟", a: "نعم، نقدم فترة تجريبية مجانية حتى تتمكن من استكشاف جميع الميزات قبل الالتزام. خلال الفترة التجريبية، تحصل على وصول كامل للنظام بدون أي التزامات." },
+            { q: "هل يمكنني إلغاء اشتراكي؟", a: "نعم، يمكنك إلغاء اشتراكك في أي وقت. ستظل بياناتك متاحة حتى نهاية فترة الفوترة. كما نوفر خيارات تصدير البيانات." },
+          ]
+        },
+        {
+          title: "🔒 الأمان والمدفوعات",
+          items: [
+            { q: "ما هي طرق الدفع المقبولة؟", a: "نقبل الدفع النقدي والتحويلات البنكية وخدمات الأموال المتنقلة مثل زين كاش وفاست باي. تواصل مع فريق المبيعات لإعداد طريقة الدفع المفضلة لديك." },
+            { q: "هل بيانات مرضاي آمنة؟", a: "نعم، نستخدم تشفيراً من الدرجة المصرفية لحماية جميع البيانات. لا يمكن لأي طرف ثالث الوصول إلى بيانات مرضاك." },
+          ]
+        },
+        {
+          title: "⚙️ الميزات",
+          items: [
+            { q: "هل يمكنني الوصول من الهاتف المحمول؟", a: "نعم! العيادة الرقمية متجاوبة بالكامل وتعمل على جميع الأجهزة بما في ذلك الهواتف الذكية والأجهزة اللوحية. يمكنك إدارة المواعيد وعرض سجلات المرضى من أي مكان." },
+            { q: "هل يرسل النظام تذكيرات بالمواعيد؟", a: "نعم، يمكن للنظام إرسال تذكيرات آلية بالمواعيد للمرضى عبر الرسائل القصيرة أو واتساب لتقليل حالات عدم الحضور." },
+            { q: "هل يمكنني إنشاء التقارير والتحليلات؟", a: "بالتأكيد! توفر العيادة الرقمية تقارير شاملة تشمل الملخصات المالية، إحصائيات المرضى، تحليلات المواعيد. يمكن تصدير جميع التقارير إلى Excel." },
+          ]
+        },
+      ]
     },
     cta: {
-      title: "جاهز لتبدأ نبض عيادتك الرقمية؟",
-      sub: "انضم لمئات العيادات العراقية التي تثق بنا يومياً.",
-      btn1: "إنشاء حساب مجاني",
-      btn2: "عرض الباقات",
-      badges: ["بدون بطاقة ائتمان", "آمن وخاص", "دعم 24/7"],
+      title: "مستعد لتحويل عيادتك؟",
+      sub: "انضم إلى مئات العيادات في العراق التي تستخدم العيادة الرقمية.",
+      btn1: "🚀 إنشاء حساب مجاني",
+      btn2: "عرض خطط الأسعار",
+      badges: ["💳 لا حاجة لبطاقة ائتمان", "🔒 آمن وخاص", "📞 دعم 24/7"],
     },
     footer: {
-      desc: "منصة شاملة لإدارة العيادات الطبية في العراق. مرضى، مواعيد، وصفات، وماليات — كل شيء رقمي.",
+      desc: "نظام شامل لإدارة العيادات مصمم للممارسات الطبية في العراق. أدر مرضاك ومواعيدك وأموالك بكفاءة.",
       links: "روابط سريعة",
       feat: "المميزات",
       legal: "قانوني",
@@ -154,141 +144,135 @@ const T = {
       privacy: "سياسة الخصوصية",
       copy: "© 2026 العيادة الرقمية. جميع الحقوق محفوظة.",
       by: "تصميم Dev Code",
-    },
-    trust: ["آمن وخاص", "سحابي 100%", "متعدد اللغات", "دعم 24/7", "جاهز للبدء الفوري"],
+    }
   },
   en: {
-    dir: "ltr" as const,
-    nav: { home: "Home", features: "Features", pricing: "Pricing", contact: "Contact", faq: "FAQ", login: "Login", signup: "Get Started Free" },
+    dir: "ltr" as any,
+    topbar: { email: "info@digitalclinic.iq", phone: "+964 770 281 4484", location: "Baghdad, Iraq" },
+    nav: { home: "Home", features: "Features", pricing: "Pricing", contact: "Support", faq: "FAQ", login: "Login", signup: "Get Started" },
     hero: {
-      badge: "Iraq's First Digital Clinic Platform",
-      title1: "Your Clinic,",
-      title2: "with a Digital",
-      title3: "Pulse",
-      subtitle: "A smart platform that manages your entire clinic — patients, appointments, prescriptions, and finances — all in one seamless system.",
-      cta1: "Start Free Now",
+      badge: "⚕️ Iraq's Most Advanced Healthcare Tech",
+      title1: "The Digital Future",
+      title2: "of Your Clinic",
+      subtitle: "Iraq's most advanced clinic management system. Manage patients, appointments, medical records, and billing in one intelligent platform.",
+      cta1: "🚀 Register Your Clinic Free",
       cta2: "See How It Works",
+      stat1val: "2,500+", stat1lbl: "Active Patients",
+      stat2val: "150+", stat2lbl: "Clinics Trust Us",
+      stat3val: "99.9%", stat3lbl: "Uptime",
+      stat4val: "24/7", stat4lbl: "Support",
     },
-    pulse: {
-      label: "Digital Clinic Pulse",
-      stats: [
-        { val: "2,500+", lbl: "Active Patients", icon: Users },
-        { val: "150+", lbl: "Clinics Trust Us", icon: Building2 },
-        { val: "99.9%", lbl: "Uptime", icon: Activity },
-        { val: "24/7", lbl: "Support", icon: HeartPulse },
-      ],
-    },
-    pain: {
-      badge: "The Problem",
-      title: "Your clinic deserves better than paper chaos",
+    trust: ["🔒 Secure & Private", "☁️ 100% Cloud", "🌐 Multilingual", "📞 24/7 Support", "✅ Start Instantly"],
+    features: {
+      badge: "⚡ Our Features",
+      title: "Everything Your Clinic Needs",
+      sub: "Comprehensive tools to manage every aspect of your medical practice efficiently.",
       items: [
-        { icon: CalendarPlus, title: "Lost Appointments", desc: "Appointments forgotten or double-booked because you rely on paper" },
-        { icon: FileText, title: "Scattered Records", desc: "Patient files in different drawers, prescriptions in illegible handwriting" },
-        { icon: Receipt, title: "Unclear Finances", desc: "You don't know exactly how much came in and went out last month" },
-        { icon: Clock, title: "Wasted Hours", desc: "Hours wasted daily on organization instead of focusing on patients" },
-      ],
+        { icon: "👥", badge: "Core", title: "Patient Management", desc: "Complete patient records with medical history, allergies, medications, and chronic conditions.", list: ["Complete patient records", "Medical history tracking", "Allergies & medications"] },
+        { icon: "📅", badge: "Popular", title: "Appointment Scheduling", desc: "Smart appointment system with doctor availability, reminders, and status tracking.", list: ["Easy booking system", "Doctor availability", "WhatsApp reminders"] },
+        { icon: "🩺", badge: "Key", title: "Medical Sessions", desc: "Record diagnoses and treatments, create follow-up session chains for comprehensive care.", list: ["Record diagnoses", "Treatment tracking", "Follow-up chains"] },
+        { icon: "💊", badge: "Medical", title: "Prescriptions", desc: "Digital prescriptions with professional print layouts and medication tracking.", list: ["Digital prescriptions", "Professional printing", "Medication tracking"] },
+        { icon: "💰", badge: "★ Most Used", title: "Financial Management", desc: "Track payments, manage expenses, and generate financial reports for your clinic.", list: ["Payment tracking", "Expense management", "Financial reports"] },
+        { icon: "🏢", badge: "Scalable", title: "Multi-Clinic Support", desc: "Manage multiple clinic branches with isolated data and centralized control.", list: ["Multiple clinics", "Isolated data per clinic", "Central control"] },
+      ]
     },
-    solution: {
-      badge: "The Solution",
-      title: "One system that transforms clinic chaos into digital flow",
-      subtitle: "Everything you need to manage your clinic smartly — from first appointment to final invoice.",
+    why: {
+      badge: "💡 Why Us?",
+      title: "Built for Iraqi Clinics",
+      sub: "We understand the local context and build solutions that truly fit your needs.",
       items: [
-        { icon: Users, title: "Patient Management", desc: "Complete records with medical history, allergies, and drug interactions", color: "from-blue-500 to-cyan-400" },
-        { icon: CalendarPlus, title: "Smart Scheduling", desc: "Automated appointments with WhatsApp reminders and visit tracking", color: "from-emerald-500 to-teal-400" },
-        { icon: Stethoscope, title: "Medical Sessions", desc: "Record diagnoses and treatments with complete follow-up chains", color: "from-violet-500 to-purple-400" },
-        { icon: Pill, title: "Digital Prescriptions", desc: "Professional prescriptions with clean print and full customization", color: "from-amber-500 to-orange-400" },
-        { icon: BarChart3, title: "Financial Management", desc: "Track payments and expenses with clear monthly reports", color: "from-rose-500 to-pink-400" },
-        { icon: Building2, title: "Multi-Branch", desc: "Manage multiple clinics with isolated data and central control", color: "from-indigo-500 to-blue-400" },
-      ],
-    },
-    dayInLife: {
-      badge: "A Day in Your Clinic",
-      title: "From morning to evening, everything digital",
-      steps: [
-        { time: "8:00 AM", title: "Clinic Opened", desc: "Dashboard shows today's appointments and stats at a glance", icon: Activity },
-        { time: "8:30 AM", title: "First Patient Arrives", desc: "Waitlist card moves automatically between stages", icon: Users },
-        { time: "9:15 AM", title: "Diagnosis & Treatment", desc: "Record diagnosis and prescription in a few clicks, see full patient history", icon: Stethoscope },
-        { time: "10:00 AM", title: "Print Prescription", desc: "Professional prescription ready to print with clinic branding", icon: FileText },
-        { time: "11:30 AM", title: "Payment Collected", desc: "Record payment with one click — revenue updates automatically in reports", icon: Receipt },
-        { time: "2:00 PM", title: "End of Day", desc: "Comprehensive daily report: patients seen, revenue, expenses — all clear", icon: TrendingUp },
-      ],
-    },
-    whyUs: {
-      badge: "Why Us?",
-      title: "Built Specifically for Iraqi Clinics",
-      items: [
-        { icon: Globe, title: "Arabic, Kurdish & English", desc: "Multilingual interface for all medical staff across Iraq" },
-        { icon: Shield, title: "No Credit Card Required", desc: "Start free and pay when you're ready. No commitments" },
-        { icon: MessageSquare, title: "WhatsApp & ZainCash", desc: "Automatic reminders via WhatsApp and local Iraqi payments" },
-        { icon: Lock, title: "Data Secured in Europe", desc: "European servers with banking-grade encryption for patient data" },
+        { title: "Arabic, Kurdish & English Support", desc: "A multilingual interface suitable for all medical staff across Iraq." },
+        { title: "No Credit Card Required", desc: "Start free and pay when you're ready. No prior commitments whatsoever." },
+        { title: "WhatsApp & ZainCash Integration", desc: "Automatic appointment reminders via WhatsApp and local Iraqi payment methods." },
+        { title: "Data Secured in Iraq", desc: "Reliable servers with enterprise-grade encryption to protect your patient data." },
       ],
       stats: [
         { val: "500+", lbl: "Active Clinics" },
         { val: "50K+", lbl: "Registered Patients" },
         { val: "99.9%", lbl: "Uptime" },
         { val: "4.9★", lbl: "Customer Rating" },
-      ],
+      ]
     },
     pricing: {
-      badge: "Pricing",
-      title: "Transparent pricing for every clinic size",
-      sub: "Start free. Scale when needed. No hidden fees.",
+      badge: "💎 Pricing",
+      title: "Transparent Pricing for Every Size",
+      sub: "Choose the plan that fits your clinic. No hidden fees.",
       toggle: ["Monthly", "Yearly"],
       save: "Save 17%",
       plans: [
         { name: "Trial", tagline: "Try without commitment", monthlyPrice: "0", yearlyPrice: "0", doctors: "1 Doctor", highlight: false, features: ["50 patients", "200 appointments/mo", "Prescriptions", "Email support"], cta: "Start Free" },
         { name: "Basic", tagline: "For solo practitioners", monthlyPrice: "25,000", yearlyPrice: "250,000", doctors: "1–2 Doctors", highlight: false, features: ["Unlimited records", "Unlimited appointments", "Prescriptions", "Financial reports", "Phone support"], cta: "Get Started" },
         { name: "Silver", tagline: "For small clinics", monthlyPrice: "60,000", yearlyPrice: "600,000", doctors: "3–5 Doctors", highlight: false, features: ["All Basic features", "Multi-clinic", "WhatsApp reminders", "Advanced reports", "Priority support"], cta: "Get Started" },
-        { name: "Gold", tagline: "Most Popular", monthlyPrice: "120,000", yearlyPrice: "1,200,000", doctors: "6–15 Doctors", highlight: true, features: ["All Silver features", "Lab integration", "Mobile app", "Dedicated manager", "24/7 support"], cta: "Get Started" },
-        { name: "Platinum", tagline: "For clinic chains", monthlyPrice: "300,000", yearlyPrice: "3,000,000", doctors: "Unlimited", highlight: false, features: ["All Gold features", "Custom API", "On-site training", "99.99% SLA", "VIP support"], cta: "Contact Us" },
+        { name: "Gold", tagline: "Most Popular", monthlyPrice: "120,000", yearlyPrice: "1,200,000", doctors: "6–15 Doctors", highlight: true, features: ["All Silver features", "Lab integration", "Mobile app", "Dedicated account manager", "24/7 support"], cta: "Get Started" },
+        { name: "Platinum", tagline: "For clinic chains", monthlyPrice: "300,000", yearlyPrice: "3,000,000", doctors: "Unlimited Doctors", highlight: false, features: ["All Gold features", "Custom API", "On-site training", "99.99% SLA", "VIP support"], cta: "Contact Us" },
       ],
       currency: "IQD",
       period: "/mo",
       yearNote: "Billed annually",
     },
     contact: {
-      badge: "Contact Us",
-      title: "Our team is ready to help",
-      sub: "We're here to answer all your questions — anytime.",
+      badge: "📬 Contact Us",
+      title: "We're Here to Help",
+      sub: "Our local team is available to answer all your inquiries.",
       info: [
-        { icon: Mail, label: "Email", value: "info@digitalclinic.iq" },
-        { icon: Phone, label: "Phone", value: "+964 770 281 4484" },
-        { icon: MessageSquare, label: "WhatsApp", value: "+964 770 281 4484" },
-        { icon: MapPin, label: "Location", value: "Baghdad, Iraq" },
+        { icon: "📧", label: "Email", value: "info@digitalclinic.iq" },
+        { icon: "📞", label: "Phone", value: "+964 770 281 4484" },
+        { icon: "💬", label: "WhatsApp", value: "+964 770 281 4484" },
+        { icon: "📍", label: "Location", value: "Baghdad, Iraq" },
+        { icon: "🕐", label: "Working Hours", value: "Sat–Thu: 9 AM – 6 PM" },
       ],
-      form: { title: "Send a Message", name: "Full Name", namePh: "Your name", email: "Email Address", emailPh: "example@email.com", phone: "Phone Number", phonePh: "07xxxxxxxxx", subject: "Subject", subjectPh: "Message subject", clinic: "Clinic Name (optional)", clinicPh: "Your clinic name", message: "Your Message", messagePh: "Write your message here...", submit: "Send Message", success: "Your message has been sent! Our team will contact you within 24 hours." },
+      form: {
+        title: "Send a Message",
+        name: "Full Name", namePh: "Your name",
+        email: "Email Address", emailPh: "example@email.com",
+        phone: "Phone Number", phonePh: "07xxxxxxxxx",
+        subject: "Subject", subjectPh: "Message subject",
+        clinic: "Clinic Name (optional)", clinicPh: "Your clinic name",
+        message: "Your Message", messagePh: "Write your message here...",
+        submit: "📨 Send Message",
+        success: "✅ Your message has been sent successfully! Our team will contact you within 24 hours.",
+      }
     },
     faq: {
-      badge: "FAQ",
-      title: "Answers to your questions",
-      sub: "Didn't find what you're looking for?",
+      badge: "❓ FAQ",
+      title: "Frequently Asked Questions",
+      sub: "Find answers to common questions. Didn't find what you're looking for?",
       contact: "Contact Support",
       groups: [
-        { title: "Getting Started", items: [
-          { q: "Can I upgrade or downgrade my plan?", a: "Yes! You can change your plan at any time. Upgrades are instant, downgrades apply at the end of the billing period." },
-          { q: "Is there a free trial?", a: "Yes, we offer a free trial with full system access and no obligations." },
-          { q: "Can I cancel my subscription?", a: "Yes, you can cancel anytime. Your data remains accessible until the end of the billing period with export options." },
-        ]},
-        { title: "Security & Payments", items: [
-          { q: "What payment methods are accepted?", a: "We accept cash, bank transfers, and mobile money services like ZainCash and FastPay." },
-          { q: "Is my patient data secure?", a: "Yes, we use banking-grade encryption. No third party can access your patient data." },
-        ]},
-        { title: "Features", items: [
-          { q: "Can I access from mobile?", a: "Yes! The system is fully responsive and works on all devices including smartphones." },
-          { q: "Does it send appointment reminders?", a: "Yes, automatic reminders via WhatsApp and SMS to reduce no-shows." },
-          { q: "Can I generate reports?", a: "Absolutely! Comprehensive financial reports, patient statistics, and appointment analytics — all exportable." },
-        ]},
-      ],
+        {
+          title: "🚀 Getting Started",
+          items: [
+            { q: "Can I upgrade or downgrade my plan?", a: "Yes! You can upgrade or downgrade your plan at any time. When upgrading, you get immediate access to new features. When downgrading, changes take effect at the end of the billing period." },
+            { q: "Is there a free trial?", a: "Yes, we offer a free trial so you can explore all features before committing. During the trial, you get full system access with no obligations." },
+            { q: "Can I cancel my subscription?", a: "Yes, you can cancel your subscription at any time. Your data will remain accessible until the end of the billing period. We also provide data export options." },
+          ]
+        },
+        {
+          title: "🔒 Security & Payments",
+          items: [
+            { q: "What payment methods are accepted?", a: "We accept cash, bank transfers, and mobile money services like ZainCash and FastPay. Contact our sales team to set up your preferred payment method." },
+            { q: "Is my patient data secure?", a: "Yes, we use banking-grade encryption to protect all data. No third party can access your patient data." },
+          ]
+        },
+        {
+          title: "⚙️ Features",
+          items: [
+            { q: "Can I access the system from my mobile phone?", a: "Yes! Digital Clinic is fully responsive and works on all devices including smartphones and tablets. You can manage appointments and view patient records from anywhere." },
+            { q: "Does the system send appointment reminders?", a: "Yes, the system can send automatic appointment reminders to patients via SMS or WhatsApp to reduce no-shows and improve clinic efficiency." },
+            { q: "Can I generate reports and analytics?", a: "Absolutely! Digital Clinic provides comprehensive reports including financial summaries, patient statistics, appointment analytics, and doctor performance metrics. All reports can be exported to Excel." },
+          ]
+        },
+      ]
     },
     cta: {
-      title: "Ready to start your clinic's digital pulse?",
-      sub: "Join hundreds of Iraqi clinics that trust us daily.",
-      btn1: "Create Free Account",
-      btn2: "View Pricing",
-      badges: ["No credit card needed", "Secure & private", "24/7 support"],
+      title: "Ready to Transform Your Clinic?",
+      sub: "Join hundreds of clinics in Iraq using Digital Clinic to deliver exceptional patient care.",
+      btn1: "🚀 Create Free Account",
+      btn2: "View Pricing Plans",
+      badges: ["💳 No credit card needed", "🔒 Secure & private", "📞 24/7 support"],
     },
     footer: {
-      desc: "A comprehensive clinic management platform for Iraq. Patients, appointments, prescriptions, and finances — all digital.",
+      desc: "A comprehensive clinic management system designed for medical practices in Iraq. Manage your patients, appointments, and finances with efficiency.",
       links: "Quick Links",
       feat: "Features",
       legal: "Legal",
@@ -296,170 +280,103 @@ const T = {
       privacy: "Privacy Policy",
       copy: "© 2026 Digital Clinic. All rights reserved.",
       by: "Designed by Dev Code",
-    },
-    trust: ["Secure & Private", "100% Cloud", "Multilingual", "24/7 Support", "Start Instantly"],
-  },
+    }
+  }
 };
 
-function useAnimatedCounter(target: number, duration = 2000) {
-  const [count, setCount] = useState(0);
-  const ref = useRef<HTMLDivElement>(null);
-  const started = useRef(false);
+// ─── MOCKUP DASHBOARD COMPONENT ──────────────────────────────────────────────
+function DashboardMockup({ lang }: { lang: Lang }) {
+  const [tick, setTick] = useState(0);
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting && !started.current) {
-        started.current = true;
-        const start = performance.now();
-        const step = (now: number) => {
-          const progress = Math.min((now - start) / duration, 1);
-          setCount(Math.floor(progress * target));
-          if (progress < 1) requestAnimationFrame(step);
-        };
-        requestAnimationFrame(step);
-      }
-    }, { threshold: 0.3 });
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [target, duration]);
-  return { count, ref };
-}
-
-function useScrollReveal() {
-  const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) { setVisible(true); obs.disconnect(); }
-    }, { threshold: 0.1 });
-    obs.observe(el);
-    return () => obs.disconnect();
+    const i = setInterval(() => setTick(t => t + 1), 2000);
+    return () => clearInterval(i);
   }, []);
-  return { ref, visible };
-}
 
-function ECGLine({ className = "" }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 400 60" preserveAspectRatio="none" fill="none">
-      <path
-        d="M0,30 L60,30 L70,30 L80,8 L90,52 L100,30 L120,30 L140,30 L150,30 L160,12 L170,48 L180,30 L200,30 L260,30 L270,30 L280,6 L290,54 L300,30 L320,30 L340,30 L350,30 L360,10 L370,50 L380,30 L400,30"
-        stroke="url(#ecgGrad)"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="ecg-path"
-      />
-      <defs>
-        <linearGradient id="ecgGrad" x1="0" y1="0" x2="400" y2="0" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#0d9488" stopOpacity="0" />
-          <stop offset="15%" stopColor="#0d9488" />
-          <stop offset="50%" stopColor="#06b6d4" />
-          <stop offset="85%" stopColor="#0d9488" />
-          <stop offset="100%" stopColor="#0d9488" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-    </svg>
-  );
-}
-
-function DashboardPreview({ lang }: { lang: Lang }) {
-  const t = T[lang];
-  const [activeTab, setActiveTab] = useState(0);
-  const tabs = [lang === "ar" ? "لوحة التحكم" : "Dashboard", lang === "ar" ? "المواعيد" : "Appointments", lang === "ar" ? "المرضى" : "Patients"];
-  const patients = [
-    { name: lang === "ar" ? "أحمد محمد" : "Ahmed M.", time: "9:00", status: lang === "ar" ? "مؤكد" : "Confirmed", color: "bg-emerald-400" },
-    { name: lang === "ar" ? "سارة علي" : "Sara A.", time: "9:30", status: lang === "ar" ? "بالانتظار" : "Waiting", color: "bg-amber-400" },
-    { name: lang === "ar" ? "حسين كريم" : "Hussein K.", time: "10:00", status: lang === "ar" ? "مؤكد" : "Confirmed", color: "bg-emerald-400" },
-  ];
+  const patients = [1284, 1285, 1286, 1287];
+  const today = [48, 49, 50, 51];
 
   return (
-    <div className="relative w-full max-w-[480px] mx-auto">
-      <div className="absolute -inset-4 rounded-3xl bg-gradient-to-br from-teal-500/20 via-cyan-500/10 to-transparent blur-2xl" />
-      <div className="relative rounded-2xl overflow-hidden bg-slate-900/90 backdrop-blur-xl border border-white/10 shadow-2xl">
-        <div className="flex items-center gap-2 px-4 py-3 bg-slate-800/80 border-b border-white/5">
-          <div className="flex gap-1.5">
-            <div className="w-3 h-3 rounded-full bg-red-400" />
-            <div className="w-3 h-3 rounded-full bg-amber-400" />
-            <div className="w-3 h-3 rounded-full bg-emerald-400" />
-          </div>
-          <span className="text-[10px] text-slate-500 font-mono ms-auto">digitalclinic.iq/dashboard</span>
+    <div style={{ background: "#fff", borderRadius: 20, overflow: "hidden", boxShadow: "0 40px 100px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1)", maxWidth: 480, width: "100%", direction: "ltr" }}>
+      {/* Browser bar */}
+      <div style={{ background: "#1a1f2e", padding: "12px 16px", display: "flex", gap: 8, alignItems: "center" }}>
+        <span style={{ width: 12, height: 12, borderRadius: "50%", background: "#ff5f57", display: "inline-block" }} />
+        <span style={{ width: 12, height: 12, borderRadius: "50%", background: "#febc2e", display: "inline-block" }} />
+        <span style={{ width: 12, height: 12, borderRadius: "50%", background: "#28c840", display: "inline-block" }} />
+        <span style={{ marginLeft: "auto", fontSize: 11, color: "#64748b", fontFamily: "monospace" }}>digitalclinic.iq/dashboard</span>
+      </div>
+      {/* Gradient banner */}
+      <div style={{ background: "linear-gradient(135deg, #1a6fba, #0f4d8a)", padding: "24px 20px 20px" }}>
+        <div style={{ color: "#93c5fd", fontSize: 12, marginBottom: 6, fontWeight: 600 }}>
+          {lang === "ar" ? "صباح الخير، د. أحمد 👋" : "Good morning, Dr. Ahmed 👋"}
         </div>
-        <div className="bg-gradient-to-br from-teal-600 to-cyan-700 px-5 py-5">
-          <div className="text-teal-100 text-xs font-semibold mb-1">
-            {lang === "ar" ? "صباح الخير، د. أحمد 👋" : "Good morning, Dr. Ahmed 👋"}
-          </div>
-          <div className="text-white text-lg font-extrabold">
-            {lang === "ar" ? "لوحة تحكم العيادة الرقمية" : "Digital Clinic Dashboard"}
-          </div>
-          <div className="grid grid-cols-3 gap-2.5 mt-4">
-            {[
-              { val: "1,284", lbl: lang === "ar" ? "المرضى" : "Patients", accent: "text-cyan-300" },
-              { val: "48", lbl: lang === "ar" ? "اليوم" : "Today", accent: "text-emerald-300" },
-              { val: "✓ 3", lbl: lang === "ar" ? "مؤكد" : "Confirmed", accent: "text-amber-300" },
-            ].map((s, i) => (
-              <div key={i} className="bg-white/10 rounded-xl p-3 text-center backdrop-blur-sm">
-                <div className={`text-xl font-black ${s.accent}`}>{s.val}</div>
-                <div className="text-[10px] text-white/60 mt-0.5">{s.lbl}</div>
-              </div>
-            ))}
-          </div>
+        <div style={{ color: "#fff", fontSize: 18, fontWeight: 800, marginBottom: 16 }}>
+          {lang === "ar" ? "لوحة تحكم العيادة الرقمية" : "Digital Clinic Dashboard"}
         </div>
-        <div className="px-4 pt-1 pb-1">
-          <div className="flex gap-1 border-b border-slate-700/50">
-            {tabs.map((tab, i) => (
-              <button key={i} onClick={() => setActiveTab(i)} className={`px-3 py-2 text-[11px] font-bold transition-all ${activeTab === i ? "text-teal-400 border-b-2 border-teal-400" : "text-slate-500 hover:text-slate-300"}`}>
-                {tab}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="px-4 py-3">
-          <div className="text-xs font-bold text-slate-300 mb-2.5 flex justify-between">
-            <span>{lang === "ar" ? "مواعيد اليوم" : "Today's Appointments"}</span>
-            <span className="text-teal-400 cursor-pointer">{lang === "ar" ? "عرض الكل" : "View all"}</span>
-          </div>
-          {patients.map((p, i) => (
-            <div key={i} className="flex items-center gap-2.5 py-2 border-b border-slate-800/50 last:border-0">
-              <div className={`w-8 h-8 rounded-full ${p.color}/20 flex items-center justify-center text-sm font-bold ${p.color.replace("bg-", "text-").replace("/20", "")}`}>
-                {p.name.charAt(0)}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-xs font-bold text-white truncate">{p.name}</div>
-                <div className="text-[10px] text-slate-500">{p.time}</div>
-              </div>
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${p.color === "bg-emerald-400" ? "bg-emerald-400/10 text-emerald-400" : "bg-amber-400/10 text-amber-400"}`}>
-                {p.status}
-              </span>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+          {[
+            { val: patients[tick % 4].toLocaleString(), lbl: lang === "ar" ? "المرضى" : "Patients", color: "#60a5fa" },
+            { val: today[tick % 4], lbl: lang === "ar" ? "اليوم" : "Today", color: "#34d399" },
+            { val: "✓ 3", lbl: lang === "ar" ? "مؤكد" : "Confirmed", color: "#fbbf24" },
+          ].map((s, i) => (
+            <div key={i} style={{ background: "rgba(255,255,255,0.12)", borderRadius: 10, padding: "12px 8px", textAlign: "center", backdropFilter: "blur(4px)" }}>
+              <div style={{ fontSize: 20, fontWeight: 900, color: s.color }}>{s.val}</div>
+              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.7)", marginTop: 2 }}>{s.lbl}</div>
             </div>
           ))}
         </div>
+      </div>
+      {/* List preview */}
+      <div style={{ padding: "16px 20px" }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: "#374151", marginBottom: 10, display: "flex", justifyContent: "space-between" }}>
+          <span>{lang === "ar" ? "مواعيد اليوم" : "Today's Appointments"}</span>
+          <span style={{ color: "#1a6fba", cursor: "pointer" }}>{lang === "ar" ? "عرض الكل" : "View all"}</span>
+        </div>
+        {[
+          { name: lang === "ar" ? "علي حسن" : "Ali Hassan", time: "9:00", status: lang === "ar" ? "مؤكد" : "Confirmed", color: "#10b981" },
+          { name: lang === "ar" ? "سارة أحمد" : "Sara Ahmed", time: "10:30", status: lang === "ar" ? "قيد الانتظار" : "Waiting", color: "#f59e0b" },
+          { name: lang === "ar" ? "محمد كريم" : "Mohamed Kareem", time: "11:00", status: lang === "ar" ? "مؤكد" : "Confirmed", color: "#10b981" },
+        ].map((a, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: i < 2 ? "1px solid #f1f5f9" : "none" }}>
+            <div style={{ width: 32, height: 32, borderRadius: "50%", background: `hsl(${(i * 80) + 200},60%,85%)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>
+              {a.name.charAt(0)}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#111827" }}>{a.name}</div>
+              <div style={{ fontSize: 10, color: "#9ca3af" }}>{a.time}</div>
+            </div>
+            <div style={{ fontSize: 10, background: a.color + "20", color: a.color, padding: "3px 8px", borderRadius: 20, fontWeight: 700 }}>{a.status}</div>
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
-function IslamicPattern() {
-  return (
-    <svg className="absolute inset-0 w-full h-full opacity-[0.03]" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <pattern id="islamicPattern" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
-          <path d="M30 0L60 30L30 60L0 30Z" fill="none" stroke="currentColor" strokeWidth="0.5" />
-          <circle cx="30" cy="30" r="8" fill="none" stroke="currentColor" strokeWidth="0.3" />
-          <circle cx="0" cy="0" r="4" fill="none" stroke="currentColor" strokeWidth="0.3" />
-          <circle cx="60" cy="0" r="4" fill="none" stroke="currentColor" strokeWidth="0.3" />
-          <circle cx="0" cy="60" r="4" fill="none" stroke="currentColor" strokeWidth="0.3" />
-          <circle cx="60" cy="60" r="4" fill="none" stroke="currentColor" strokeWidth="0.3" />
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#islamicPattern)" />
-    </svg>
-  );
+// ─── ANIMATED COUNTER ────────────────────────────────────────────────────────
+function AnimatedCounter({ target, suffix = "" }: { target: number; suffix?: string }) {
+  const [count, setCount] = useState(0);
+  const ref = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        let start = 0;
+        const step = target / 60;
+        const timer = setInterval(() => {
+          start += step;
+          if (start >= target) { setCount(target); clearInterval(timer); }
+          else setCount(Math.floor(start));
+        }, 16);
+        observer.disconnect();
+      }
+    });
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [target]);
+  return <span ref={ref}>{count.toLocaleString()}{suffix}</span>;
 }
 
-export default function LandingPage() {
+// ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
+export default function DigitalClinicLanding() {
   const router = useRouter();
   const [lang, setLang] = useState<Lang>("ar");
   const [page, setPage] = useState<Page>("home");
@@ -468,10 +385,8 @@ export default function LandingPage() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [formSent, setFormSent] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [heroTyped, setHeroTyped] = useState("");
 
   const t = T[lang];
-  const isRtl = lang === "ar";
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -479,425 +394,433 @@ export default function LandingPage() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  useEffect(() => {
-    const words = isRtl ? [t.hero.title2, t.hero.title3] : [t.hero.title2, t.hero.title3];
-    let wi = 0;
-    let ci = 0;
-    const interval = setInterval(() => {
-      if (ci <= words[wi].length) {
-        setHeroTyped(words[wi].slice(0, ci));
-        ci++;
-      } else {
-        setTimeout(() => {
-          wi = (wi + 1) % words.length;
-          ci = 0;
-        }, 2000);
-        ci = words[wi].length + 1;
-      }
-    }, 80);
-    return () => clearInterval(interval);
-  }, [lang]);
-
   const nav = (p: Page) => { setPage(p); setMobileOpen(false); window.scrollTo({ top: 0, behavior: "smooth" }); };
-  const Arrow = isRtl ? ArrowLeft : ArrowRight;
 
+  // ─── STYLES ──────────────────────────────────────────────────────────────
+  const isRtl = lang === "ar";
+
+  // Google Fonts via @import in a style tag approach — injected once
+  const fontStyle = `
+    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Syne:wght@400;600;700;800;900&display=swap');
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Cairo','Syne',sans-serif;}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(32px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes slideIn{from{opacity:0;transform:translateX(-32px)}to{opacity:1;transform:translateX(0)}}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+    @keyframes gradShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+    @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @keyframes glow{0%,100%{box-shadow:0 0 20px rgba(26,111,186,0.4)}50%{box-shadow:0 0 60px rgba(26,111,186,0.8)}}
+    .fade-up{animation:fadeUp .7s ease forwards;}
+    .slide-in{animation:slideIn .7s ease forwards;}
+    .float-anim{animation:float 4s ease-in-out infinite;}
+    .gradient-text{
+      background:linear-gradient(135deg,#60a5fa,#34d399,#a78bfa);
+      background-size:200% 200%;
+      animation:gradShift 4s ease infinite;
+      -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;
+      background-clip:text;
+    }
+    input,textarea,select{outline:none;}
+    a{text-decoration:none;}
+    button{cursor:pointer;font-family:'Cairo','Syne',sans-serif;}
+    ::-webkit-scrollbar{width:6px;}
+    ::-webkit-scrollbar-track{background:#0d1b2a;}
+    ::-webkit-scrollbar-thumb{background:#1a6fba;border-radius:3px;}
+    .plan-card-hover:hover{transform:translateY(-8px);box-shadow:0 32px 80px rgba(26,111,186,0.25);}
+    .feat-card-hover:hover{transform:translateY(-6px);}
+    .btn-shine{position:relative;overflow:hidden;}
+    .btn-shine::after{content:'';position:absolute;top:-50%;left:-60%;width:40%;height:200%;background:rgba(255,255,255,0.15);transform:skewX(-20deg);transition:left .4s;}
+    .btn-shine:hover::after{left:120%;}
+    @media(max-width:900px){
+      .hero-grid{grid-template-columns:1fr!important;}
+      .why-grid{grid-template-columns:1fr!important;}
+      .feat-grid{grid-template-columns:1fr 1fr!important;}
+      .plan-grid{grid-template-columns:1fr!important;}
+      .contact-grid{grid-template-columns:1fr!important;}
+      .footer-grid{grid-template-columns:1fr 1fr!important;}
+      .hero-mockup-wrap{display:none!important;}
+      .stat-row{flex-wrap:wrap!important;}
+      .nav-links-wrap{display:none!important;}
+    }
+    @media(max-width:600px){
+      .feat-grid{grid-template-columns:1fr!important;}
+      .footer-grid{grid-template-columns:1fr!important;}
+      .hero h1{font-size:36px!important;}
+    }
+  `;
+
+  const C = {
+    bg: "#060d18",
+    surface: "#0d1b2a",
+    surface2: "#111f30",
+    border: "rgba(255,255,255,0.07)",
+    blue: "#1a6fba",
+    blueBright: "#3b9eff",
+    teal: "#0fb8a0",
+    gold: "#f6ad55",
+    green: "#22c55e",
+    text: "#e2e8f0",
+    muted: "#64748b",
+    white: "#ffffff",
+  };
+
+  const btnPrimary: React.CSSProperties = {
+    display: "inline-flex", alignItems: "center", gap: 8,
+    padding: "14px 28px", borderRadius: 50, fontSize: 15, fontWeight: 800,
+    border: "none", cursor: "pointer",
+    background: `linear-gradient(135deg, ${C.blue}, #2563eb)`,
+    color: "#fff", transition: "all .25s",
+    boxShadow: "0 4px 20px rgba(26,111,186,0.4)",
+    fontFamily: "'Cairo','Syne',sans-serif",
+  };
+
+  const btnGhost: React.CSSProperties = {
+    display: "inline-flex", alignItems: "center", gap: 8,
+    padding: "13px 28px", borderRadius: 50, fontSize: 15, fontWeight: 700,
+    border: "2px solid rgba(255,255,255,0.2)", cursor: "pointer",
+    background: "rgba(255,255,255,0.05)", color: "#fff",
+    transition: "all .25s", backdropFilter: "blur(8px)",
+    fontFamily: "'Cairo','Syne',sans-serif",
+  };
+
+  const sectionWrap: React.CSSProperties = {
+    padding: "100px 0", direction: t.dir,
+  };
+
+  const container: React.CSSProperties = {
+    maxWidth: 1180, margin: "0 auto", padding: "0 24px",
+  };
+
+  // ─── RENDER ──────────────────────────────────────────────────────────────
   return (
-    <div dir={t.dir} className="min-h-screen bg-[#050a15] text-slate-200 font-sans overflow-x-hidden">
-      <style>{`
-        @keyframes ecgDraw { from { stroke-dashoffset: 800; } to { stroke-dashoffset: 0; } }
-        @keyframes ecgRepeat { 0%,100% { stroke-dashoffset: 0; } 50% { stroke-dashoffset: 800; } }
-        @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
-        @keyframes pulse-glow { 0%,100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 0.8; transform: scale(1.05); } }
-        @keyframes gradient-x { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
-        @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
-        @keyframes fade-up { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:translateY(0); } }
-        @keyframes slide-in { from { opacity:0; transform:translateX(${isRtl ? "30px" : "-30px"}); } to { opacity:1; transform:translateX(0); } }
-        .ecg-path { stroke-dasharray: 800; animation: ecgDraw 3s ease-out forwards, ecgRepeat 4s ease-in-out 3s infinite; }
-        .float-anim { animation: float 6s ease-in-out infinite; }
-        .float-anim-delay { animation: float 7s ease-in-out 1s infinite; }
-        .pulse-glow { animation: pulse-glow 3s ease-in-out infinite; }
-        .gradient-x { background-size: 200% 200%; animation: gradient-x 6s ease infinite; }
-        .shimmer { animation: shimmer 2s ease-in-out infinite; }
-        .fade-up { animation: fade-up 0.6s ease-out both; }
-        .slide-in { animation: slide-in 0.6s ease-out both; }
-        .reveal { opacity: 0; transform: translateY(40px); transition: all 0.7s cubic-bezier(0.16,1,0.3,1); }
-        .reveal.visible { opacity: 1; transform: translateY(0); }
-        .card-hover { transition: all 0.35s cubic-bezier(0.16,1,0.3,1); }
-        .card-hover:hover { transform: translateY(-8px); }
-        .btn-shine { position: relative; overflow: hidden; }
-        .btn-shine::after { content:''; position:absolute; top:-50%; left:-60%; width:40%; height:200%; background:rgba(255,255,255,0.12); transform:skewX(-20deg); transition:left 0.4s; }
-        .btn-shine:hover::after { left: 120%; }
-      `}</style>
+    <div style={{ background: C.bg, color: C.text, fontFamily: "'Cairo','Syne',sans-serif", direction: t.dir, overflowX: "hidden" }}>
+      <style>{fontStyle}</style>
 
-      {/* ═══ NAVBAR ═══ */}
-      <nav className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${scrolled ? "bg-[#050a15]/80 backdrop-blur-2xl border-b border-white/5 shadow-xl shadow-black/20" : "bg-transparent"}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-teal-500/30 pulse-glow cursor-pointer" onClick={() => router.push("/admin/login")}>
-              <Stethoscope className="w-5 h-5 text-white" />
+      {/* ── TOPBAR ─────────────────────────────────────────────────────── */}
+      <div style={{ background: C.surface, borderBottom: `1px solid ${C.border}`, padding: "8px 0", fontSize: 12 }}>
+        <div style={{ ...container, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 20, color: C.muted }}>
+            <a href={`mailto:${t.topbar.email}`} style={{ color: C.muted, display: "flex", gap: 6, alignItems: "center" }}>📧 {t.topbar.email}</a>
+            <a href={`tel:${t.topbar.phone}`} style={{ color: C.muted, display: "flex", gap: 6, alignItems: "center" }}>📞 {t.topbar.phone}</a>
+          </div>
+          <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+            {/* Live badge */}
+            <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: C.green }}>
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: C.green, display: "inline-block", animation: "pulse 2s infinite" }} />
+              {lang === "ar" ? "النظام يعمل" : "System Online"}
+            </span>
+            {/* Language toggle */}
+            <button
+              onClick={() => setLang(lang === "ar" ? "en" : "ar")}
+              style={{ background: "rgba(255,255,255,0.07)", border: `1px solid ${C.border}`, color: C.text, padding: "4px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700, cursor: "pointer", transition: "all .2s", fontFamily: "'Cairo','Syne',sans-serif" }}
+            >
+              {lang === "ar" ? "🇺🇸 EN" : "🇮🇶 عربي"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── NAVBAR ─────────────────────────────────────────────────────── */}
+      <nav style={{
+        position: "sticky", top: 0, zIndex: 1000,
+        background: scrolled ? "rgba(6,13,24,0.95)" : "transparent",
+        backdropFilter: scrolled ? "blur(20px)" : "none",
+        borderBottom: scrolled ? `1px solid ${C.border}` : "none",
+        transition: "all .3s",
+      }}>
+        <div style={{ ...container, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px", gap: 20 }}>
+          {/* Logo */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div onClick={() => router.push("/admin/login")} style={{ width: 44, height: 44, borderRadius: 12, background: `linear-gradient(135deg, ${C.blue}, ${C.teal})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, boxShadow: "0 4px 16px rgba(26,111,186,0.5)", animation: "glow 3s ease-in-out infinite", cursor: "pointer" }}>
+              🏥
             </div>
-            <Link href="/" className="flex items-center gap-2 no-underline">
-              <div className={isRtl ? "text-right" : "text-left"}>
-                <div className="text-lg font-black text-white leading-tight">
-                  {isRtl ? <>العيادة <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-cyan-300">الرقمية</span></> : <>Digital <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-cyan-300">Clinic</span></>}
+            <Link href="/" style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
+              <div style={{ textAlign: isRtl ? "right" : "left" }}>
+                <div style={{ fontSize: 18, fontWeight: 900, color: C.white, lineHeight: 1.1 }}>
+                  {lang === "ar" ? <>العيادة <span style={{ color: C.blueBright }}>الرقمية</span></> : <>Digital <span style={{ color: C.blueBright }}>Clinic</span></>}
                 </div>
-                <div className="text-[10px] text-slate-500 font-medium">
-                  {isRtl ? "منصة إدارة العيادات" : "Clinic Management Platform"}
+                <div style={{ fontSize: 10, color: C.muted, fontWeight: 500 }}>
+                  {lang === "ar" ? "منصة إدارة العيادات" : "Clinic Management Platform"}
                 </div>
               </div>
             </Link>
           </div>
 
-          <div className="hidden md:flex items-center gap-1">
+          {/* Nav links */}
+          <div className="nav-links-wrap" style={{ display: "flex", gap: 4, alignItems: "center" }}>
             {(["home", "features", "pricing", "contact", "faq"] as Page[]).map(p => (
-              <button key={p} onClick={() => nav(p)} className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${page === p ? "bg-teal-500/15 text-teal-300 border border-teal-500/30" : "text-slate-400 hover:text-white hover:bg-white/5"}`}>
-                {t.nav[p as keyof typeof t.nav]}
+              <button key={p} onClick={() => nav(p)} style={{
+                background: page === p ? "rgba(26,111,186,0.2)" : "transparent",
+                border: page === p ? "1px solid rgba(26,111,186,0.4)" : "1px solid transparent",
+                color: page === p ? C.blueBright : C.muted,
+                padding: "8px 16px", borderRadius: 50, fontSize: 14, fontWeight: 700,
+                cursor: "pointer", transition: "all .2s", fontFamily: "'Cairo','Syne',sans-serif",
+              }}>
+                {t.nav[p]}
               </button>
             ))}
           </div>
 
-          <div className="flex items-center gap-2.5">
-            <button onClick={() => setLang(lang === "ar" ? "en" : "ar")} className="px-3 py-1.5 rounded-full text-xs font-bold bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 transition-all">
-              {lang === "ar" ? "🇺🇸 EN" : "🇮🇶 عربي"}
-            </button>
-            <Link href="/signup" className="hidden sm:inline-flex px-4 py-2 rounded-full text-sm font-bold text-slate-300 border border-white/10 hover:bg-white/5 transition-all no-underline">
+          {/* Actions */}
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <Link href="/signup" style={{ background: "transparent", border: `1px solid ${C.border}`, color: C.text, padding: "9px 18px", borderRadius: 50, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "'Cairo','Syne',sans-serif" }}>
               {t.nav.login}
             </Link>
-            <Link href="/signup" className="btn-shine px-5 py-2 rounded-full text-sm font-black bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg shadow-teal-500/25 hover:shadow-teal-500/40 transition-all no-underline">
+            <Link className="btn-shine" href="/signup" style={{ ...btnPrimary, padding: "9px 20px", fontSize: 14 }}>
               {t.nav.signup}
             </Link>
-            <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden p-2 rounded-lg text-slate-400 hover:text-white border border-white/10">
-              {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            <button onClick={() => setMobileOpen(!mobileOpen)} style={{ background: "none", border: `1px solid ${C.border}`, color: C.text, padding: "8px", borderRadius: 10, fontSize: 18, cursor: "pointer", display: "none" }} className="mobile-menu-btn">
+              ☰
             </button>
           </div>
         </div>
 
+        {/* Mobile nav */}
         {mobileOpen && (
-          <div className="md:hidden bg-slate-900/95 backdrop-blur-xl border-t border-white/5 px-4 pb-4">
+          <div style={{ background: C.surface, padding: "16px 24px", borderTop: `1px solid ${C.border}` }}>
             {(["home", "features", "pricing", "contact", "faq"] as Page[]).map(p => (
-              <button key={p} onClick={() => nav(p)} className="block w-full text-start py-3 px-4 text-sm font-bold text-slate-300 border-b border-white/5 hover:text-white">
-                {t.nav[p as keyof typeof t.nav]}
+              <button key={p} onClick={() => nav(p)} style={{ display: "block", width: "100%", textAlign: isRtl ? "right" : "left", background: "none", border: "none", color: C.text, padding: "12px 0", fontSize: 15, fontWeight: 700, cursor: "pointer", borderBottom: `1px solid ${C.border}`, fontFamily: "'Cairo','Syne',sans-serif" }}>
+                {t.nav[p]}
               </button>
             ))}
-            <div className="flex gap-2 mt-4">
-              <Link href="/signup" className="flex-1 text-center py-2 rounded-full text-sm font-bold border border-white/10 text-slate-300 no-underline">{t.nav.login}</Link>
-              <Link href="/signup" className="flex-1 text-center py-2 rounded-full text-sm font-black bg-gradient-to-r from-teal-500 to-cyan-500 text-white no-underline">{t.nav.signup}</Link>
-            </div>
           </div>
         )}
       </nav>
 
-      {/* ═══ PAGE: HOME ═══ */}
+      {/* ═══════════════════ PAGE: HOME ═══════════════════════════════════ */}
       {page === "home" && (
         <>
-          {/* ═══ HERO ═══ */}
-          <section className="relative min-h-screen flex items-center pt-16 overflow-hidden">
-            <IslamicPattern />
-            <div className="absolute top-20 start-10 w-[500px] h-[500px] rounded-full bg-teal-500/10 blur-[120px] pulse-glow" />
-            <div className="absolute bottom-20 end-10 w-[400px] h-[400px] rounded-full bg-cyan-500/8 blur-[100px] pulse-glow" style={{ animationDelay: "1.5s" }} />
+          {/* HERO */}
+          <section style={{ position: "relative", overflow: "hidden", minHeight: "92vh", display: "flex", alignItems: "center" }}>
+            {/* animated background */}
+            <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 80% 60% at 20% 40%, rgba(26,111,186,0.2) 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 80% 60%, rgba(15,184,160,0.12) 0%, transparent 50%)" }} />
+            {/* grid pattern */}
+            <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px)", backgroundSize: "60px 60px", opacity: .5 }} />
+            {/* glow orbs */}
+            <div style={{ position: "absolute", top: "10%", left: isRtl ? "auto" : "5%", right: isRtl ? "5%" : "auto", width: 400, height: 400, borderRadius: "50%", background: "rgba(26,111,186,0.08)", filter: "blur(80px)", animation: "float 6s ease-in-out infinite" }} />
+            <div style={{ position: "absolute", bottom: "10%", right: isRtl ? "auto" : "5%", left: isRtl ? "5%" : "auto", width: 300, height: 300, borderRadius: "50%", background: "rgba(15,184,160,0.08)", filter: "blur(60px)", animation: "float 8s ease-in-out infinite reverse" }} />
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-20 lg:py-28 w-full relative z-10">
-              <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+            <div style={{ ...container, paddingTop: 60, paddingBottom: 60, position: "relative", width: "100%" }}>
+              <div className="hero-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 64, alignItems: "center" }}>
+                {/* Content */}
                 <div className="fade-up">
-                  <div className="inline-flex items-center gap-2 bg-teal-500/10 border border-teal-500/25 text-teal-300 px-4 py-2 rounded-full text-sm font-bold mb-8">
-                    <HeartPulse className="w-4 h-4" />
-                    <span>{t.hero.badge}</span>
+                  {/* Badge */}
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(26,111,186,0.15)", border: "1px solid rgba(26,111,186,0.35)", color: "#93c5fd", padding: "8px 18px", borderRadius: 50, fontSize: 13, fontWeight: 700, marginBottom: 28 }}>
+                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#93c5fd", animation: "pulse 2s infinite", display: "inline-block" }} />
+                    {t.hero.badge}
                   </div>
 
-                  <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-tight mb-6">
-                    <span className="text-white">{t.hero.title1}</span>
-                    <br />
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 via-cyan-300 to-teal-400 gradient-x">
-                      {heroTyped}
-                    </span>
-                    <span className="inline-block w-0.5 h-10 bg-teal-400 ms-1 animate-pulse" />
+                  {/* Title */}
+                  <h1 style={{ fontSize: 58, fontWeight: 900, lineHeight: 1.2, marginBottom: 24, letterSpacing: "-1px" }}>
+                    <span style={{ display: "block", color: C.white }}>{t.hero.title1}</span>
+                    <span className="gradient-text" style={{ display: "block" }}>{t.hero.title2}</span>
                   </h1>
 
-                  <p className="text-lg text-slate-400 leading-relaxed mb-10 max-w-xl">
+                  <p style={{ fontSize: 17, color: C.muted, lineHeight: 1.8, marginBottom: 40, maxWidth: 500 }}>
                     {t.hero.subtitle}
                   </p>
 
-                  <div className="flex flex-wrap gap-3 mb-12">
-                    <Link href="/signup" className="btn-shine inline-flex items-center gap-2 px-7 py-3.5 rounded-full font-black bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-xl shadow-teal-500/25 hover:shadow-teal-500/40 transition-all no-underline">
-                      <Sparkles className="w-4 h-4" />
+                  {/* CTAs */}
+                  <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 48 }}>
+                    <Link className="btn-shine" href="/signup" style={btnPrimary}>
                       {t.hero.cta1}
                     </Link>
-                    <button onClick={() => nav("features")} className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full font-bold text-slate-300 border-2 border-white/10 hover:bg-white/5 hover:border-white/20 transition-all bg-white/[0.02] backdrop-blur-sm">
-                      {t.hero.cta2}
-                      <Arrow className="w-4 h-4" />
+                    <button onClick={() => nav("features")} style={btnGhost}>
+                      {t.hero.cta2} {isRtl ? "←" : "→"}
                     </button>
                   </div>
 
-                  <ECGLine className="w-full h-10 mb-8 opacity-60" />
-
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    {t.pulse.stats.map((s, i) => {
-                      const Icon = s.icon;
-                      return (
-                        <div key={i} className="flex items-center gap-2.5 p-3 rounded-xl bg-white/[0.03] border border-white/5">
-                          <div className="w-8 h-8 rounded-lg bg-teal-500/10 flex items-center justify-center flex-shrink-0">
-                            <Icon className="w-4 h-4 text-teal-400" />
-                          </div>
-                          <div>
-                            <div className="text-sm font-black text-white">{s.val}</div>
-                            <div className="text-[10px] text-slate-500">{s.lbl}</div>
-                          </div>
-                        </div>
-                      );
-                    })}
+                  {/* Stats */}
+                  <div className="stat-row" style={{ display: "flex", gap: 32, paddingTop: 28, borderTop: `1px solid ${C.border}` }}>
+                    {[
+                      { val: t.hero.stat1val, lbl: t.hero.stat1lbl },
+                      { val: t.hero.stat2val, lbl: t.hero.stat2lbl },
+                      { val: t.hero.stat3val, lbl: t.hero.stat3lbl },
+                      { val: t.hero.stat4val, lbl: t.hero.stat4lbl },
+                    ].map((s, i) => (
+                      <div key={i}>
+                        <div style={{ fontSize: 26, fontWeight: 900, color: C.white, lineHeight: 1 }}>{s.val}</div>
+                        <div style={{ fontSize: 12, color: C.muted, marginTop: 4 }}>{s.lbl}</div>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
-                <div className="hidden lg:block float-anim">
-                  <DashboardPreview lang={lang} />
+                {/* Dashboard Visual */}
+                <div className="hero-mockup-wrap float-anim" style={{ display: "flex", justifyContent: "center", position: "relative" }}>
+                  {/* Decorative ring */}
+                  <div style={{ position: "absolute", inset: -24, borderRadius: 32, border: "1px solid rgba(26,111,186,0.2)", animation: "glow 3s ease-in-out infinite" }} />
+                  <DashboardMockup lang={lang} />
                 </div>
               </div>
             </div>
           </section>
 
-          {/* ═══ TRUST BAR ═══ */}
-          <div className="border-y border-white/5 bg-white/[0.02] py-4">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6">
-              <div className="flex flex-wrap justify-center gap-6 sm:gap-10">
-                {t.trust.map((item, i) => (
-                  <div key={i} className="flex items-center gap-2 text-sm font-bold text-slate-500">
-                    <Shield className="w-4 h-4 text-teal-500/50" />
-                    {item}
-                  </div>
-                ))}
-              </div>
+          {/* TRUST BAR */}
+          <div style={{ background: C.surface, borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}`, padding: "16px 0", overflow: "hidden" }}>
+            <div style={{ display: "flex", justifyContent: "center", gap: 48, flexWrap: "wrap" }}>
+              {t.trust.map((item, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 700, color: C.muted, whiteSpace: "nowrap" }}>
+                  {item}
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* ═══ PAIN POINTS ═══ */}
-          <section className="py-20 lg:py-28 relative">
-            <IslamicPattern />
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
-              <div className="text-center mb-14 reveal-section" data-reveal>
-                <div className="inline-flex items-center gap-2 bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-2 rounded-full text-sm font-bold mb-6">
-                  <Activity className="w-4 h-4" />
-                  {t.pain.badge}
+          {/* FEATURES PREVIEW */}
+          <section style={sectionWrap}>
+            <div style={container}>
+              <div style={{ textAlign: "center", marginBottom: 64 }}>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(26,111,186,0.1)", border: "1px solid rgba(26,111,186,0.25)", color: "#93c5fd", padding: "6px 16px", borderRadius: 50, fontSize: 12, fontWeight: 700, marginBottom: 20 }}>
+                  {t.features.badge}
                 </div>
-                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white mb-4">{t.pain.title}</h2>
+                <h2 style={{ fontSize: 42, fontWeight: 900, color: C.white, marginBottom: 16 }}>{t.features.title}</h2>
+                <p style={{ fontSize: 16, color: C.muted, maxWidth: 560, margin: "0 auto", lineHeight: 1.7 }}>{t.features.sub}</p>
               </div>
-
-              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                {t.pain.items.map((item, i) => {
-                  const Icon = item.icon;
-                  return (
-                    <div key={i} className="card-hover group p-6 rounded-2xl bg-white/[0.02] border border-red-500/10 hover:border-red-500/30 transition-all">
-                      <div className="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center mb-4 group-hover:bg-red-500/20 transition-all">
-                        <Icon className="w-6 h-6 text-red-400" />
-                      </div>
-                      <h3 className="text-lg font-extrabold text-white mb-2">{item.title}</h3>
-                      <p className="text-sm text-slate-400 leading-relaxed">{item.desc}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </section>
-
-          {/* ═══ SOLUTION / FEATURES ═══ */}
-          <section className="py-20 lg:py-28 bg-gradient-to-b from-transparent via-teal-950/5 to-transparent relative">
-            <IslamicPattern />
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(13,148,136,0.08),transparent)] pointer-events-none" />
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
-              <div className="text-center mb-14">
-                <div className="inline-flex items-center gap-2 bg-teal-500/10 border border-teal-500/20 text-teal-300 px-4 py-2 rounded-full text-sm font-bold mb-6">
-                  <Zap className="w-4 h-4" />
-                  {t.solution.badge}
-                </div>
-                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white mb-4">{t.solution.title}</h2>
-                <p className="text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed">{t.solution.subtitle}</p>
-              </div>
-
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {t.solution.items.map((item, i) => {
-                  const Icon = item.icon;
-                  return (
-                    <div key={i} className="card-hover group relative p-7 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-teal-500/30 overflow-hidden">
-                      <div className={`absolute top-0 inset-x-0 h-1 bg-gradient-to-r ${item.color} opacity-0 group-hover:opacity-100 transition-opacity`} />
-                      <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${item.color} flex items-center justify-center mb-5 shadow-lg`}>
-                        <Icon className="w-7 h-7 text-white" />
-                      </div>
-                      <h3 className="text-xl font-extrabold text-white mb-2">{item.title}</h3>
-                      <p className="text-sm text-slate-400 leading-relaxed">{item.desc}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </section>
-
-          {/* ═══ DAY IN LIFE ═══ */}
-          <section className="py-20 lg:py-28 relative">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6">
-              <div className="text-center mb-14">
-                <div className="inline-flex items-center gap-2 bg-violet-500/10 border border-violet-500/20 text-violet-300 px-4 py-2 rounded-full text-sm font-bold mb-6">
-                  <Clock className="w-4 h-4" />
-                  {t.dayInLife.badge}
-                </div>
-                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white mb-4">{t.dayInLife.title}</h2>
-              </div>
-
-              <div className="relative">
-                <div className="absolute start-[28px] top-0 bottom-0 w-0.5 bg-gradient-to-b from-teal-500 via-cyan-500 to-violet-500 hidden sm:block" />
-                <div className="space-y-6">
-                  {t.dayInLife.steps.map((step, i) => {
-                    const Icon = step.icon;
-                    return (
-                      <div key={i} className="relative flex items-start gap-5 sm:gap-8">
-                        <div className="relative z-10 flex-shrink-0">
-                          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-500/20 to-cyan-500/20 border border-teal-500/30 flex items-center justify-center">
-                            <Icon className="w-6 h-6 text-teal-400" />
-                          </div>
-                        </div>
-                        <div className="flex-1 p-5 rounded-2xl bg-white/[0.03] border border-white/5 hover:border-teal-500/20 transition-all">
-                          <div className="flex items-center gap-3 mb-2">
-                            <span className="text-xs font-black text-teal-400 bg-teal-500/10 px-2.5 py-1 rounded-full">{step.time}</span>
-                            <h3 className="text-lg font-extrabold text-white">{step.title}</h3>
-                          </div>
-                          <p className="text-sm text-slate-400 leading-relaxed">{step.desc}</p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* ═══ WHY US ═══ */}
-          <section className="py-20 lg:py-28 bg-white/[0.02] border-y border-white/5">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6">
-              <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-                <div>
-                  <div className="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 text-amber-300 px-4 py-2 rounded-full text-sm font-bold mb-6">
-                    <Award className="w-4 h-4" />
-                    {t.whyUs.badge}
-                  </div>
-                  <h2 className="text-3xl sm:text-4xl font-black text-white mb-6">{t.whyUs.title}</h2>
-                  <div className="space-y-5">
-                    {t.whyUs.items.map((item, i) => {
-                      const Icon = item.icon;
-                      return (
-                        <div key={i} className="flex items-start gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-teal-500/20 transition-all">
-                          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center flex-shrink-0">
-                            <Icon className="w-5 h-5 text-white" />
-                          </div>
-                          <div>
-                            <div className="font-extrabold text-white mb-1">{item.title}</div>
-                            <div className="text-sm text-slate-400 leading-relaxed">{item.desc}</div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  {t.whyUs.stats.map((s, i) => (
-                    <div key={i} className="p-6 rounded-2xl bg-gradient-to-br from-teal-500/5 to-cyan-500/5 border border-teal-500/10 text-center hover:border-teal-500/30 transition-all">
-                      <div className="text-3xl font-black text-teal-400 mb-1">{s.val}</div>
-                      <div className="text-sm text-slate-500">{s.lbl}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* ═══ PRICING PREVIEW ═══ */}
-          <section className="py-20 lg:py-28 relative">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6">
-              <div className="text-center mb-14">
-                <div className="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 text-amber-300 px-4 py-2 rounded-full text-sm font-bold mb-6">
-                  <Receipt className="w-4 h-4" />
-                  {t.pricing.badge}
-                </div>
-                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white mb-4">{t.pricing.title}</h2>
-                <p className="text-lg text-slate-400 max-w-xl mx-auto">{t.pricing.sub}</p>
-              </div>
-
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {t.pricing.plans.slice(0, 3).map((plan, i) => (
-                  <div key={i} className={`card-hover relative p-7 rounded-2xl border-2 overflow-hidden ${plan.highlight ? "bg-gradient-to-br from-teal-500/10 to-cyan-500/5 border-teal-500/50 shadow-xl shadow-teal-500/10" : "bg-white/[0.02] border-white/5 hover:border-white/15"}`}>
-                    {plan.highlight && (
-                      <div className="absolute top-0 start-0 end-0 h-1 bg-gradient-to-r from-amber-400 to-orange-500" />
-                    )}
-                    {plan.highlight && (
-                      <div className="absolute -top-0 start-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-400 to-orange-500 text-black px-4 py-0.5 rounded-b-lg text-xs font-black">
-                        {isRtl ? "⭐ الأكثر شعبية" : "⭐ Most Popular"}
-                      </div>
-                    )}
-                    <div className="text-xl font-black text-white mb-1">{plan.name}</div>
-                    <div className="text-sm text-slate-500 mb-5">{plan.tagline}</div>
-                    <div className="flex items-baseline gap-1 mb-1">
-                      <span className="text-sm text-slate-500">{t.pricing.currency}</span>
-                      <span className="text-4xl font-black text-white">{billingYearly ? plan.yearlyPrice : plan.monthlyPrice}</span>
-                      <span className="text-sm text-slate-500">{t.pricing.period}</span>
-                    </div>
-                    {billingYearly && <div className="text-xs text-teal-400 mb-3">{t.pricing.yearNote}</div>}
-                    <div className="text-xs text-slate-500 bg-white/5 px-2 py-1 rounded-lg inline-flex items-center gap-1.5 mb-5">
-                      <Stethoscope className="w-3 h-3" />
-                      {plan.doctors}
-                    </div>
-                    <div className="h-px bg-white/5 mb-5" />
-                    <ul className="space-y-2.5 mb-7">
-                      {plan.features.map((f, j) => (
-                        <li key={j} className="flex items-center gap-2 text-sm text-slate-300">
-                          <Check className="w-4 h-4 text-teal-400 flex-shrink-0" />
-                          {f}
+              <div className="feat-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 24 }}>
+                {t.features.items.map((f, i) => (
+                  <div key={i} className="feat-card-hover" style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 20, padding: 28, transition: "all .3s", position: "relative", overflow: "hidden" }}>
+                    <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg,${C.blue},${C.teal})`, opacity: 0.6 }} />
+                    <div style={{ fontSize: 36, marginBottom: 16 }}>{f.icon}</div>
+                    <div style={{ display: "inline-block", background: "rgba(26,111,186,0.12)", color: "#93c5fd", padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700, marginBottom: 12 }}>{f.badge}</div>
+                    <div style={{ fontSize: 17, fontWeight: 800, color: C.white, marginBottom: 8 }}>{f.title}</div>
+                    <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.7, marginBottom: 16 }}>{f.desc}</p>
+                    <ul style={{ listStyle: "none" }}>
+                      {f.list.map((li, j) => (
+                        <li key={j} style={{ fontSize: 13, color: C.text, padding: "4px 0", display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ color: C.green, fontWeight: 800 }}>✓</span> {li}
                         </li>
                       ))}
                     </ul>
-                    <Link href="/signup" className={`btn-shine block text-center py-3 rounded-full font-bold transition-all no-underline ${plan.highlight ? "bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg shadow-teal-500/25" : "bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10"}`}>
-                      {plan.cta}
-                    </Link>
                   </div>
                 ))}
               </div>
+              <div style={{ textAlign: "center", marginTop: 40 }}>
+                <button className="btn-shine" onClick={() => nav("features")} style={btnPrimary}>
+                  {lang === "ar" ? "استكشف جميع المميزات →" : "Explore All Features →"}
+                </button>
+              </div>
+            </div>
+          </section>
 
-              <div className="flex flex-wrap items-center justify-center gap-4 mt-8">
-                <div className="inline-flex bg-white/5 border border-white/10 rounded-full p-1 gap-1">
+          {/* WHY US */}
+          <section style={{ ...sectionWrap, background: C.surface, borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}` }}>
+            <div style={container}>
+              <div className="why-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 72, alignItems: "center" }}>
+                <div>
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(26,111,186,0.1)", border: "1px solid rgba(26,111,186,0.25)", color: "#93c5fd", padding: "6px 16px", borderRadius: 50, fontSize: 12, fontWeight: 700, marginBottom: 20 }}>
+                    {t.why.badge}
+                  </div>
+                  <h2 style={{ fontSize: 40, fontWeight: 900, color: C.white, marginBottom: 16 }}>{t.why.title}</h2>
+                  <p style={{ fontSize: 16, color: C.muted, lineHeight: 1.7, marginBottom: 36 }}>{t.why.sub}</p>
+                  {/* Stats grid */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 40 }}>
+                    {t.why.stats.map((s, i) => (
+                      <div key={i} style={{ background: "rgba(26,111,186,0.08)", border: "1px solid rgba(26,111,186,0.2)", borderRadius: 16, padding: "20px 16px", textAlign: "center" }}>
+                        <div style={{ fontSize: 30, fontWeight: 900, color: "#60a5fa" }}>{s.val}</div>
+                        <div style={{ fontSize: 12, color: C.muted, marginTop: 4 }}>{s.lbl}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <button className="btn-shine" onClick={() => nav("pricing")} style={btnPrimary}>
+                    {lang === "ar" ? "ابدأ مجاناً اليوم" : "Start Free Today"}
+                  </button>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                  {t.why.items.map((item, i) => (
+                    <div key={i} style={{ display: "flex", gap: 16, alignItems: "flex-start", background: C.bg, border: `1px solid ${C.border}`, borderRadius: 16, padding: "20px 24px", transition: "all .3s" }}>
+                      <div style={{ width: 40, height: 40, minWidth: 40, background: `linear-gradient(135deg,${C.blue},${C.teal})`, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 900, color: "#fff" }}>
+                        {i + 1}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 15, fontWeight: 800, color: C.white, marginBottom: 4 }}>{item.title}</div>
+                        <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.6 }}>{item.desc}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* PRICING PREVIEW */}
+          <section style={sectionWrap}>
+            <div style={container}>
+              <div style={{ textAlign: "center", marginBottom: 64 }}>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(246,173,85,0.1)", border: "1px solid rgba(246,173,85,0.25)", color: C.gold, padding: "6px 16px", borderRadius: 50, fontSize: 12, fontWeight: 700, marginBottom: 20 }}>
+                  {t.pricing.badge}
+                </div>
+                <h2 style={{ fontSize: 42, fontWeight: 900, color: C.white, marginBottom: 16 }}>{t.pricing.title}</h2>
+                <p style={{ fontSize: 16, color: C.muted, maxWidth: 500, margin: "0 auto 32px", lineHeight: 1.7 }}>{t.pricing.sub}</p>
+                {/* Billing toggle */}
+                <div style={{ display: "inline-flex", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 50, padding: 4, gap: 4 }}>
                   {t.pricing.toggle.map((label, i) => (
-                    <button key={i} onClick={() => setBillingYearly(i === 1)} className={`px-5 py-2 rounded-full text-sm font-bold transition-all ${(i === 1) === billingYearly ? "bg-gradient-to-r from-teal-500 to-cyan-500 text-white" : "text-slate-400 hover:text-white"}`}>
-                      {label} {i === 1 && <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-full ms-1">{t.pricing.save}</span>}
+                    <button key={i} onClick={() => setBillingYearly(i === 1)} style={{ padding: "8px 20px", borderRadius: 50, border: "none", fontSize: 13, fontWeight: 700, cursor: "pointer", background: (i === 1) === billingYearly ? `linear-gradient(135deg,${C.blue},#2563eb)` : "transparent", color: (i === 1) === billingYearly ? "#fff" : C.muted, transition: "all .25s", fontFamily: "'Cairo','Syne',sans-serif" }}>
+                      {label} {i === 1 && <span style={{ fontSize: 10, background: "rgba(34,197,94,0.2)", color: C.green, padding: "2px 6px", borderRadius: 10, marginInlineStart: 6 }}>{t.pricing.save}</span>}
                     </button>
                   ))}
                 </div>
-                <button onClick={() => nav("pricing")} className="text-sm text-slate-400 hover:text-teal-300 font-bold transition-colors">
-                  {isRtl ? "عرض جميع الباقات الخمس ←" : "View All 5 Plans →"}
+              </div>
+              {/* Show only 3 plans on home */}
+              <div className="plan-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }}>
+                {t.pricing.plans.slice(0, 3).map((plan, i) => (
+                  <div key={i} className="plan-card-hover" style={{ background: plan.highlight ? `linear-gradient(160deg,${C.blue}22,${C.teal}11)` : C.surface, border: `2px solid ${plan.highlight ? C.blue : C.border}`, borderRadius: 24, padding: "32px 28px", position: "relative", transition: "all .3s", boxShadow: plan.highlight ? `0 0 40px rgba(26,111,186,0.25)` : "none" }}>
+                    {plan.highlight && <div style={{ position: "absolute", top: -14, left: "50%", transform: "translateX(-50%)", background: `linear-gradient(135deg,${C.gold},#f59e0b)`, color: "#000", padding: "4px 18px", borderRadius: 50, fontSize: 12, fontWeight: 800, whiteSpace: "nowrap" }}>
+                      {lang === "ar" ? "⭐ الأكثر شعبية" : "⭐ Most Popular"}
+                    </div>}
+                    <div style={{ fontSize: 20, fontWeight: 900, color: C.white, marginBottom: 4 }}>{plan.name}</div>
+                    <div style={{ fontSize: 13, color: C.muted, marginBottom: 24 }}>{plan.tagline}</div>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 4 }}>
+                      <span style={{ fontSize: 13, color: C.muted }}>{t.pricing.currency}</span>
+                      <span style={{ fontSize: 44, fontWeight: 900, color: C.white, lineHeight: 1 }}>
+                        {billingYearly ? plan.yearlyPrice : plan.monthlyPrice}
+                      </span>
+                      <span style={{ fontSize: 13, color: C.muted }}>{t.pricing.period}</span>
+                    </div>
+                    {billingYearly && <div style={{ fontSize: 11, color: C.teal, marginBottom: 8 }}>{t.pricing.yearNote}</div>}
+                    <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.06)", padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 600, color: C.muted, marginBottom: 24 }}>
+                      👨‍⚕️ {plan.doctors}
+                    </div>
+                    <div style={{ height: 1, background: C.border, marginBottom: 20 }} />
+                    <ul style={{ listStyle: "none", marginBottom: 28 }}>
+                      {plan.features.map((feat, j) => (
+                        <li key={j} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: C.text, padding: "6px 0", borderBottom: j < plan.features.length - 1 ? `1px solid ${C.border}` : "none" }}>
+                          <span style={{ color: C.green, fontWeight: 800 }}>✓</span> {feat}
+                        </li>
+                      ))}
+                    </ul>
+                    <button className="btn-shine" onClick={() => nav("pricing")} style={{ ...btnPrimary, width: "100%", justifyContent: "center", background: plan.highlight ? `linear-gradient(135deg,${C.blue},#2563eb)` : "transparent", border: `1px solid ${plan.highlight ? "transparent" : C.border}`, color: plan.highlight ? "#fff" : C.text }}>
+                      {plan.cta}
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <div style={{ textAlign: "center", marginTop: 32 }}>
+                <button onClick={() => nav("pricing")} style={{ ...btnGhost, fontSize: 14 }}>
+                  {lang === "ar" ? "عرض جميع الباقات الخمس ←" : "View All 5 Plans →"}
                 </button>
               </div>
             </div>
           </section>
 
-          {/* ═══ CTA ═══ */}
-          <section className="py-20 lg:py-28 relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-teal-600 to-cyan-700" />
-            <IslamicPattern />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.05),transparent_60%)]" />
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center relative z-10">
-              <ECGLine className="w-full h-8 mb-8 opacity-30" />
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white mb-4">{t.cta.title}</h2>
-              <p className="text-lg text-white/70 mb-10 max-w-xl mx-auto">{t.cta.sub}</p>
-              <div className="flex flex-wrap justify-center gap-4 mb-8">
-                <Link href="/signup" className="btn-shine inline-flex items-center gap-2 px-8 py-4 rounded-full font-black bg-white text-teal-700 shadow-xl hover:shadow-white/25 transition-all no-underline">
-                  <Sparkles className="w-5 h-5" />
+          {/* CTA SECTION */}
+          <section style={{ position: "relative", padding: "100px 0", overflow: "hidden" }}>
+            <div style={{ position: "absolute", inset: 0, background: `linear-gradient(135deg,${C.blue}dd,#0f4d8a)` }} />
+            <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle at 20% 50%,rgba(255,255,255,0.05) 1px,transparent 1px)", backgroundSize: "40px 40px" }} />
+            <div style={{ ...container, textAlign: "center", position: "relative" }}>
+              <h2 style={{ fontSize: 44, fontWeight: 900, color: "#fff", marginBottom: 16 }}>{t.cta.title}</h2>
+              <p style={{ fontSize: 17, color: "rgba(255,255,255,0.8)", maxWidth: 560, margin: "0 auto 40px", lineHeight: 1.7 }}>{t.cta.sub}</p>
+              <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", marginBottom: 32 }}>
+                <button className="btn-shine" onClick={() => nav("pricing")} style={{ ...btnPrimary, background: "#fff", color: C.blue, boxShadow: "0 8px 32px rgba(0,0,0,0.2)" }}>
                   {t.cta.btn1}
-                </Link>
-                <button onClick={() => nav("pricing")} className="inline-flex items-center gap-2 px-8 py-4 rounded-full font-bold text-white border-2 border-white/20 hover:bg-white/10 transition-all backdrop-blur-sm">
-                  {t.cta.btn2}
-                  <Arrow className="w-4 h-4" />
                 </button>
+                <button onClick={() => nav("pricing")} style={btnGhost}>{t.cta.btn2}</button>
               </div>
-              <div className="flex flex-wrap justify-center gap-6">
+              <div style={{ display: "flex", gap: 28, justifyContent: "center", flexWrap: "wrap" }}>
                 {t.cta.badges.map((b, i) => (
-                  <span key={i} className="text-sm text-white/60 flex items-center gap-2">
-                    <BadgeCheck className="w-4 h-4" />
-                    {b}
-                  </span>
+                  <span key={i} style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", display: "flex", alignItems: "center", gap: 6 }}>{b}</span>
                 ))}
               </div>
             </div>
@@ -905,245 +828,214 @@ export default function LandingPage() {
         </>
       )}
 
-      {/* ═══ PAGE: FEATURES ═══ */}
+      {/* ═══════════════════ PAGE: FEATURES ══════════════════════════════ */}
       {page === "features" && (
         <>
-          <section className="pt-28 pb-16 bg-gradient-to-b from-teal-950/20 to-transparent relative">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center">
-              <div className="inline-flex items-center gap-2 bg-teal-500/10 border border-teal-500/20 text-teal-300 px-4 py-2 rounded-full text-sm font-bold mb-6">
-                <Zap className="w-4 h-4" />
-                {t.solution.badge}
+          <section style={{ position: "relative", padding: "100px 0 80px", overflow: "hidden", background: `linear-gradient(135deg,${C.blue}22,${C.bg})` }}>
+            <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px)", backgroundSize: "60px 60px" }} />
+            <div style={{ ...container, textAlign: "center", position: "relative" }}>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(26,111,186,0.15)", border: "1px solid rgba(26,111,186,0.3)", color: "#93c5fd", padding: "8px 18px", borderRadius: 50, fontSize: 13, fontWeight: 700, marginBottom: 24 }}>
+                {t.features.badge}
               </div>
-              <h1 className="text-4xl sm:text-5xl font-black text-white mb-4">{t.solution.title}</h1>
-              <p className="text-lg text-slate-400 max-w-2xl mx-auto mb-8">{t.solution.subtitle}</p>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-xl mx-auto">
-                {t.whyUs.stats.map((s, i) => (
-                  <div key={i} className="p-4 rounded-xl bg-white/[0.03] border border-white/5">
-                    <div className="text-2xl font-black text-teal-400">{s.val}</div>
-                    <div className="text-xs text-slate-500">{s.lbl}</div>
+              <h1 style={{ fontSize: 52, fontWeight: 900, color: C.white, marginBottom: 20 }}>{t.features.title}</h1>
+              <p style={{ fontSize: 17, color: C.muted, maxWidth: 580, margin: "0 auto 40px", lineHeight: 1.7 }}>{t.features.sub}</p>
+              <div className="stat-row" style={{ display: "flex", justifyContent: "center", gap: 48, paddingTop: 32, borderTop: `1px solid ${C.border}` }}>
+                {t.why.stats.map((s, i) => (
+                  <div key={i} style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: 28, fontWeight: 900, color: "#60a5fa" }}>{s.val}</div>
+                    <div style={{ fontSize: 12, color: C.muted, marginTop: 4 }}>{s.lbl}</div>
                   </div>
                 ))}
               </div>
             </div>
           </section>
-
-          <section className="py-16">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6">
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {t.solution.items.map((item, i) => {
-                  const Icon = item.icon;
-                  return (
-                    <div key={i} className="card-hover group relative p-8 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-teal-500/30 overflow-hidden">
-                      <div className={`absolute top-0 inset-x-0 h-1 bg-gradient-to-r ${item.color} opacity-0 group-hover:opacity-100 transition-opacity`} />
-                      <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${item.color} flex items-center justify-center mb-6 shadow-lg`}>
-                        <Icon className="w-8 h-8 text-white" />
-                      </div>
-                      <h3 className="text-xl font-extrabold text-white mb-3">{item.title}</h3>
-                      <p className="text-sm text-slate-400 leading-relaxed">{item.desc}</p>
-                    </div>
-                  );
-                })}
+          <section style={sectionWrap}>
+            <div style={container}>
+              <div className="feat-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 24 }}>
+                {t.features.items.map((f, i) => (
+                  <div key={i} className="feat-card-hover" style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 20, padding: 32, transition: "all .3s", position: "relative", overflow: "hidden" }}>
+                    <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg,${C.blue},${C.teal})` }} />
+                    <div style={{ fontSize: 44, marginBottom: 20 }}>{f.icon}</div>
+                    <div style={{ display: "inline-block", background: "rgba(26,111,186,0.12)", color: "#93c5fd", padding: "4px 12px", borderRadius: 20, fontSize: 11, fontWeight: 700, marginBottom: 14 }}>{f.badge}</div>
+                    <div style={{ fontSize: 19, fontWeight: 800, color: C.white, marginBottom: 10 }}>{f.title}</div>
+                    <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.7, marginBottom: 20 }}>{f.desc}</p>
+                    <ul style={{ listStyle: "none" }}>
+                      {f.list.map((li, j) => (
+                        <li key={j} style={{ fontSize: 13, color: C.text, padding: "6px 0", display: "flex", alignItems: "center", gap: 8, borderBottom: `1px solid ${C.border}` }}>
+                          <span style={{ color: C.green, fontWeight: 800, fontSize: 15 }}>✓</span> {li}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
               </div>
             </div>
           </section>
-
-          <section className="py-16 bg-white/[0.02] border-y border-white/5">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6">
-              <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <section style={{ ...sectionWrap, background: C.surface, borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}` }}>
+            <div style={container}>
+              <div className="why-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 64, alignItems: "center" }}>
                 <div>
-                  <h2 className="text-3xl font-black text-white mb-6">{t.whyUs.title}</h2>
-                  <div className="space-y-4">
-                    {t.whyUs.items.map((item, i) => {
-                      const Icon = item.icon;
-                      return (
-                        <div key={i} className="flex items-start gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/5">
-                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center flex-shrink-0">
-                            <Icon className="w-5 h-5 text-white" />
-                          </div>
-                          <div>
-                            <div className="font-extrabold text-white mb-1">{item.title}</div>
-                            <div className="text-sm text-slate-400">{item.desc}</div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <h2 style={{ fontSize: 36, fontWeight: 900, color: C.white, marginBottom: 24 }}>{t.why.title}</h2>
+                  {t.why.items.map((item, i) => (
+                    <div key={i} style={{ display: "flex", gap: 16, alignItems: "flex-start", marginBottom: 24 }}>
+                      <div style={{ width: 36, height: 36, minWidth: 36, background: `linear-gradient(135deg,${C.blue},${C.teal})`, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 900, color: "#fff" }}>{i + 1}</div>
+                      <div>
+                        <div style={{ fontSize: 15, fontWeight: 800, color: C.white, marginBottom: 4 }}>{item.title}</div>
+                        <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.6 }}>{item.desc}</div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  {t.whyUs.stats.map((s, i) => (
-                    <div key={i} className="p-6 rounded-2xl bg-gradient-to-br from-teal-500/5 to-cyan-500/5 border border-teal-500/10 text-center">
-                      <div className="text-3xl font-black text-teal-400">{s.val}</div>
-                      <div className="text-sm text-slate-500 mt-1">{s.lbl}</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                  {t.why.stats.map((s, i) => (
+                    <div key={i} style={{ background: "rgba(26,111,186,0.08)", border: "1px solid rgba(26,111,186,0.2)", borderRadius: 16, padding: "24px 20px", textAlign: "center" }}>
+                      <div style={{ fontSize: 32, fontWeight: 900, color: "#60a5fa" }}>{s.val}</div>
+                      <div style={{ fontSize: 12, color: C.muted, marginTop: 6 }}>{s.lbl}</div>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
           </section>
-
-          {/* CTA */}
-          <section className="py-20 relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-teal-600 to-cyan-700" />
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center relative z-10">
-              <h2 className="text-3xl sm:text-4xl font-black text-white mb-4">{t.cta.title}</h2>
-              <p className="text-lg text-white/70 mb-10">{t.cta.sub}</p>
-              <div className="flex flex-wrap justify-center gap-4">
-                <Link href="/signup" className="btn-shine inline-flex items-center gap-2 px-8 py-4 rounded-full font-black bg-white text-teal-700 shadow-xl no-underline">
-                  <Sparkles className="w-5 h-5" />
-                  {t.cta.btn1}
-                </Link>
-                <button onClick={() => nav("pricing")} className="inline-flex items-center gap-2 px-8 py-4 rounded-full font-bold text-white border-2 border-white/20 hover:bg-white/10 transition-all">
-                  {t.cta.btn2} <Arrow className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </section>
+          <CtaSection lang={lang} t={t as any} router={router} btnPrimary={btnPrimary} btnGhost={btnGhost} container={container} C={C} />
         </>
       )}
 
-      {/* ═══ PAGE: PRICING ═══ */}
+      {/* ═══════════════════ PAGE: PRICING ═══════════════════════════════ */}
       {page === "pricing" && (
         <>
-          <section className="pt-28 pb-16 bg-gradient-to-b from-amber-950/10 to-transparent text-center">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6">
-              <div className="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 text-amber-300 px-4 py-2 rounded-full text-sm font-bold mb-6">
-                <Receipt className="w-4 h-4" />
+          <section style={{ padding: "100px 0 80px", background: `linear-gradient(135deg,${C.surface},${C.bg})`, position: "relative", overflow: "hidden" }}>
+            <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px)", backgroundSize: "60px 60px" }} />
+            <div style={{ ...container, textAlign: "center", position: "relative" }}>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(246,173,85,0.1)", border: "1px solid rgba(246,173,85,0.25)", color: C.gold, padding: "8px 18px", borderRadius: 50, fontSize: 13, fontWeight: 700, marginBottom: 24 }}>
                 {t.pricing.badge}
               </div>
-              <h1 className="text-4xl sm:text-5xl font-black text-white mb-4">{t.pricing.title}</h1>
-              <p className="text-lg text-slate-400 max-w-xl mx-auto mb-8">{t.pricing.sub}</p>
-              <div className="inline-flex bg-white/5 border border-white/10 rounded-full p-1 gap-1">
+              <h1 style={{ fontSize: 52, fontWeight: 900, color: C.white, marginBottom: 20 }}>{t.pricing.title}</h1>
+              <p style={{ fontSize: 17, color: C.muted, maxWidth: 500, margin: "0 auto 36px", lineHeight: 1.7 }}>{t.pricing.sub}</p>
+              <div style={{ display: "inline-flex", background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 50, padding: 4, gap: 4 }}>
                 {t.pricing.toggle.map((label, i) => (
-                  <button key={i} onClick={() => setBillingYearly(i === 1)} className={`px-6 py-2.5 rounded-full text-sm font-bold transition-all ${(i === 1) === billingYearly ? "bg-gradient-to-r from-teal-500 to-cyan-500 text-white" : "text-slate-400 hover:text-white"}`}>
-                    {label} {i === 1 && billingYearly && <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-full ms-1">{t.pricing.save}</span>}
+                  <button key={i} onClick={() => setBillingYearly(i === 1)} style={{ padding: "10px 24px", borderRadius: 50, border: "none", fontSize: 14, fontWeight: 700, cursor: "pointer", background: (i === 1) === billingYearly ? `linear-gradient(135deg,${C.blue},#2563eb)` : "transparent", color: (i === 1) === billingYearly ? "#fff" : C.muted, transition: "all .25s", fontFamily: "'Cairo','Syne',sans-serif" }}>
+                    {label} {i === 1 && billingYearly && <span style={{ fontSize: 10, background: "rgba(34,197,94,0.2)", color: C.green, padding: "2px 8px", borderRadius: 10, marginInlineStart: 6 }}>{t.pricing.save}</span>}
                   </button>
                 ))}
               </div>
             </div>
           </section>
-
-          <section className="py-8 pb-20">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6">
-              <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          <section style={{ padding: "60px 0 100px" }}>
+            <div style={container}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 16 }}>
                 {t.pricing.plans.map((plan, i) => (
-                  <div key={i} className={`card-hover relative p-6 rounded-2xl overflow-hidden border-2 ${plan.highlight ? "bg-gradient-to-br from-teal-500/10 to-cyan-500/5 border-teal-500/50 shadow-xl shadow-teal-500/10" : "bg-white/[0.02] border-white/5 hover:border-white/15"}`}>
-                    {plan.highlight && <div className="absolute top-0 start-0 end-0 h-1 bg-gradient-to-r from-amber-400 to-orange-500" />}
-                    {plan.highlight && (
-                      <div className="absolute -top-0 start-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-400 to-orange-500 text-black px-3 py-0.5 rounded-b-lg text-[10px] font-black">
-                        {isRtl ? "الأكثر شعبية" : "Most Popular"}
-                      </div>
-                    )}
-                    <div className="text-lg font-black text-white mb-1">{plan.name}</div>
-                    <div className="text-xs text-slate-500 mb-4">{plan.tagline}</div>
-                    <div className="mb-1">
-                      <span className="text-[10px] text-slate-500">{t.pricing.currency}</span>
-                      <span className="text-3xl font-black text-white ms-1">{billingYearly ? plan.yearlyPrice : plan.monthlyPrice}</span>
-                      <span className="text-xs text-slate-500 ms-1">{t.pricing.period}</span>
+                  <div key={i} className="plan-card-hover" style={{ background: plan.highlight ? `linear-gradient(160deg,${C.blue}33,${C.teal}11)` : C.surface, border: `2px solid ${plan.highlight ? C.blue : C.border}`, borderRadius: 20, padding: "24px 18px", position: "relative", transition: "all .3s", boxShadow: plan.highlight ? `0 0 50px rgba(26,111,186,0.3)` : "none" }}>
+                    {plan.highlight && <div style={{ position: "absolute", top: -13, left: "50%", transform: "translateX(-50%)", background: `linear-gradient(135deg,${C.gold},#f59e0b)`, color: "#000", padding: "4px 14px", borderRadius: 50, fontSize: 11, fontWeight: 800, whiteSpace: "nowrap" }}>
+                      {lang === "ar" ? "⭐ الأكثر شعبية" : "⭐ Most Popular"}
+                    </div>}
+                    <div style={{ fontSize: 17, fontWeight: 900, color: C.white, marginBottom: 4 }}>{plan.name}</div>
+                    <div style={{ fontSize: 11, color: C.muted, marginBottom: 16 }}>{plan.tagline}</div>
+                    <div style={{ marginBottom: 4 }}>
+                      <span style={{ fontSize: 10, color: C.muted }}>{t.pricing.currency} </span>
+                      <span style={{ fontSize: 28, fontWeight: 900, color: C.white }}>{billingYearly ? plan.yearlyPrice : plan.monthlyPrice}</span>
+                      <span style={{ fontSize: 11, color: C.muted }}>{t.pricing.period}</span>
                     </div>
-                    {billingYearly && <div className="text-[10px] text-teal-400 mb-2">{t.pricing.yearNote}</div>}
-                    <div className="text-[10px] text-slate-500 bg-white/5 px-2 py-1 rounded-md inline-flex items-center gap-1 mb-4">
-                      <Stethoscope className="w-3 h-3" />
-                      {plan.doctors}
-                    </div>
-                    <div className="h-px bg-white/5 mb-4" />
-                    <ul className="space-y-2 mb-5">
-                      {plan.features.map((f, j) => (
-                        <li key={j} className="flex items-start gap-1.5 text-xs text-slate-300">
-                          <Check className="w-3.5 h-3.5 text-teal-400 flex-shrink-0 mt-0.5" />
-                          {f}
+                    <div style={{ fontSize: 10, color: C.teal, marginBottom: 12 }}>{billingYearly && t.pricing.yearNote}</div>
+                    <div style={{ fontSize: 11, color: C.muted, background: "rgba(255,255,255,0.05)", padding: "5px 8px", borderRadius: 6, marginBottom: 16, fontWeight: 600 }}>👨‍⚕️ {plan.doctors}</div>
+                    <div style={{ height: 1, background: C.border, marginBottom: 14 }} />
+                    <ul style={{ listStyle: "none", marginBottom: 20 }}>
+                      {plan.features.map((feat, j) => (
+                        <li key={j} style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 12, color: C.text, padding: "5px 0" }}>
+                          <span style={{ color: C.green, fontWeight: 800 }}>✓</span> {feat}
                         </li>
                       ))}
                     </ul>
-                    <Link href="/signup" className={`btn-shine block text-center py-2.5 rounded-full text-sm font-bold transition-all no-underline ${plan.highlight ? "bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg shadow-teal-500/25" : "bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10"}`}>
+                    <button className="btn-shine" onClick={() => nav("contact")} style={{ width: "100%", padding: "10px", borderRadius: 50, border: `1px solid ${plan.highlight ? "transparent" : C.border}`, fontSize: 12, fontWeight: 800, cursor: "pointer", background: plan.highlight ? `linear-gradient(135deg,${C.blue},#2563eb)` : "transparent", color: plan.highlight ? "#fff" : C.text, transition: "all .2s", fontFamily: "'Cairo','Syne',sans-serif" }}>
                       {plan.cta}
-                    </Link>
+                    </button>
                   </div>
                 ))}
               </div>
-              <p className="text-center text-sm text-slate-500 mt-8">
-                {isRtl ? "كل باقة تأتي مع وصول كامل لجميع الميزات. الفرق الوحيد هو عدد الأطباء المسموح به." : "Every plan includes full feature access. The only difference is the number of allowed doctors."}
+              <p style={{ textAlign: "center", marginTop: 24, color: C.muted, fontSize: 13 }}>
+                {lang === "ar" ? "كل باقة تأتي مع وصول كامل لجميع الميزات. الفرق الوحيد هو عدد الأطباء المسموح به." : "Every plan includes full feature access. The only difference is the number of allowed doctors."}
               </p>
             </div>
           </section>
-
-          <section className="py-16 relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-teal-600 to-cyan-700" />
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center relative z-10">
-              <h2 className="text-3xl sm:text-4xl font-black text-white mb-4">{t.cta.title}</h2>
-              <p className="text-lg text-white/70 mb-10">{t.cta.sub}</p>
-              <div className="flex flex-wrap justify-center gap-4">
-                <Link href="/signup" className="btn-shine inline-flex items-center gap-2 px-8 py-4 rounded-full font-black bg-white text-teal-700 shadow-xl no-underline">
-                  <Sparkles className="w-5 h-5" /> {t.cta.btn1}
-                </Link>
-                <button onClick={() => nav("contact")} className="inline-flex items-center gap-2 px-8 py-4 rounded-full font-bold text-white border-2 border-white/20 hover:bg-white/10 transition-all">
-                  {isRtl ? "تواصل معنا" : "Contact Us"} <Arrow className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </section>
+          <CtaSection lang={lang} t={t as any} router={router} btnPrimary={btnPrimary} btnGhost={btnGhost} container={container} C={C} />
         </>
       )}
 
-      {/* ═══ PAGE: CONTACT ═══ */}
+      {/* ═══════════════════ PAGE: CONTACT ═══════════════════════════════ */}
       {page === "contact" && (
         <>
-          <section className="pt-28 pb-16 bg-gradient-to-b from-teal-950/20 to-transparent text-center">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6">
-              <div className="inline-flex items-center gap-2 bg-teal-500/10 border border-teal-500/20 text-teal-300 px-4 py-2 rounded-full text-sm font-bold mb-6">
-                <Mail className="w-4 h-4" />
+          <section style={{ padding: "100px 0 80px", background: `linear-gradient(135deg,${C.surface},${C.bg})`, position: "relative", overflow: "hidden" }}>
+            <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px)", backgroundSize: "60px 60px" }} />
+            <div style={{ ...container, textAlign: "center", position: "relative" }}>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(26,111,186,0.1)", border: "1px solid rgba(26,111,186,0.25)", color: "#93c5fd", padding: "8px 18px", borderRadius: 50, fontSize: 13, fontWeight: 700, marginBottom: 24 }}>
                 {t.contact.badge}
               </div>
-              <h1 className="text-4xl sm:text-5xl font-black text-white mb-4">{t.contact.title}</h1>
-              <p className="text-lg text-slate-400 max-w-xl mx-auto">{t.contact.sub}</p>
+              <h1 style={{ fontSize: 52, fontWeight: 900, color: C.white, marginBottom: 20 }}>{t.contact.title}</h1>
+              <p style={{ fontSize: 17, color: C.muted, maxWidth: 480, margin: "0 auto", lineHeight: 1.7 }}>{t.contact.sub}</p>
             </div>
           </section>
-
-          <section className="py-8 pb-20">
-            <div className="max-w-5xl mx-auto px-4 sm:px-6">
-              <div className="grid lg:grid-cols-5 gap-8">
-                <div className="lg:col-span-2">
-                  <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 space-y-6">
-                    <h3 className="text-lg font-extrabold text-white">{isRtl ? "معلومات التواصل" : "Contact Information"}</h3>
-                    {t.contact.info.map((item, i) => {
-                      const Icon = item.icon;
-                      return (
-                        <div key={i} className="flex items-start gap-4">
-                          <div className="w-10 h-10 rounded-xl bg-teal-500/10 flex items-center justify-center flex-shrink-0">
-                            <Icon className="w-5 h-5 text-teal-400" />
-                          </div>
-                          <div>
-                            <div className="text-xs text-slate-500">{item.label}</div>
-                            <div className="text-sm font-semibold text-white">{item.value}</div>
-                          </div>
+          <section style={{ padding: "60px 0 100px" }}>
+            <div style={container}>
+              <div className="contact-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1.6fr", gap: 48 }}>
+                {/* Info */}
+                <div>
+                  <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 24, padding: 32, marginBottom: 24 }}>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: C.white, marginBottom: 24 }}>
+                      {lang === "ar" ? "معلومات التواصل" : "Contact Information"}
+                    </div>
+                    {t.contact.info.map((item, i) => (
+                      <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 14, padding: "14px 0", borderBottom: i < t.contact.info.length - 1 ? `1px solid ${C.border}` : "none" }}>
+                        <div style={{ width: 40, height: 40, background: "rgba(26,111,186,0.15)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{item.icon}</div>
+                        <div>
+                          <div style={{ fontSize: 11, color: C.muted, marginBottom: 2 }}>{item.label}</div>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: C.white }}>{item.value}</div>
                         </div>
-                      );
-                    })}
+                      </div>
+                    ))}
                   </div>
                 </div>
-
-                <div className="lg:col-span-3 p-8 rounded-2xl bg-white/[0.02] border border-white/5">
-                  <h3 className="text-lg font-extrabold text-white mb-6">{t.contact.form.title}</h3>
+                {/* Form */}
+                <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 24, padding: 36 }}>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: C.white, marginBottom: 28 }}>{t.contact.form.title}</div>
                   {formSent ? (
-                    <div className="text-center py-12">
-                      <div className="w-16 h-16 rounded-full bg-teal-500/10 flex items-center justify-center mx-auto mb-4">
-                        <Check className="w-8 h-8 text-teal-400" />
-                      </div>
-                      <div className="text-xl font-bold text-white mb-2">{isRtl ? "تم الإرسال بنجاح!" : "Sent Successfully!"}</div>
-                      <div className="text-sm text-slate-400">{t.contact.form.success}</div>
+                    <div style={{ textAlign: "center", padding: "60px 0" }}>
+                      <div style={{ fontSize: 64, marginBottom: 16 }}>✅</div>
+                      <div style={{ fontSize: 18, fontWeight: 800, color: C.white, marginBottom: 8 }}>{lang === "ar" ? "تم الإرسال بنجاح!" : "Sent Successfully!"}</div>
+                      <div style={{ fontSize: 14, color: C.muted, lineHeight: 1.7 }}>{lang === "ar" ? "سيتواصل معك فريقنا خلال 24 ساعة." : "Our team will contact you within 24 hours."}</div>
                     </div>
                   ) : (
-                    <form onSubmit={(e) => { e.preventDefault(); setFormSent(true); }} className="space-y-4">
-                      <div className="grid sm:grid-cols-2 gap-4">
-                        <input placeholder={t.contact.form.namePh} className="w-full px-4 py-3 rounded-xl bg-[#0a0f1a] border border-white/10 text-white text-sm focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500/30 outline-none transition-all" />
-                        <input placeholder={t.contact.form.emailPh} type="email" className="w-full px-4 py-3 rounded-xl bg-[#0a0f1a] border border-white/10 text-white text-sm focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500/30 outline-none transition-all" />
+                    <form onSubmit={(e) => { e.preventDefault(); setFormSent(true); }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+                        {[
+                          { label: t.contact.form.name, ph: t.contact.form.namePh, type: "text" },
+                          { label: t.contact.form.email, ph: t.contact.form.emailPh, type: "email" },
+                        ].map((field, i) => (
+                          <div key={i}>
+                            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: C.muted, marginBottom: 6 }}>{field.label}</label>
+                            <input type={field.type} placeholder={field.ph} style={{ width: "100%", padding: "12px 16px", borderRadius: 12, border: `1px solid ${C.border}`, background: C.bg, color: C.white, fontSize: 14, fontFamily: "'Cairo','Syne',sans-serif", direction: t.dir }} />
+                          </div>
+                        ))}
                       </div>
-                      <div className="grid sm:grid-cols-2 gap-4">
-                        <input placeholder={t.contact.form.phonePh} type="tel" className="w-full px-4 py-3 rounded-xl bg-[#0a0f1a] border border-white/10 text-white text-sm focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500/30 outline-none transition-all" />
-                        <input placeholder={t.contact.form.subjectPh} className="w-full px-4 py-3 rounded-xl bg-[#0a0f1a] border border-white/10 text-white text-sm focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500/30 outline-none transition-all" />
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+                        {[
+                          { label: t.contact.form.phone, ph: t.contact.form.phonePh, type: "tel" },
+                          { label: t.contact.form.subject, ph: t.contact.form.subjectPh, type: "text" },
+                        ].map((field, i) => (
+                          <div key={i}>
+                            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: C.muted, marginBottom: 6 }}>{field.label}</label>
+                            <input type={field.type} placeholder={field.ph} style={{ width: "100%", padding: "12px 16px", borderRadius: 12, border: `1px solid ${C.border}`, background: C.bg, color: C.white, fontSize: 14, fontFamily: "'Cairo','Syne',sans-serif", direction: t.dir }} />
+                          </div>
+                        ))}
                       </div>
-                      <input placeholder={t.contact.form.clinicPh} className="w-full px-4 py-3 rounded-xl bg-[#0a0f1a] border border-white/10 text-white text-sm focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500/30 outline-none transition-all" />
-                      <textarea placeholder={t.contact.form.messagePh} rows={5} required className="w-full px-4 py-3 rounded-xl bg-[#0a0f1a] border border-white/10 text-white text-sm focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500/30 outline-none transition-all resize-y" />
-                      <button type="submit" className="btn-shine w-full py-3.5 rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-black shadow-lg shadow-teal-500/25 hover:shadow-teal-500/40 transition-all">
+                      <div style={{ marginBottom: 16 }}>
+                        <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: C.muted, marginBottom: 6 }}>{t.contact.form.clinic}</label>
+                        <input type="text" placeholder={t.contact.form.clinicPh} style={{ width: "100%", padding: "12px 16px", borderRadius: 12, border: `1px solid ${C.border}`, background: C.bg, color: C.white, fontSize: 14, fontFamily: "'Cairo','Syne',sans-serif", direction: t.dir }} />
+                      </div>
+                      <div style={{ marginBottom: 24 }}>
+                        <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: C.muted, marginBottom: 6 }}>{t.contact.form.message} <span style={{ color: "#ef4444" }}>*</span></label>
+                        <textarea required placeholder={t.contact.form.messagePh} rows={5} style={{ width: "100%", padding: "12px 16px", borderRadius: 12, border: `1px solid ${C.border}`, background: C.bg, color: C.white, fontSize: 14, fontFamily: "'Cairo','Syne',sans-serif", resize: "vertical", direction: t.dir }} />
+                      </div>
+                      <button type="submit" className="btn-shine" style={{ ...btnPrimary, width: "100%", justifyContent: "center", fontSize: 15 }}>
                         {t.contact.form.submit}
                       </button>
                     </form>
@@ -1155,128 +1047,111 @@ export default function LandingPage() {
         </>
       )}
 
-      {/* ═══ PAGE: FAQ ═══ */}
+      {/* ═══════════════════ PAGE: FAQ ════════════════════════════════════ */}
       {page === "faq" && (
         <>
-          <section className="pt-28 pb-16 bg-gradient-to-b from-teal-950/20 to-transparent text-center">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6">
-              <div className="inline-flex items-center gap-2 bg-teal-500/10 border border-teal-500/20 text-teal-300 px-4 py-2 rounded-full text-sm font-bold mb-6">
-                <CircleDot className="w-4 h-4" />
+          <section style={{ padding: "100px 0 80px", background: `linear-gradient(135deg,${C.blue}22,${C.bg})`, position: "relative", overflow: "hidden" }}>
+            <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px)", backgroundSize: "60px 60px" }} />
+            <div style={{ ...container, textAlign: "center", position: "relative" }}>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(26,111,186,0.1)", border: "1px solid rgba(26,111,186,0.25)", color: "#93c5fd", padding: "8px 18px", borderRadius: 50, fontSize: 13, fontWeight: 700, marginBottom: 24 }}>
                 {t.faq.badge}
               </div>
-              <h1 className="text-4xl sm:text-5xl font-black text-white mb-4">{t.faq.title}</h1>
-              <p className="text-lg text-slate-400">
+              <h1 style={{ fontSize: 52, fontWeight: 900, color: C.white, marginBottom: 20 }}>{t.faq.title}</h1>
+              <p style={{ fontSize: 17, color: C.muted, maxWidth: 500, margin: "0 auto", lineHeight: 1.7 }}>
                 {t.faq.sub}{" "}
-                <button onClick={() => nav("contact")} className="text-teal-400 hover:text-teal-300 font-bold">
+                <button onClick={() => nav("contact")} style={{ background: "none", border: "none", color: "#93c5fd", cursor: "pointer", fontWeight: 700, fontSize: 17, fontFamily: "'Cairo','Syne',sans-serif" }}>
                   {t.faq.contact}
                 </button>
               </p>
             </div>
           </section>
-
-          <section className="py-8 pb-20">
-            <div className="max-w-3xl mx-auto px-4 sm:px-6">
+          <section style={{ padding: "60px 0 100px" }}>
+            <div style={{ ...container, maxWidth: 800 }}>
               {t.faq.groups.map((group, gi) => (
-                <div key={gi} className="mb-10">
-                  <h3 className="text-lg font-extrabold text-white mb-4 pb-3 border-b-2 border-teal-500/20 flex items-center gap-2">
+                <div key={gi} style={{ marginBottom: 48 }}>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: C.white, marginBottom: 20, paddingBottom: 14, borderBottom: `2px solid rgba(26,111,186,0.3)`, display: "flex", alignItems: "center", gap: 10 }}>
                     {group.title}
-                  </h3>
-                  <div className="space-y-3">
-                    {group.items.map((item, ii) => {
-                      const key = `${gi}-${ii}`;
-                      const isOpen = openFaq === key;
-                      return (
-                        <div key={ii} className={`rounded-2xl border overflow-hidden transition-all ${isOpen ? "bg-white/[0.04] border-teal-500/30 shadow-lg shadow-teal-500/5" : "bg-white/[0.02] border-white/5 hover:border-white/10"}`}>
-                          <button onClick={() => setOpenFaq(isOpen ? null : key)} className="w-full px-6 py-5 flex items-center justify-between text-start">
-                            <span className="font-bold text-white">{item.q}</span>
-                            <span className={`text-teal-400 text-xl font-bold transition-transform flex-shrink-0 ms-4 ${isOpen ? "rotate-45" : ""}`}>+</span>
-                          </button>
-                          {isOpen && (
-                            <div className="px-6 pb-5 text-sm text-slate-400 leading-relaxed">
-                              {item.a}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
                   </div>
+                  {group.items.map((item, ii) => {
+                    const key = `${gi}-${ii}`;
+                    const isOpen = openFaq === key;
+                    return (
+                      <div key={ii} style={{ background: C.surface, border: `1px solid ${isOpen ? C.blue : C.border}`, borderRadius: 16, marginBottom: 12, overflow: "hidden", transition: "border-color .2s", boxShadow: isOpen ? `0 0 20px rgba(26,111,186,0.15)` : "none" }}>
+                        <button onClick={() => setOpenFaq(isOpen ? null : key)} style={{ width: "100%", padding: "20px 24px", background: "none", border: "none", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", textAlign: isRtl ? "right" : "left" }}>
+                          <span style={{ fontSize: 15, fontWeight: 700, color: C.white, fontFamily: "'Cairo','Syne',sans-serif" }}>{item.q}</span>
+                          <span style={{ color: C.blue, fontSize: 22, fontWeight: 900, transition: "transform .3s", transform: isOpen ? "rotate(45deg)" : "none", display: "inline-block", flexShrink: 0, marginInlineStart: 16 }}>+</span>
+                        </button>
+                        {isOpen && (
+                          <div style={{ padding: "0 24px 20px", fontSize: 14, color: C.muted, lineHeight: 1.8 }}>
+                            {item.a}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               ))}
             </div>
           </section>
-
-          <section className="py-16 relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-teal-600 to-cyan-700" />
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center relative z-10">
-              <h2 className="text-3xl sm:text-4xl font-black text-white mb-4">{t.cta.title}</h2>
-              <p className="text-lg text-white/70 mb-10">{t.cta.sub}</p>
-              <div className="flex flex-wrap justify-center gap-4">
-                <Link href="/signup" className="btn-shine inline-flex items-center gap-2 px-8 py-4 rounded-full font-black bg-white text-teal-700 shadow-xl no-underline">
-                  <Sparkles className="w-5 h-5" /> {t.cta.btn1}
-                </Link>
-                <button onClick={() => nav("pricing")} className="inline-flex items-center gap-2 px-8 py-4 rounded-full font-bold text-white border-2 border-white/20 hover:bg-white/10 transition-all">
-                  {t.cta.btn2} <Arrow className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </section>
+          <CtaSection lang={lang} t={t as any} router={router} btnPrimary={btnPrimary} btnGhost={btnGhost} container={container} C={C} />
         </>
       )}
 
-      {/* ═══ FOOTER ═══ */}
-      <footer className="bg-[#040810] border-t border-white/5 pt-16 pb-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-10 pb-12 border-b border-white/5">
+      {/* ── FOOTER ─────────────────────────────────────────────────────── */}
+      <footer style={{ background: C.surface, borderTop: `1px solid ${C.border}`, padding: "64px 0 24px" }}>
+        <div style={container}>
+          <div className="footer-grid" style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 48, paddingBottom: 48, borderBottom: `1px solid ${C.border}`, marginBottom: 24 }}>
+            {/* Brand */}
             <div>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-teal-500/30">
-                  <Stethoscope className="w-5 h-5 text-white" />
-                </div>
-                <span className="text-lg font-black text-white">
-                  {isRtl ? "العيادة الرقمية" : "Digital Clinic"}
-                </span>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: `linear-gradient(135deg,${C.blue},${C.teal})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>🏥</div>
+                <span style={{ fontSize: 18, fontWeight: 900, color: C.white }}>{lang === "ar" ? "العيادة الرقمية" : "Digital Clinic"}</span>
               </div>
-              <p className="text-sm text-slate-500 leading-relaxed max-w-xs">{t.footer.desc}</p>
-              <div className="flex gap-2 mt-5">
-                {[
-                  { icon: <Globe className="w-4 h-4" />, label: "Website" },
-                  { icon: <Smartphone className="w-4 h-4" />, label: "App" },
-                  { icon: <MessageSquare className="w-4 h-4" />, label: "Chat" },
-                  { icon: <Mail className="w-4 h-4" />, label: "Email" },
-                ].map((s, i) => (
-                  <div key={i} className="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-500 hover:text-teal-400 hover:border-teal-500/30 transition-all cursor-pointer">
-                    {s.icon}
+              <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.7, maxWidth: 280 }}>{t.footer.desc}</p>
+              <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+                {["📘", "📸", "🐦", "💼"].map((icon, i) => (
+                  <div key={i} style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.06)", border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 16, transition: "all .2s" }}>
+                    {icon}
                   </div>
                 ))}
               </div>
             </div>
-
+            {/* Links */}
             {[
-              { title: t.footer.links, items: [
-                { label: t.nav.home, page: "home" as Page },
-                { label: t.nav.features, page: "features" as Page },
-                { label: t.nav.pricing, page: "pricing" as Page },
-                { label: t.nav.contact, page: "contact" as Page },
-              ]},
-              { title: t.footer.feat, items: [
-                { label: isRtl ? "إدارة المرضى" : "Patient Management", page: "features" as Page },
-                { label: isRtl ? "جدولة المواعيد" : "Scheduling", page: "features" as Page },
-                { label: isRtl ? "الوصفات الرقمية" : "Prescriptions", page: "features" as Page },
-                { label: isRtl ? "الإدارة المالية" : "Financial Mgmt", page: "features" as Page },
-              ]},
-              { title: t.footer.legal, items: [
-                { label: t.footer.terms, page: "home" as Page },
-                { label: t.footer.privacy, page: "home" as Page },
-                { label: t.nav.faq, page: "faq" as Page },
-                { label: t.nav.contact, page: "contact" as Page },
-              ]},
+              {
+                title: t.footer.links,
+                items: [
+                  { label: t.nav.home, page: "home" as Page },
+                  { label: t.nav.features, page: "features" as Page },
+                  { label: t.nav.pricing, page: "pricing" as Page },
+                  { label: t.nav.contact, page: "contact" as Page },
+                ]
+              },
+              {
+                title: t.footer.feat,
+                items: [
+                  { label: lang === "ar" ? "إدارة المرضى" : "Patient Management", page: "features" as Page },
+                  { label: lang === "ar" ? "جدولة المواعيد" : "Scheduling", page: "features" as Page },
+                  { label: lang === "ar" ? "الجلسات الطبية" : "Medical Sessions", page: "features" as Page },
+                  { label: lang === "ar" ? "الإدارة المالية" : "Financial Mgmt", page: "features" as Page },
+                ]
+              },
+              {
+                title: t.footer.legal,
+                items: [
+                  { label: t.footer.terms, page: "home" as Page },
+                  { label: t.footer.privacy, page: "home" as Page },
+                  { label: t.nav.faq, page: "faq" as Page },
+                  { label: t.nav.contact, page: "contact" as Page },
+                ]
+              },
             ].map((col, ci) => (
               <div key={ci}>
-                <div className="text-xs font-extrabold text-white uppercase tracking-wider mb-4">{col.title}</div>
-                <ul className="space-y-2.5">
+                <div style={{ fontSize: 13, fontWeight: 800, color: C.white, marginBottom: 16, textTransform: "uppercase", letterSpacing: 1 }}>{col.title}</div>
+                <ul style={{ listStyle: "none" }}>
                   {col.items.map((item, ii) => (
-                    <li key={ii}>
-                      <button onClick={() => nav(item.page)} className="text-sm text-slate-500 hover:text-teal-300 transition-colors">
+                    <li key={ii} style={{ marginBottom: 10 }}>
+                      <button onClick={() => nav(item.page)} style={{ background: "none", border: "none", color: C.muted, fontSize: 13, cursor: "pointer", fontFamily: "'Cairo','Syne',sans-serif", transition: "color .2s" }}>
                         {item.label}
                       </button>
                     </li>
@@ -1285,13 +1160,41 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
-
-          <div className="flex flex-wrap justify-between items-center gap-4 pt-6">
-            <span className="text-xs text-slate-600">{t.footer.copy}</span>
-            <span className="text-xs text-slate-600">{t.footer.by}</span>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+            <span style={{ fontSize: 12, color: C.muted }}>{t.footer.copy}</span>
+            <span style={{ fontSize: 12, color: C.muted }}>{t.footer.by}</span>
           </div>
         </div>
       </footer>
     </div>
+  );
+}
+
+// ─── SHARED CTA SECTION COMPONENT ────────────────────────────────────────────
+function CtaSection({ lang, t, router, btnPrimary, btnGhost, container, C }: {
+  lang: Lang; t: any; router: any;
+  btnPrimary: React.CSSProperties; btnGhost: React.CSSProperties;
+  container: React.CSSProperties; C: Record<string, string>;
+}) {
+  return (
+    <section style={{ position: "relative", padding: "100px 0", overflow: "hidden" }}>
+      <div style={{ position: "absolute", inset: 0, background: `linear-gradient(135deg,${C.blue}dd,#0f4d8a)` }} />
+      <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle at 20% 50%,rgba(255,255,255,0.05) 1px,transparent 1px)", backgroundSize: "40px 40px" }} />
+      <div style={{ ...container, textAlign: "center", position: "relative" }}>
+        <h2 style={{ fontSize: 44, fontWeight: 900, color: "#fff", marginBottom: 16 }}>{t.cta.title}</h2>
+        <p style={{ fontSize: 17, color: "rgba(255,255,255,0.8)", maxWidth: 560, margin: "0 auto 40px", lineHeight: 1.7 }}>{t.cta.sub}</p>
+        <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", marginBottom: 32 }}>
+          <Link href="/signup" style={{ ...btnPrimary, background: "#fff", color: C.blue, boxShadow: "0 8px 32px rgba(0,0,0,0.2)", textDecoration: "none" }}>
+            {t.cta.btn1}
+          </Link>
+          <button onClick={() => router.push("/pricing")} style={btnGhost}>{t.cta.btn2}</button>
+        </div>
+        <div style={{ display: "flex", gap: 28, justifyContent: "center", flexWrap: "wrap" }}>
+          {t.cta.badges.map((b: string, i: number) => (
+            <span key={i} style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", display: "flex", alignItems: "center", gap: 6 }}>{b}</span>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
