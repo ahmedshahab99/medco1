@@ -2,10 +2,10 @@
 
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CalendarPlus, Clock, Activity, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PatientCard } from "./PatientCard";
-import type { BoardPatient, WaitlistStatus } from "@/lib/mock/waitlist-data";
-import type { ColumnDefinition } from "@/lib/types/waitlist-board";
+import type { BoardPatient, WaitlistStatus, ColumnDefinition } from "@/lib/types/waitlist-board";
 
 interface WaitlistColumnProps {
   column: ColumnDefinition;
@@ -24,22 +24,19 @@ export function WaitlistColumn({ column, patients, onAdvance }: WaitlistColumnPr
   return (
     <div
       className={cn(
-        "flex w-full md:w-72 md:shrink-0 flex-col rounded-xl border bg-slate-50/50",
-        isOver && "ring-2 ring-primary/20 border-primary/40 bg-primary/5"
+        "flex w-full md:w-72 md:shrink-0 flex-col border rounded-t-xl bg-white",
+        isOver && "ring-2 ring-primary/20 border-primary/40 bg-primary/5 "  
       )}
     >
-      <div className="flex items-center justify-between px-4 pt-3 pb-2">
+      <div className={cn("flex items-center justify-between px-4 pt-3 pb-2 rounded-t-xl", column.headerBgColor)}>
         <div className="flex items-center gap-2">
-          <span
-            className={cn(
-              "size-2 rounded-full",
-              column.id === "BOOKING" && "bg-blue-500",
-              column.id === "WAITING" && "bg-amber-500",
-              column.id === "IN_PROGRESS" && "bg-emerald-500",
-              column.id === "COMPLETED" && "bg-slate-400"
-            )}
-          />
-          <h3 className={cn("text-sm font-bold", column.color)}>
+          <span className="size-4">
+            {column.id === "BOOKING" && <CalendarPlus className="size-4 text-white" />}
+            {column.id === "WAITING" && <Clock className="size-4 text-white" />}
+            {column.id === "IN_PROGRESS" && <Activity className="size-4 text-white" />}
+            {column.id === "COMPLETED" && <CheckCircle className="size-4 text-white" />}
+          </span>
+          <h3 className="text-sm font-bold text-white">
             {column.title}
           </h3>
         </div>
