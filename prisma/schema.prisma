@@ -171,9 +171,12 @@ model Appointment {
 }
 
 enum AppointmentStatus {
+  BOOKING
+  WAITING
   SCHEDULED
   CONFIRMED
   ARRIVED
+  IN_PROGRESS
   COMPLETED
   CANCELLED
   NO_SHOW
