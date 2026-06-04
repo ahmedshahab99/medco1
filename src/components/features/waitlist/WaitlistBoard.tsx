@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo, useRef } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -11,15 +11,15 @@ import {
   type DragStartEvent,
   type DragEndEvent,
 } from "@dnd-kit/core";
-import { arrayMove } from "@dnd-kit/sortable";
+import { RefreshCw } from "lucide-react";
 import { WaitlistColumn } from "./WaitlistColumn";
 import { PatientCard } from "./PatientCard";
 import { COLUMNS } from "@/lib/types/waitlist-board";
-import {
-  mockPatients,
-  type BoardPatient,
-  type WaitlistStatus,
-} from "@/lib/mock/waitlist-data";
+import type { BoardPatient, WaitlistStatus } from "@/lib/types/waitlist-board";
+import { useAppointments, useUpdateAppointment } from "@/hooks/use-appointments";
+import type { CalendarAppointment } from "@/hooks/use-appointments";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { Button } from "@/components/ui/Button";
 
 const STAGE_ORDER: WaitlistStatus[] = [
   "BOOKING",
@@ -28,9 +28,34 @@ const STAGE_ORDER: WaitlistStatus[] = [
   "COMPLETED",
 ];
 
-function groupByStatus(
-  patients: BoardPatient[]
-): Record<WaitlistStatus, BoardPatient[]> {
+const BOOKING_STATUSES = new Set(["BOOKING", "SCHEDULED", "CONFIRMED"]);
+const WAITING_STATUSES = new Set(["WAITING", "ARRIVED"]);
+
+function mapAppointmentStatus(status: string): WaitlistStatus {
+  if (BOOKING_STATUSES.has(status)) return "BOOKING";
+  if (WAITING_STATUSES.has(status)) return "WAITING";
+  if (status === "IN_PROGRESS") return "IN_PROGRESS";
+  if (status === "COMPLETED") return "COMPLETED";
+  return "BOOKING";
+}
+
+function toBoardPatient(a: CalendarAppointment): BoardPatient {
+  return {
+    id: a.id,
+    name: a.patientName,
+    phone: a.patientPhone,
+    notes: a.notes,
+    status: mapAppointmentStatus(a.status),
+    addedAt: a.createdAt,
+    appointmentStartTime: a.startTime,
+    appointmentEndTime: a.endTime,
+    serviceName: a.serviceName,
+    serviceColor: a.serviceColor,
+    doctorName: a.doctorName,
+  };
+}
+
+function groupByStatus(patients: BoardPatient[]): Record<WaitlistStatus, BoardPatient[]> {
   const grouped: Record<WaitlistStatus, BoardPatient[]> = {
     BOOKING: [],
     WAITING: [],
@@ -40,8 +65,13 @@ function groupByStatus(
   for (const p of patients) {
     grouped[p.status].push(p);
   }
-  for (const status of Object.keys(grouped) as WaitlistStatus[]) {
-    grouped[status].sort(
+  grouped.BOOKING.sort(
+    (a, b) =>
+      new Date(a.appointmentStartTime!).getTime() -
+      new Date(b.appointmentStartTime!).getTime()
+  );
+  for (const col of ["WAITING", "IN_PROGRESS", "COMPLETED"] as WaitlistStatus[]) {
+    grouped[col].sort(
       (a, b) => new Date(a.addedAt).getTime() - new Date(b.addedAt).getTime()
     );
   }
@@ -62,12 +92,50 @@ function isColumnId(value: string): value is WaitlistStatus {
   return STAGE_ORDER.includes(value as WaitlistStatus);
 }
 
-export function WaitlistBoard() {
-  const [columns, setColumns] =
-    useState<Record<WaitlistStatus, BoardPatient[]>>(() =>
-      groupByStatus(mockPatients)
+interface WaitlistBoardProps {
+  doctorId: string | undefined;
+}
+
+function todayRange() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth();
+  const d = now.getDate();
+  return {
+    from: new Date(Date.UTC(y, m, d)),
+    to: new Date(Date.UTC(y, m, d, 23, 59, 59, 999)),
+  };
+}
+
+export function WaitlistBoard({ doctorId }: WaitlistBoardProps) {
+  const { from, to } = useMemo(() => todayRange(), []);
+  const {
+    data: appointments,
+    isLoading,
+    error,
+    refetch,
+  } = useAppointments(from, to);
+  const updateAppointment = useUpdateAppointment(from, to);
+
+  const columns = useMemo(() => {
+    if (!appointments) {
+      return { BOOKING: [], WAITING: [], IN_PROGRESS: [], COMPLETED: [] } as Record<
+        WaitlistStatus,
+        BoardPatient[]
+      >;
+    }
+    let filtered = appointments.filter(
+      (a) => a.status !== "CANCELLED" && a.status !== "NO_SHOW"
     );
+    if (doctorId) {
+      filtered = filtered.filter((a) => a.doctorId === doctorId);
+    }
+    return groupByStatus(filtered.map(toBoardPatient));
+  }, [appointments, doctorId]);
+
   const [activePatient, setActivePatient] = useState<BoardPatient | null>(null);
+  const columnsRef = useRef(columns);
+  columnsRef.current = columns;
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -75,89 +143,114 @@ export function WaitlistBoard() {
     })
   );
 
-  const handleDragStart = useCallback((event: DragStartEvent) => {
-    const id = event.active.id as string;
-    setColumns((prev) => {
-      const sourceCol = findColumnByPatientId(prev, id);
+  const handleDragStart = useCallback(
+    (event: DragStartEvent) => {
+      const id = event.active.id as string;
+      const currentColumns = columnsRef.current;
+      const sourceCol = findColumnByPatientId(currentColumns, id);
       if (!sourceCol) {
         setActivePatient(null);
-        return prev;
+        return;
       }
-      const patient = prev[sourceCol].find((p) => p.id === id) ?? null;
-      setActivePatient(patient);
-      return prev;
-    });
-  }, []);
+      setActivePatient(currentColumns[sourceCol].find((p) => p.id === id) ?? null);
+    },
+    []
+  );
 
-  const handleDragEnd = useCallback((event: DragEndEvent) => {
-    setActivePatient(null);
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      setActivePatient(null);
 
-    const { active, over } = event;
-    if (!over) return;
+      const { active, over } = event;
+      if (!over) return;
 
-    const activeId = active.id as string;
-    const overId = over.id as string;
+      const activeId = active.id as string;
+      const overId = over.id as string;
 
-    setColumns((prev) => {
-      const sourceCol = findColumnByPatientId(prev, activeId);
-      if (!sourceCol) return prev;
+      const currentColumns = columnsRef.current;
+      const sourceCol = findColumnByPatientId(currentColumns, activeId);
+      if (!sourceCol) return;
 
-      const fromIndex = prev[sourceCol].findIndex((p) => p.id === activeId);
-      if (fromIndex === -1) return prev;
-
-      const next = { ...prev };
+      let targetCol: WaitlistStatus | null = null;
 
       if (isColumnId(overId)) {
-        if (sourceCol === overId) return prev;
-        next[sourceCol] = [...prev[sourceCol]];
-        const [moved] = next[sourceCol].splice(fromIndex, 1);
-        next[overId] = [...prev[overId], { ...moved, status: overId }];
-        return next;
+        targetCol = overId;
+      } else {
+        targetCol = findColumnByPatientId(currentColumns, overId);
       }
 
-      const targetCol = findColumnByPatientId(prev, overId);
-      if (!targetCol) return prev;
+      if (!targetCol || targetCol === sourceCol) return;
 
-      const toIndex = prev[targetCol].findIndex((p) => p.id === overId);
-      if (toIndex === -1) return prev;
+      updateAppointment.mutate({
+        id: activeId,
+        data: { status: targetCol },
+      });
+    },
+    [updateAppointment]
+  );
 
-      if (sourceCol === targetCol) {
-        next[sourceCol] = arrayMove(
-          prev[sourceCol].map((p) => ({ ...p })),
-          fromIndex,
-          toIndex
-        );
-        return next;
-      }
-
-      next[sourceCol] = [...prev[sourceCol]];
-      const [moved] = next[sourceCol].splice(fromIndex, 1);
-      const updated = { ...moved, status: targetCol };
-      next[targetCol] = [...prev[targetCol]];
-      next[targetCol].splice(toIndex, 0, updated);
-      return next;
-    });
-  }, []);
-
-  const handleAdvance = useCallback((patientId: string) => {
-    setColumns((prev) => {
-      const sourceCol = findColumnByPatientId(prev, patientId);
-      if (!sourceCol) return prev;
+  const handleAdvance = useCallback(
+    (patientId: string) => {
+      const currentColumns = columnsRef.current;
+      const sourceCol = findColumnByPatientId(currentColumns, patientId);
+      if (!sourceCol) return;
 
       const currentIndex = STAGE_ORDER.indexOf(sourceCol);
-      if (currentIndex === STAGE_ORDER.length - 1) return prev;
+      if (currentIndex === STAGE_ORDER.length - 1) return;
 
       const targetCol = STAGE_ORDER[currentIndex + 1];
-      const patientIndex = prev[sourceCol].findIndex((p) => p.id === patientId);
-      if (patientIndex === -1) return prev;
+      updateAppointment.mutate({
+        id: patientId,
+        data: { status: targetCol },
+      });
+    },
+    [updateAppointment]
+  );
 
-      const next = { ...prev };
-      next[sourceCol] = [...prev[sourceCol]];
-      const [moved] = next[sourceCol].splice(patientIndex, 1);
-      next[targetCol] = [...prev[targetCol], { ...moved, status: targetCol }];
-      return next;
-    });
-  }, []);
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-4 md:flex-row md:overflow-x-auto pb-4">
+        {COLUMNS.map((column) => (
+          <div
+            key={column.id}
+            className="flex w-full md:w-72 md:shrink-0 flex-col border rounded-t-xl bg-white"
+          >
+            <div className={column.headerBgColor + " flex items-center justify-between px-4 pt-3 pb-2 rounded-t-xl"}>
+              <Skeleton className="h-4 w-20 bg-white/30" />
+              <Skeleton className="size-6 rounded-full bg-white/30" />
+            </div>
+            <div className="flex flex-col gap-2 p-2 min-h-[200px]">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-20 rounded-lg" />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 gap-3">
+        <p className="text-sm text-slate-500">فشل تحميل المواعيد</p>
+        <Button variant="outline" size="sm" onClick={() => refetch()}>
+          <RefreshCw className="size-4 ms-0 me-1" />
+          إعادة المحاولة
+        </Button>
+      </div>
+    );
+  }
+
+  const hasAppointments = Object.values(columns).some((col) => col.length > 0);
+
+  if (!hasAppointments) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16">
+        <p className="text-sm text-slate-500">لا يوجد مواعيد اليوم</p>
+      </div>
+    );
+  }
 
   return (
     <DndContext

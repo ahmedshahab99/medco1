@@ -2,9 +2,9 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Calendar, Check, Phone, StickyNote } from "lucide-react";
+import { Calendar, Check, Clock, Phone, Stethoscope, StickyNote } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { BoardPatient, WaitlistStatus } from "@/lib/mock/waitlist-data";
+import type { BoardPatient } from "@/lib/types/waitlist-board";
 
 interface PatientCardProps {
   patient: BoardPatient;
@@ -47,6 +47,13 @@ export function PatientCard({
     minute: "2-digit",
   });
 
+  const appointmentTime = patient.appointmentStartTime
+    ? new Date(patient.appointmentStartTime).toLocaleTimeString("ar-SA", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : null;
+
   return (
     <div
       ref={setNodeRef}
@@ -74,6 +81,13 @@ export function PatientCard({
           </div>
         )}
 
+        {patient.doctorName && (
+          <div className="mt-1 flex items-center gap-1 text-xs text-slate-500">
+            <Stethoscope className="size-3 shrink-0" />
+            <span className="truncate">{patient.doctorName}</span>
+          </div>
+        )}
+
         {patient.notes && (
           <div className="mt-1.5 flex items-start gap-1 text-xs text-slate-500">
             <StickyNote className="size-3 shrink-0 mt-0.5" />
@@ -82,8 +96,12 @@ export function PatientCard({
         )}
 
         <div className="mt-2 flex items-center gap-1 text-xs text-slate-400">
-          <Calendar className="size-3 shrink-0" />
-          <span>{timeStr}</span>
+          {appointmentTime ? (
+            <Clock className="size-3 shrink-0" />
+          ) : (
+            <Calendar className="size-3 shrink-0" />
+          )}
+          <span>{appointmentTime ?? timeStr}</span>
         </div>
       </div>
 

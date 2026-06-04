@@ -83,8 +83,21 @@ async function updateAppointment(id: string, data: AppointmentPatchInput): Promi
       signal: controller.signal,
     });
     if (!res.ok) {
-      const error = await res.json().catch(() => ({ error: "Failed to update appointment" }));
-      throw new Error(error.error || "Failed to update appointment");
+      const text = await res.text();
+      console.error("[updateAppointment] FAILED", {
+        id,
+        status: res.status,
+        statusText: res.statusText,
+        body: text,
+        sentData: data,
+      });
+      let parsed: { error?: string } = {};
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        // response was not JSON
+      }
+      throw new Error(parsed.error || `HTTP ${res.status}: ${res.statusText}`);
     }
     return res.json();
   } finally {
