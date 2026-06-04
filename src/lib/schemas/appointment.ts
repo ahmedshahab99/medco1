@@ -55,9 +55,12 @@ export const appointmentCreateSchema = z.object({
 export const appointmentPatchSchema = z.object({
   status: z
     .enum([
+      "BOOKING",
+      "WAITING",
       "SCHEDULED",
       "CONFIRMED",
       "ARRIVED",
+      "IN_PROGRESS",
       "COMPLETED",
       "CANCELLED",
       "NO_SHOW",

@@ -54,6 +54,7 @@
 - ✅ **Use `truncate` shorthand** — not `overflow-hidden text-ellipsis whitespace-nowrap`
 - ✅ **No manual `dark:` overrides** — semantic tokens handle dark mode
 - ✅ **No inline `style={}`** — Tailwind classes only
+- ✅ **No gradient colors** — solid fills only (`bg-primary`, `bg-muted`, etc.). No `bg-gradient-to-*`, `from-*`, `via-*`, `to-*`, or inline `background: linear-gradient(...)`
 
 ### Composition Patterns
 - **Card**: Use `CardHeader` + `CardTitle` + `CardDescription` + `CardContent` + `CardFooter`
@@ -147,6 +148,7 @@ await prisma.profile.update({ ... });
 - [ ] Forms validated with Zod
 - [ ] Accessible (labels, roles, focus, contrast)
 - [ ] Tailwind classes follow project order (`clsx`/`cva` for variants)
+- [ ] No gradient colors used anywhere
 - [ ] shadcn components preferred over custom HTML primitives
 - [ ] Server/Client boundary respected
 - [ ] Environment variables validated
