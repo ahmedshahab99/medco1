@@ -205,7 +205,7 @@ export async function POST(request: Request) {
       startTime: new Date(data.startTime),
       endTime: new Date(data.endTime),
       notes: data.notes,
-      status: "SCHEDULED",
+      status: data.status ?? "SCHEDULED",
       consultationFee,
       paymentStatus: "PENDING",
     },

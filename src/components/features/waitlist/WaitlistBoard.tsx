@@ -16,10 +16,11 @@ import { WaitlistColumn } from "./WaitlistColumn";
 import { PatientCard } from "./PatientCard";
 import { COLUMNS } from "@/lib/types/waitlist-board";
 import type { BoardPatient, WaitlistStatus } from "@/lib/types/waitlist-board";
-import { useAppointments, useUpdateAppointment } from "@/hooks/use-appointments";
+import { useAppointments, useUpdateAppointment, useCreateAppointment } from "@/hooks/use-appointments";
 import type { CalendarAppointment } from "@/hooks/use-appointments";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Button } from "@/components/ui/Button";
+import QuickAppointmentModal from "./QuickAppointmentModal";
 
 const STAGE_ORDER: WaitlistStatus[] = [
   "BOOKING",
@@ -116,6 +117,10 @@ export function WaitlistBoard({ doctorId }: WaitlistBoardProps) {
     refetch,
   } = useAppointments(from, to);
   const updateAppointment = useUpdateAppointment(from, to);
+  const { mutate: createAppointment } = useCreateAppointment(from, to);
+
+  const [isNewOpen, setIsNewOpen] = useState(false);
+  const [targetStatus, setTargetStatus] = useState<WaitlistStatus>("BOOKING");
 
   const columns = useMemo(() => {
     if (!appointments) {
@@ -242,39 +247,42 @@ export function WaitlistBoard({ doctorId }: WaitlistBoardProps) {
     );
   }
 
-  const hasAppointments = Object.values(columns).some((col) => col.length > 0);
-
-  if (!hasAppointments) {
-    return (
-      <div className="flex flex-col items-center justify-center py-16">
-        <p className="text-sm text-slate-500">لا يوجد مواعيد اليوم</p>
-      </div>
-    );
-  }
-
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
-      <div className="flex flex-col gap-4 md:flex-row md:overflow-x-auto pb-4 custom-scrollbar">
-        {COLUMNS.map((column) => (
-          <WaitlistColumn
-            key={column.id}
-            column={column}
-            patients={columns[column.id]}
-            onAdvance={handleAdvance}
-          />
-        ))}
-      </div>
+    <>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="flex flex-col gap-4 md:flex-row md:overflow-x-auto pb-4 custom-scrollbar">
+          {COLUMNS.map((column) => (
+            <WaitlistColumn
+              key={column.id}
+              column={column}
+              patients={columns[column.id]}
+              onAdvance={handleAdvance}
+              onAddClick={() => {
+                setTargetStatus(column.id);
+                setIsNewOpen(true);
+              }}
+            />
+          ))}
+        </div>
 
-      <DragOverlay>
-        {activePatient ? (
-          <PatientCard patient={activePatient} isDragOverlay />
-        ) : null}
-      </DragOverlay>
-    </DndContext>
+        <DragOverlay>
+          {activePatient ? (
+            <PatientCard patient={activePatient} isDragOverlay />
+          ) : null}
+        </DragOverlay>
+      </DndContext>
+
+      <QuickAppointmentModal
+        isOpen={isNewOpen}
+        onClose={() => setIsNewOpen(false)}
+        initialStatus={targetStatus}
+        onCreate={(args) => createAppointment(args)}
+      />
+    </>
   );
 }

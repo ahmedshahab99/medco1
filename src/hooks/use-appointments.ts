@@ -134,8 +134,9 @@ export function useCreateAppointment(from: Date, to: Date) {
       await queryClient.cancelQueries({ queryKey });
       const previous = queryClient.getQueryData<CalendarAppointment[]>(queryKey);
 
+      const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
       const optimistic: CalendarAppointment = {
-        id: `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+        id: tempId,
         patientId: args.input.patientId ?? `temp-patient-${Date.now()}`,
         patientName: args.optimistic.patientName,
         patientPhone: args.optimistic.patientPhone,
@@ -144,7 +145,7 @@ export function useCreateAppointment(from: Date, to: Date) {
         serviceId: args.input.serviceId,
         serviceName: args.optimistic.serviceName,
         serviceColor: args.optimistic.serviceColor,
-        status: "SCHEDULED",
+        status: args.input.status ?? "SCHEDULED",
         startTime: args.input.startTime,
         endTime: args.input.endTime,
         notes: args.input.notes ?? null,
@@ -160,10 +161,20 @@ export function useCreateAppointment(from: Date, to: Date) {
         old ? [...old, optimistic] : [optimistic]
       );
 
-      return { previous, queryKey };
+      return { previous, queryKey, tempId };
     },
-    onSuccess: () => {
+    onSuccess: (data, _vars, context) => {
       toast.success("تم حجز الموعد بنجاح");
+      if (context?.tempId) {
+        const queryKey = context.queryKey;
+        queryClient.setQueryData<CalendarAppointment[]>(queryKey, (old) => {
+          if (!old) return [data];
+          const next = old.filter(
+            (a) => a.id !== context.tempId && a.id !== data.id
+          );
+          return [...next, data];
+        });
+      }
     },
     onError: (err, _args, context) => {
       toast.error(err instanceof Error ? err.message : "فشل إنشاء الموعد");
