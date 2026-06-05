@@ -50,6 +50,19 @@ export const appointmentCreateSchema = z.object({
     .regex(/^\d+$/, "الكشفية يجب أن تكون رقماً")
     .optional()
     .or(z.literal("")),
+  status: z
+    .enum([
+      "BOOKING",
+      "WAITING",
+      "SCHEDULED",
+      "CONFIRMED",
+      "ARRIVED",
+      "IN_PROGRESS",
+      "COMPLETED",
+      "CANCELLED",
+      "NO_SHOW",
+    ])
+    .optional(),
 });
 
 export const appointmentPatchSchema = z.object({

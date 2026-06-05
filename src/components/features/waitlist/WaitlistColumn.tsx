@@ -2,7 +2,7 @@
 
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { CalendarPlus, Clock, Activity, CheckCircle } from "lucide-react";
+import { CalendarPlus, Clock, Activity, CheckCircle, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PatientCard } from "./PatientCard";
 import type { BoardPatient, WaitlistStatus, ColumnDefinition } from "@/lib/types/waitlist-board";
@@ -11,9 +11,10 @@ interface WaitlistColumnProps {
   column: ColumnDefinition;
   patients: BoardPatient[];
   onAdvance?: (patientId: string) => void;
+  onAddClick?: () => void;
 }
 
-export function WaitlistColumn({ column, patients, onAdvance }: WaitlistColumnProps) {
+export function WaitlistColumn({ column, patients, onAdvance, onAddClick }: WaitlistColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: column.id,
   });
@@ -49,6 +50,17 @@ export function WaitlistColumn({ column, patients, onAdvance }: WaitlistColumnPr
         >
           {patients.length}
         </span>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onAddClick?.();
+          }}
+          aria-label="إضافة موعد جديد"
+          className="flex size-6 items-center justify-center rounded-full text-white/90 hover:bg-white/15 active:bg-white/25 transition-colors"
+        >
+          <Plus className="size-4" />
+        </button>
       </div>
 
       <SortableContext items={patientIds} strategy={verticalListSortingStrategy}>
