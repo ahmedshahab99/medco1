@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { createClient } from "@/utils/supabase/server";
 import prisma from "@/lib/prisma";
 import { appointmentPatchSchema } from "@/lib/schemas/appointment";
@@ -56,53 +57,76 @@ export async function PATCH(
 
   const data = parseResult.data;
 
+  const ops: Prisma.PrismaPromise<unknown>[] = [];
+
   // If marking as paid, create a transaction
   if (data.paymentStatus === "PAID" && existing.paymentStatus !== "PAID" && existing.consultationFee) {
-    await prisma.transaction.create({
-      data: {
-        tenantId: actor.tenantId,
-        type: "INCOME",
-        category: "CONSULTATION",
-        amount: Number(existing.consultationFee),
-        description: "الكشفية",
-        date: new Date(),
-        patientId: existing.patientId,
-      },
-    });
+    ops.push(
+      prisma.transaction.create({
+        data: {
+          tenantId: actor.tenantId,
+          type: "INCOME",
+          category: "CONSULTATION",
+          amount: Number(existing.consultationFee),
+          description: "الكشفية",
+          date: new Date(),
+          patientId: existing.patientId,
+          appointmentId: existing.id,
+        },
+      })
+    );
   }
 
   // If payment reverted, delete the associated transaction
   if (data.paymentStatus === "PENDING" && existing.paymentStatus === "PAID" && existing.consultationFee) {
-    await prisma.transaction.deleteMany({
-      where: {
-        tenantId: actor.tenantId,
-        patientId: existing.patientId,
-        type: "INCOME",
-        category: "CONSULTATION",
-        description: "الكشفية",
-      },
-    });
+    ops.push(
+      prisma.transaction.deleteMany({
+        where: {
+          tenantId: actor.tenantId,
+          appointmentId: existing.id,
+        },
+      })
+    );
   }
 
-  const updated = await prisma.appointment.update({
-    where: { id },
-    data: {
-      ...(data.status && { status: data.status }),
-      ...(data.paymentStatus && { paymentStatus: data.paymentStatus }),
-      ...(data.startTime && { startTime: new Date(data.startTime) }),
-      ...(data.endTime && { endTime: new Date(data.endTime) }),
-      ...(data.notes !== undefined && { notes: data.notes }),
-      ...(data.caseId !== undefined && { caseId: data.caseId || null }),
-      ...(data.serviceId && { serviceId: data.serviceId }),
-      ...(data.doctorId && { doctorId: data.doctorId }),
-    },
+  ops.push(
+    prisma.appointment.update({
+      where: { id },
+      data: {
+        ...(data.status && { status: data.status }),
+        ...(data.paymentStatus && { paymentStatus: data.paymentStatus }),
+        ...(data.startTime && { startTime: new Date(data.startTime) }),
+        ...(data.endTime && { endTime: new Date(data.endTime) }),
+        ...(data.notes !== undefined && { notes: data.notes }),
+        ...(data.caseId !== undefined && { caseId: data.caseId || null }),
+        ...(data.serviceId && { serviceId: data.serviceId }),
+        ...(data.doctorId && { doctorId: data.doctorId }),
+      },
+      include: {
+        patient: true,
+        doctor: true,
+        service: true,
+        case: true,
+        transactions: {
+          select: { id: true, amount: true, type: true, category: true, description: true, date: true },
+          orderBy: { date: "desc" },
+        },
+      },
+    })
+  );
+
+  const results = await prisma.$transaction(ops);
+  const updated = results[results.length - 1] as Prisma.AppointmentGetPayload<{
     include: {
-      patient: true,
-      doctor: true,
-      service: true,
-      case: true,
-    },
-  });
+      patient: true;
+      doctor: true;
+      service: true;
+      case: true;
+      transactions: {
+        select: { id: true; amount: true; type: true; category: true; description: true; date: true };
+      };
+    };
+  }>;
 
   const mapped = {
     id: updated.id,
@@ -122,6 +146,14 @@ export async function PATCH(
     caseName: updated.case?.title ?? null,
     consultationFee: updated.consultationFee ? Number(updated.consultationFee) : null,
     paymentStatus: updated.paymentStatus,
+    transactions: updated.transactions.map((t) => ({
+      id: t.id,
+      amount: Number(t.amount),
+      type: t.type,
+      category: t.category,
+      description: t.description,
+      date: t.date.toISOString(),
+    })),
     createdAt: updated.createdAt.toISOString(),
     updatedAt: updated.updatedAt.toISOString(),
   };

@@ -6,9 +6,10 @@ import { Patient } from "../../../hooks/use-patients";
 import {
   X, Phone, Mail, CalendarDays, MapPin, Stethoscope, ChevronLeft, Pencil, Trash2, FileText, Pill, Activity,
   Syringe, ClipboardList, Heart, User, CalendarClock, Hash, Sparkles, ChevronDown,
-  Clock, Shield, Tag,
+  Clock, Shield, Tag, Wallet,
 } from "lucide-react";
 import { PrescriptionTab } from "./tabs/PrescriptionTab";
+import { PaymentsTab } from "./tabs/PaymentsTab";
 
 interface PatientDetailPanelProps {
   patient: Patient;
@@ -84,7 +85,7 @@ export function PatientDetailPanel({
   onDelete,
 }: PatientDetailPanelProps) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"overview" | "prescriptions" | "medical" | "files">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "prescriptions" | "medical" | "files" | "payment">("overview");
   const [prescriptionHistory, setPrescriptionHistory] = useState<{ id: string; diagnosis: string; createdAt: string }[]>([]);
   const age = calcAge(patient.dateOfBirth);
   const cIdx = getColorIndex(patient.id);
@@ -102,6 +103,7 @@ export function PatientDetailPanel({
     { key: "prescriptions" as const, icon: Pill, label: "الوصفات" },
     { key: "medical" as const, icon: ClipboardList, label: "السجل الطبي" },
     { key: "files" as const, icon: FileText, label: "الملفات" },
+    { key: "payment" as const, icon: Wallet, label: "المدفوعات" },
   ];
 
   return (
@@ -470,6 +472,10 @@ export function PatientDetailPanel({
               </div>
             )}
           </div>
+        )}
+
+        {activeTab === "payment" && (
+          <PaymentsTab patientId={patient.id} />
         )}
       </div>
     </div>

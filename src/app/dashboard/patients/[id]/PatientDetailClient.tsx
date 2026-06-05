@@ -7,8 +7,9 @@ import { HistoryTab } from "@/components/dashboard/patients/tabs/HistoryTab";
 import { NotesTab } from "@/components/dashboard/patients/tabs/NotesTab";
 import { FilesTab } from "@/components/dashboard/patients/tabs/FilesTab";
 import { PrescriptionTab } from "@/components/dashboard/patients/tabs/PrescriptionTab";
+import { PaymentsTab } from "@/components/dashboard/patients/tabs/PaymentsTab";
 import { Patient } from "@/lib/types/dashboard";
-import { Pill, Stethoscope } from "lucide-react";
+import { Pill, Stethoscope, Wallet } from "lucide-react";
 
 interface PatientDetailClientProps {
   patient: Patient;
@@ -17,6 +18,7 @@ interface PatientDetailClientProps {
 const tabs = [
   { key: "overview", label: "نظرة عامة" },
   { key: "prescriptions", label: "الوصفات" },
+  { key: "payment", label: "المدفوعات" },
   { key: "notes", label: "ملاحظات" },
   { key: "files", label: "ملفات" },
   { key: "history", label: "السجل" },
@@ -71,6 +73,7 @@ export default function PatientDetailClient({ patient }: PatientDetailClientProp
             }`}
           >
             {t.key === "prescriptions" && <Pill className="w-4 h-4 inline ms-1" />}
+            {t.key === "payment" && <Wallet className="w-4 h-4 inline ms-1" />}
             {t.label}
           </button>
         ))}
@@ -88,11 +91,7 @@ export default function PatientDetailClient({ patient }: PatientDetailClientProp
             <p className="text-lg font-medium">قريباً: عرض جميع المواعيد الخاصة بالمريض</p>
           </div>
         )}
-        {activeTab === "payment" && (
-          <div className="flex flex-col items-center justify-center h-full py-20 text-slate-400">
-            <p className="text-lg font-medium">قريباً: سجل المدفوعات والفواتير</p>
-          </div>
-        )}
+        {activeTab === "payment" && <PaymentsTab patientId={patient.id} />}
         {activeTab === "reminders" && (
           <div className="flex flex-col items-center justify-center h-full py-20 text-slate-400">
             <p className="text-lg font-medium">قريباً: التذكيرات والإشعارات</p>
