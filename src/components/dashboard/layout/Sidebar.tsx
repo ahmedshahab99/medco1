@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { navigationGroups } from "../../../lib/constants/navigation";
 import { SidebarItem } from "./SidebarItem";
 import { 
   Activity, ChevronLeft, ChevronRight, User, FileText, 
-  Files, Calendar, Briefcase, CreditCard, Bell, PanelLeftClose, PanelLeft
+  Files, Calendar, Briefcase, CreditCard, Bell, PanelLeftClose, PanelLeft, Pill
 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { usePatient } from "@/hooks/use-patients";
@@ -21,17 +21,23 @@ export function Sidebar({ isCollapsed, onToggleCollapse, isMobileOpen, onCloseMo
   const params = useParams();
   const patientId = params.id as string;
   const { data: patient } = usePatient(patientId);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: 0, behavior: "instant" });
+  }, [patientId]);
 
   const patientLinks = useMemo(() => {
     if (!patientId) return [];
     const baseUrl = `/dashboard/patients/${patientId}`;
     return [
       { title: "تفاصيل المريض", href: `${baseUrl}?tab=overview`, icon: User },
+      { title: "الوصفات", href: `${baseUrl}?tab=prescriptions`, icon: Pill },
       { title: "ملاحظات العلاج", href: `${baseUrl}?tab=notes`, icon: FileText },
       { title: "الملفات", href: `${baseUrl}?tab=files`, icon: Files },
       { title: "المواعيد", href: `${baseUrl}?tab=appointments`, icon: Calendar },
       { title: "الحالات", href: `${baseUrl}?tab=history`, icon: Briefcase },
-      { title: "المدفوعات", href: `${baseUrl}?tab=payment`, icon: CreditCard },
+      { title: "المدفوعات", href: `${baseUrl}?tab=payments`, icon: CreditCard },
       { title: "التذكيرات", href: `${baseUrl}?tab=reminders`, icon: Bell },
     ];
   }, [patientId]);
@@ -62,7 +68,7 @@ export function Sidebar({ isCollapsed, onToggleCollapse, isMobileOpen, onCloseMo
         </div>
 
         {/* Navigation */}
-        <div className="flex-1 overflow-y-auto py-4 px-3 custom-scrollbar scrollbar-thin">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto py-4 px-3 custom-scrollbar scrollbar-thin">
           <div className="flex flex-col gap-5">
 
             {/* Patient Context */}

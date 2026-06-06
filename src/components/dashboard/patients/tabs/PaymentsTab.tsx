@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -8,14 +9,13 @@ import {
   Wallet,
   Plus,
   Loader2,
-  Pencil,
-  Trash2,
   Calendar,
   Receipt,
   Stethoscope,
   Syringe,
   Wrench,
   AlertCircle,
+  Eye,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
@@ -39,16 +39,6 @@ import {
   DialogTitle,
 } from "@/components/ui/Dialog";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/AlertDialog";
-import {
   Table,
   TableBody,
   TableCell,
@@ -67,7 +57,6 @@ import {
 } from "@/lib/types/payments";
 import {
   createPatientPaymentAction,
-  deletePatientPaymentAction,
   getPatientAppointmentsAction,
   listPatientPaymentsAction,
   updatePatientPaymentAction,
@@ -132,6 +121,7 @@ interface PaymentsTabProps {
 }
 
 export function PaymentsTab({ patientId }: PaymentsTabProps) {
+  const router = useRouter();
   const role = useAuthStore((s) => s.user?.role);
   const canManage = useMemo(
     () => role !== undefined && (PAYMENT_WRITE_ROLES as readonly string[]).includes(role),
@@ -146,9 +136,6 @@ export function PaymentsTab({ patientId }: PaymentsTabProps) {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [isDeleting, startDelete] = useTransition();
   const [, startRefresh] = useTransition();
 
   const refresh = useCallback(async () => {
@@ -182,35 +169,13 @@ export function PaymentsTab({ patientId }: PaymentsTabProps) {
   }, [patientId]);
 
   function openCreate() {
-    setEditingId(null);
-    setDialogOpen(true);
-  }
-
-  function openEdit(p: PatientPaymentRow) {
-    setEditingId(p.id);
     setDialogOpen(true);
   }
 
   function handleSaved() {
     setDialogOpen(false);
-    setEditingId(null);
     startRefresh(async () => {
       await refresh();
-    });
-  }
-
-  function handleDelete() {
-    if (!deletingId) return;
-    const id = deletingId;
-    startDelete(async () => {
-      const res = await deletePatientPaymentAction(id);
-      if (res.success) {
-        toast.success("تم حذف الدفعة");
-        await refresh();
-      } else {
-        toast.error(res.error);
-      }
-      setDeletingId(null);
     });
   }
 
@@ -243,9 +208,8 @@ export function PaymentsTab({ patientId }: PaymentsTabProps) {
       ) : (
         <PaymentsTable
           payments={payments}
-          canManage={canManage}
-          onEdit={openEdit}
-          onDelete={(id) => setDeletingId(id)}
+          patientId={patientId}
+          onView={(id) => router.push(`/dashboard/patients/${patientId}/payments/${id}`)}
         />
       )}
 
@@ -253,38 +217,10 @@ export function PaymentsTab({ patientId }: PaymentsTabProps) {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         patientId={patientId}
-        editingId={editingId}
-        editingRow={payments.find((p) => p.id === editingId) ?? null}
+        editingId={null}
+        editingRow={null}
         onSaved={handleSaved}
       />
-
-      <AlertDialog
-        open={deletingId !== null}
-        onOpenChange={(open) => !open && setDeletingId(null)}
-      >
-        <AlertDialogContent size="sm">
-          <AlertDialogHeader>
-            <AlertDialogTitle>حذف الدفعة</AlertDialogTitle>
-            <AlertDialogDescription>
-              هل أنت متأكد من حذف هذه الدفعة؟ لا يمكن التراجع.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>إلغاء</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              disabled={isDeleting}
-              onClick={(e) => {
-                e.preventDefault();
-                handleDelete();
-              }}
-            >
-              {isDeleting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              حذف
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
@@ -323,14 +259,12 @@ function PaymentsEmpty({ canManage, onCreate }: { canManage: boolean; onCreate: 
 
 function PaymentsTable({
   payments,
-  canManage,
-  onEdit,
-  onDelete,
+  patientId,
+  onView,
 }: {
   payments: PatientPaymentRow[];
-  canManage: boolean;
-  onEdit: (p: PatientPaymentRow) => void;
-  onDelete: (id: string) => void;
+  patientId: string;
+  onView: (id: string) => void;
 }) {
   return (
     <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
@@ -342,7 +276,7 @@ function PaymentsTable({
             <TableHead className="text-end">المبلغ</TableHead>
             <TableHead className="text-end">الموعد</TableHead>
             <TableHead className="text-end">الوصف</TableHead>
-            {canManage && <TableHead className="text-end w-24">إجراءات</TableHead>}
+            <TableHead className="text-end w-20">عرض</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -383,26 +317,15 @@ function PaymentsTable({
                 <TableCell className="text-slate-500 text-xs max-w-[200px]">
                   <span className="line-clamp-1">{p.description || "—"}</span>
                 </TableCell>
-                {canManage && (
-                  <TableCell>
-                    <div className="flex items-center gap-1 justify-end">
-                      <button
-                        onClick={() => onEdit(p)}
-                        className="p-1.5 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                        title="تعديل"
-                      >
-                        <Pencil className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => onDelete(p.id)}
-                        className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                        title="حذف"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </TableCell>
-                )}
+                <TableCell>
+                  <button
+                    onClick={() => onView(p.id)}
+                    className="p-1.5 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                    title="عرض التفاصيل"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                  </button>
+                </TableCell>
               </TableRow>
             );
           })}
