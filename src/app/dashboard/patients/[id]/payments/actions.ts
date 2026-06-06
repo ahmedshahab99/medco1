@@ -15,6 +15,24 @@ import type {
 
 const PAYMENT_WRITE_ROLES = ["ADMIN", "DOCTOR", "RECEPTIONIST"] as const;
 
+export interface PatientPaymentDetail {
+  id: string;
+  patientId: string;
+  patientName: string;
+  type: string;
+  category: PatientPaymentCategory;
+  amount: number;
+  description: string | null;
+  date: string;
+  createdAt: string;
+  appointmentId: string | null;
+  appointment: {
+    id: string;
+    startTime: string;
+    service: { name: string } | null;
+  } | null;
+}
+
 const paymentInputSchema = z.object({
   amount: z.coerce.number().positive("المبلغ يجب أن يكون أكبر من صفر"),
   category: z.enum(["CONSULTATION", "MEDICATIONS", "SERVICES", "OTHER"]),
@@ -98,6 +116,58 @@ export async function listPatientPaymentsAction(
     data: {
       payments,
       summary: { totalPaid, count: payments.length, lastPaymentAt },
+    },
+  };
+}
+
+export async function getPatientPaymentAction(
+  paymentId: string
+): Promise<ActionResult<PatientPaymentDetail>> {
+  const auth = await getAuthorizedActor();
+  if ("error" in auth) return { success: false, error: auth.error };
+
+  const payment = await prisma.transaction.findFirst({
+    where: {
+      id: paymentId,
+      tenantId: auth.tenantId,
+      type: "INCOME",
+    },
+    include: {
+      patient: { select: { id: true, firstName: true, lastName: true } },
+      appointment: {
+        select: {
+          id: true,
+          startTime: true,
+          service: { select: { name: true } },
+        },
+      },
+    },
+  });
+
+  if (!payment || !payment.patient) {
+    return { success: false, error: "الدفعة غير موجودة" };
+  }
+
+  return {
+    success: true,
+    data: {
+      id: payment.id,
+      patientId: payment.patient.id,
+      patientName: `${payment.patient.firstName} ${payment.patient.lastName}`,
+      type: payment.type,
+      category: payment.category as PatientPaymentCategory,
+      amount: Number(payment.amount),
+      description: payment.description,
+      date: payment.date.toISOString(),
+      createdAt: payment.createdAt.toISOString(),
+      appointmentId: payment.appointmentId,
+      appointment: payment.appointment
+        ? {
+            id: payment.appointment.id,
+            startTime: payment.appointment.startTime.toISOString(),
+            service: payment.appointment.service,
+          }
+        : null,
     },
   };
 }
@@ -242,6 +312,7 @@ export async function updatePatientPaymentAction(
   });
 
   revalidatePath(`/dashboard/patients/${existing.patientId}`);
+  revalidatePath(`/dashboard/patients/${existing.patientId}/payments/${paymentId}`);
   return { success: true };
 }
 
@@ -266,5 +337,6 @@ export async function deletePatientPaymentAction(
   await prisma.transaction.delete({ where: { id: paymentId } });
 
   revalidatePath(`/dashboard/patients/${existing.patientId}`);
+  revalidatePath(`/dashboard/patients/${existing.patientId}/payments/${paymentId}`);
   return { success: true };
 }
