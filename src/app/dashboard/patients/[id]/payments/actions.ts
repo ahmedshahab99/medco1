@@ -11,6 +11,7 @@ import type {
   PatientPaymentCategory,
   PatientPaymentRow,
   PaymentInput,
+  ServiceOption,
 } from "@/lib/types/payments";
 
 const PAYMENT_WRITE_ROLES = ["ADMIN", "DOCTOR", "RECEPTIONIST"] as const;
@@ -19,18 +20,22 @@ export interface PatientPaymentDetail {
   id: string;
   patientId: string;
   patientName: string;
+  tenantName: string;
   type: string;
   category: PatientPaymentCategory;
   amount: number;
   description: string | null;
   date: string;
   createdAt: string;
+  updatedAt: string;
   appointmentId: string | null;
   appointment: {
     id: string;
     startTime: string;
     service: { name: string } | null;
   } | null;
+  serviceId: string | null;
+  service: { name: string } | null;
 }
 
 const paymentInputSchema = z.object({
@@ -39,6 +44,7 @@ const paymentInputSchema = z.object({
   date: z.string().min(1, "التاريخ مطلوب"),
   description: z.string().max(500, "الوصف طويل جداً").optional(),
   appointmentId: z.string().uuid().nullable().optional(),
+  serviceId: z.string().uuid().nullable().optional(),
 });
 
 async function getAuthorizedActor(): Promise<
@@ -80,6 +86,8 @@ export async function listPatientPaymentsAction(
     },
     orderBy: { date: "desc" },
     include: {
+      patient: { select: { firstName: true, lastName: true } },
+      tenant: { select: { name: true } },
       appointment: {
         select: {
           id: true,
@@ -87,6 +95,7 @@ export async function listPatientPaymentsAction(
           service: { select: { name: true } },
         },
       },
+      service: { select: { name: true } },
     },
   });
 
@@ -98,6 +107,7 @@ export async function listPatientPaymentsAction(
     description: p.description,
     date: p.date.toISOString(),
     createdAt: p.createdAt.toISOString(),
+    updatedAt: p.updatedAt.toISOString(),
     appointmentId: p.appointmentId,
     appointment: p.appointment
       ? {
@@ -106,6 +116,10 @@ export async function listPatientPaymentsAction(
           service: p.appointment.service,
         }
       : null,
+    serviceId: p.serviceId,
+    service: p.service ?? null,
+    tenantName: p.tenant.name,
+    patientName: `${p.patient?.firstName ?? ""} ${p.patient?.lastName ?? ""}`,
   }));
 
   const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
@@ -133,7 +147,14 @@ export async function getPatientPaymentAction(
       type: "INCOME",
     },
     include: {
-      patient: { select: { id: true, firstName: true, lastName: true } },
+      patient: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          tenant: { select: { name: true } },
+        },
+      },
       appointment: {
         select: {
           id: true,
@@ -141,6 +162,7 @@ export async function getPatientPaymentAction(
           service: { select: { name: true } },
         },
       },
+      service: { select: { name: true } },
     },
   });
 
@@ -154,12 +176,14 @@ export async function getPatientPaymentAction(
       id: payment.id,
       patientId: payment.patient.id,
       patientName: `${payment.patient.firstName} ${payment.patient.lastName}`,
+      tenantName: payment.patient.tenant.name,
       type: payment.type,
       category: payment.category as PatientPaymentCategory,
       amount: Number(payment.amount),
       description: payment.description,
       date: payment.date.toISOString(),
       createdAt: payment.createdAt.toISOString(),
+      updatedAt: payment.updatedAt.toISOString(),
       appointmentId: payment.appointmentId,
       appointment: payment.appointment
         ? {
@@ -168,7 +192,29 @@ export async function getPatientPaymentAction(
             service: payment.appointment.service,
           }
         : null,
+      serviceId: payment.serviceId,
+      service: payment.service ?? null,
     },
+  };
+}
+
+export async function getClinicServicesAction(): Promise<ActionResult<ServiceOption[]>> {
+  const auth = await getAuthorizedActor();
+  if ("error" in auth) return { success: false, error: auth.error };
+
+  const services = await prisma.service.findMany({
+    where: { tenantId: auth.tenantId, isActive: true },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true, price: true },
+  });
+
+  return {
+    success: true,
+    data: services.map((s) => ({
+      id: s.id,
+      name: s.name,
+      price: s.price ? Number(s.price) : null,
+    })),
   };
 }
 
@@ -255,6 +301,7 @@ export async function createPatientPaymentAction(
       date: new Date(parsed.data.date),
       patientId,
       appointmentId: parsed.data.appointmentId ?? null,
+      serviceId: parsed.data.serviceId ?? null,
     },
   });
 
@@ -308,6 +355,7 @@ export async function updatePatientPaymentAction(
       description: parsed.data.description ?? null,
       date: new Date(parsed.data.date),
       appointmentId: parsed.data.appointmentId ?? null,
+      serviceId: parsed.data.serviceId ?? null,
     },
   });
 

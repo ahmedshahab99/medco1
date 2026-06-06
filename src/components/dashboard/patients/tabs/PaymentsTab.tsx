@@ -15,7 +15,8 @@ import {
   Syringe,
   Wrench,
   AlertCircle,
-  Eye,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
@@ -39,6 +40,16 @@ import {
   DialogTitle,
 } from "@/components/ui/Dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/AlertDialog";
+import {
   Table,
   TableBody,
   TableCell,
@@ -54,13 +65,17 @@ import {
   type PatientPaymentRow,
   type PatientPaymentSummary,
   type PaymentInput,
+  type ServiceOption,
 } from "@/lib/types/payments";
 import {
   createPatientPaymentAction,
+  deletePatientPaymentAction,
+  getClinicServicesAction,
   getPatientAppointmentsAction,
   listPatientPaymentsAction,
   updatePatientPaymentAction,
 } from "@/app/dashboard/patients/[id]/payments/actions";
+import { PaymentInvoice } from "@/components/dashboard/patients/payments/PaymentInvoice";
 
 const paymentFormSchema = z.object({
   amount: z.number().positive("المبلغ يجب أن يكون أكبر من صفر"),
@@ -68,6 +83,7 @@ const paymentFormSchema = z.object({
   date: z.string().min(1, "التاريخ مطلوب"),
   description: z.string().max(500, "الوصف طويل جداً").optional(),
   appointmentId: z.string().nullable().optional(),
+  serviceId: z.string().nullable().optional(),
 });
 
 type PaymentFormValues = z.infer<typeof paymentFormSchema>;
@@ -136,6 +152,9 @@ export function PaymentsTab({ patientId }: PaymentsTabProps) {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingRow, setEditingRow] = useState<PatientPaymentRow | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [isDeleting, startDeleteTransition] = useTransition();
   const [, startRefresh] = useTransition();
 
   const refresh = useCallback(async () => {
@@ -169,11 +188,33 @@ export function PaymentsTab({ patientId }: PaymentsTabProps) {
   }, [patientId]);
 
   function openCreate() {
+    setEditingRow(null);
     setDialogOpen(true);
+  }
+
+  function openEdit(row: PatientPaymentRow) {
+    setEditingRow(row);
+    setDialogOpen(true);
+  }
+
+  function handleDelete() {
+    if (!deleteTarget) return;
+    startDeleteTransition(async () => {
+      const res = await deletePatientPaymentAction(deleteTarget);
+      if (res.success) {
+        toast.success("تم حذف الدفعة");
+        setDeleteTarget(null);
+        await refresh();
+      } else {
+        toast.error(res.error);
+        setDeleteTarget(null);
+      }
+    });
   }
 
   function handleSaved() {
     setDialogOpen(false);
+    setEditingRow(null);
     startRefresh(async () => {
       await refresh();
     });
@@ -208,19 +249,49 @@ export function PaymentsTab({ patientId }: PaymentsTabProps) {
       ) : (
         <PaymentsTable
           payments={payments}
-          patientId={patientId}
+          canManage={canManage}
+          onEdit={openEdit}
+          onDelete={setDeleteTarget}
           onView={(id) => router.push(`/dashboard/patients/${patientId}/payments/${id}`)}
         />
       )}
 
       <PaymentFormDialog
         open={dialogOpen}
-        onOpenChange={setDialogOpen}
+        onOpenChange={(open) => {
+          setDialogOpen(open);
+          if (!open) setEditingRow(null);
+        }}
         patientId={patientId}
-        editingId={null}
-        editingRow={null}
+        editingId={editingRow?.id ?? null}
+        editingRow={editingRow}
         onSaved={handleSaved}
       />
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>حذف الدفعة</AlertDialogTitle>
+            <AlertDialogDescription>
+              هل أنت متأكد من حذف هذه الدفعة؟ لا يمكن التراجع.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={isDeleting}
+              onClick={(e) => {
+                e.preventDefault();
+                handleDelete();
+              }}
+            >
+              {isDeleting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              حذف
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -259,11 +330,15 @@ function PaymentsEmpty({ canManage, onCreate }: { canManage: boolean; onCreate: 
 
 function PaymentsTable({
   payments,
-  patientId,
+  canManage,
+  onEdit,
+  onDelete,
   onView,
 }: {
   payments: PatientPaymentRow[];
-  patientId: string;
+  canManage: boolean;
+  onEdit: (row: PatientPaymentRow) => void;
+  onDelete: (id: string) => void;
   onView: (id: string) => void;
 }) {
   return (
@@ -271,12 +346,12 @@ function PaymentsTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="text-end">التاريخ</TableHead>
-            <TableHead className="text-end">الفئة</TableHead>
-            <TableHead className="text-end">المبلغ</TableHead>
-            <TableHead className="text-end">الموعد</TableHead>
-            <TableHead className="text-end">الوصف</TableHead>
-            <TableHead className="text-end w-20">عرض</TableHead>
+            <TableHead className="text-start">التاريخ</TableHead>
+            <TableHead className="text-start">الفئة</TableHead>
+            <TableHead className="text-start">المبلغ</TableHead>
+            <TableHead className="text-start">الموعد</TableHead>
+            <TableHead className="text-start">الوصف</TableHead>
+            <TableHead className="text-start w-28">إجراءات</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -284,7 +359,7 @@ function PaymentsTable({
             const meta = CATEGORY_META[p.category];
             const Icon = meta.icon;
             return (
-              <TableRow key={p.id}>
+              <TableRow key={p.id} onClick={() => onView(p.id)} className="cursor-pointer">
                 <TableCell className="text-slate-600 text-sm whitespace-nowrap">
                   <span className="inline-flex items-center gap-1.5">
                     <Calendar className="w-3.5 h-3.5 text-slate-400" />
@@ -310,6 +385,8 @@ function PaymentsTable({
                         · {formatDate(p.appointment.startTime)}
                       </span>
                     </span>
+                  ) : p.service ? (
+                    <span className="line-clamp-1">{p.service.name}</span>
                   ) : (
                     <span className="text-slate-300">—</span>
                   )}
@@ -318,13 +395,41 @@ function PaymentsTable({
                   <span className="line-clamp-1">{p.description || "—"}</span>
                 </TableCell>
                 <TableCell>
-                  <button
-                    onClick={() => onView(p.id)}
-                    className="p-1.5 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                    title="عرض التفاصيل"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="flex items-center gap-0.5">
+                    <PaymentInvoice
+                      patientName={p.patientName}
+                      tenantName={p.tenantName}
+                      iconOnly
+                      payment={{
+                        id: p.id,
+                        amount: p.amount,
+                        category: p.category,
+                        date: p.date.split("T")[0],
+                        description: p.description ?? "",
+                        serviceName: p.service?.name ?? null,
+                        createdAt: p.createdAt,
+                        updatedAt: p.updatedAt,
+                      }}
+                    />
+                    {canManage && (
+                      <>
+                        <button
+                          onClick={() => onEdit(p)}
+                          className="p-1.5 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                          title="تعديل"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => onDelete(p.id)}
+                          className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          title="حذف"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             );
@@ -353,6 +458,8 @@ function PaymentFormDialog({
   const [appointments, setAppointments] = useState<PatientAppointmentOption[]>([]);
   const [isAppointmentsLoading, setIsAppointmentsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [services, setServices] = useState<ServiceOption[]>([]);
+  const [isServicesLoading, setIsServicesLoading] = useState(false);
 
   const form = useForm<PaymentFormValues>({
     resolver: zodResolver(paymentFormSchema),
@@ -362,17 +469,24 @@ function PaymentFormDialog({
       date: todayIso(),
       description: "",
       appointmentId: null,
+      serviceId: null,
     },
   });
 
   useEffect(() => {
     if (!open) return;
     setIsAppointmentsLoading(true);
+    setIsServicesLoading(true);
     getPatientAppointmentsAction(patientId)
       .then((res) => {
         if (res.success) setAppointments(res.data);
       })
       .finally(() => setIsAppointmentsLoading(false));
+    getClinicServicesAction()
+      .then((res) => {
+        if (res.success) setServices(res.data);
+      })
+      .finally(() => setIsServicesLoading(false));
 
     if (editingRow) {
       form.reset({
@@ -381,6 +495,7 @@ function PaymentFormDialog({
         date: editingRow.date.split("T")[0],
         description: editingRow.description ?? "",
         appointmentId: editingRow.appointmentId,
+        serviceId: editingRow.serviceId,
       });
     } else {
       form.reset({
@@ -389,6 +504,7 @@ function PaymentFormDialog({
         date: todayIso(),
         description: "",
         appointmentId: null,
+        serviceId: null,
       });
     }
   }, [open, editingRow, patientId, form]);
@@ -401,6 +517,7 @@ function PaymentFormDialog({
       date: values.date,
       description: values.description?.trim() || undefined,
       appointmentId: values.appointmentId || null,
+      serviceId: values.serviceId || null,
     };
     const res = editingId
       ? await updatePatientPaymentAction(editingId, payload)
@@ -417,11 +534,13 @@ function PaymentFormDialog({
 
   const appointmentId = useWatch({ control: form.control, name: "appointmentId" });
   const categoryValue = useWatch({ control: form.control, name: "category" });
+  const serviceIdValue = useWatch({ control: form.control, name: "serviceId" });
   const appointmentValue = appointmentId ?? "none";
+  const serviceValue = serviceIdValue ?? "none";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md font-sans">
         <DialogHeader>
           <DialogTitle>{editingId ? "تعديل الدفعة" : "تسجيل دفعة جديدة"}</DialogTitle>
           <DialogDescription>
@@ -491,6 +610,41 @@ function PaymentFormDialog({
               </SelectContent>
             </Select>
           </div>
+
+          {categoryValue === "SERVICES" && (
+            <div className="space-y-1.5">
+              <Label>الخدمة</Label>
+              <Select
+                value={serviceValue}
+                onValueChange={(v) => {
+                  const serviceId = v === "none" ? null : v;
+                  form.setValue("serviceId", serviceId, { shouldValidate: true });
+                  if (serviceId) {
+                    const svc = services.find((s) => s.id === serviceId);
+                    if (svc?.price != null) {
+                      form.setValue("amount", svc.price, { shouldValidate: true });
+                    }
+                  }
+                }}
+                disabled={isServicesLoading}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue
+                    placeholder={isServicesLoading ? "جاري التحميل..." : "اختر الخدمة"}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">اختر الخدمة</SelectItem>
+                  {services.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name}
+                      {s.price != null ? ` · ${formatCurrency(s.price)}` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <Label>الموعد (اختياري)</Label>

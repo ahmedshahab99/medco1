@@ -66,12 +66,18 @@ export default async function PaymentDetailPage({ params }: PaymentDetailPagePro
         <PaymentDetailActions
           paymentId={payment.id}
           patientId={patientId}
+          patientName={payment.patientName}
+          tenantName={payment.tenantName}
           payment={{
             amount: payment.amount,
             category: payment.category,
             date: payment.date.split("T")[0],
             description: payment.description ?? "",
             appointmentId: payment.appointmentId,
+            serviceName: payment.service?.name ?? null,
+            serviceId: payment.serviceId,
+            createdAt: payment.createdAt,
+            updatedAt: payment.updatedAt,
           }}
         />
       </div>
@@ -101,6 +107,13 @@ export default async function PaymentDetailPage({ params }: PaymentDetailPagePro
           value={formatDate(payment.createdAt)}
           subtle
         />
+        {payment.updatedAt !== payment.createdAt && (
+          <DetailCard
+            label="آخر تحديث"
+            value={formatDate(payment.updatedAt)}
+            subtle
+          />
+        )}
       </div>
 
       {payment.description && (
