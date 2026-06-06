@@ -24,12 +24,17 @@ export interface PatientPaymentRow {
   description: string | null;
   date: string;
   createdAt: string;
+  updatedAt: string;
   appointmentId: string | null;
   appointment: {
     id: string;
     startTime: string;
     service: { name: string } | null;
   } | null;
+  serviceId: string | null;
+  service: { name: string } | null;
+  tenantName: string;
+  patientName: string;
 }
 
 export interface PatientPaymentSummary {
@@ -46,12 +51,19 @@ export interface PatientAppointmentOption {
   consultationFee: number | null;
 }
 
+export interface ServiceOption {
+  id: string;
+  name: string;
+  price: number | null;
+}
+
 export interface PaymentInput {
   amount: number;
   category: PatientPaymentCategory;
   date: string;
   description?: string;
   appointmentId?: string | null;
+  serviceId?: string | null;
 }
 
 export interface ListPaymentsResult {

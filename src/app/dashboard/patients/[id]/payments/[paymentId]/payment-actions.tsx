@@ -39,8 +39,10 @@ import {
 import {
   updatePatientPaymentAction,
   deletePatientPaymentAction,
+  getClinicServicesAction,
 } from "../actions";
-import { PATIENT_PAYMENT_CATEGORIES, type PaymentInput } from "@/lib/types/payments";
+import { PATIENT_PAYMENT_CATEGORIES, type PaymentInput, type ServiceOption } from "@/lib/types/payments";
+import { PaymentInvoice } from "@/components/dashboard/patients/payments/PaymentInvoice";
 
 const paymentFormSchema = z.object({
   amount: z.number().positive("المبلغ يجب أن يكون أكبر من صفر"),
@@ -48,6 +50,7 @@ const paymentFormSchema = z.object({
   date: z.string().min(1, "التاريخ مطلوب"),
   description: z.string().max(500, "الوصف طويل جداً").optional(),
   appointmentId: z.string().nullable().optional(),
+  serviceId: z.string().nullable().optional(),
 });
 
 type PaymentFormValues = z.infer<typeof paymentFormSchema>;
@@ -59,27 +62,41 @@ const CATEGORY_META: Record<string, { label: string }> = {
   OTHER: { label: "أخرى" },
 };
 
+function formatCurrency(amount: number) {
+  return new Intl.NumberFormat("ar-IQ", { maximumFractionDigits: 0 }).format(amount) + " د.ع";
+}
+
 interface PaymentDetailActionsProps {
   paymentId: string;
   patientId: string;
+  patientName: string;
+  tenantName: string;
   payment: {
     amount: number;
     category: string;
     date: string;
     description: string;
     appointmentId: string | null;
+    serviceName: string | null;
+    serviceId: string | null;
+    createdAt: string;
+    updatedAt: string;
   };
 }
 
 export function PaymentDetailActions({
   paymentId,
   patientId,
+  patientName,
+  tenantName,
   payment,
 }: PaymentDetailActionsProps) {
   const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [isDeleting, startDelete] = useTransition();
+  const [services, setServices] = useState<ServiceOption[]>([]);
+  const [isServicesLoading, setIsServicesLoading] = useState(false);
 
   const form = useForm<PaymentFormValues>({
     resolver: zodResolver(paymentFormSchema),
@@ -89,18 +106,28 @@ export function PaymentDetailActions({
       date: payment.date,
       description: payment.description,
       appointmentId: payment.appointmentId,
+      serviceId: payment.serviceId,
     },
   });
 
   const categoryValue = useWatch({ control: form.control, name: "category" });
+  const serviceIdValue = useWatch({ control: form.control, name: "serviceId" });
+  const serviceValue = serviceIdValue ?? "none";
 
   function openEdit() {
+    setIsServicesLoading(true);
+    getClinicServicesAction()
+      .then((res) => {
+        if (res.success) setServices(res.data);
+      })
+      .finally(() => setIsServicesLoading(false));
     form.reset({
       amount: payment.amount,
       category: payment.category as PaymentFormValues["category"],
       date: payment.date,
       description: payment.description,
       appointmentId: payment.appointmentId,
+      serviceId: payment.serviceId,
     });
     setEditOpen(true);
   }
@@ -112,6 +139,7 @@ export function PaymentDetailActions({
       date: values.date,
       description: values.description?.trim() || undefined,
       appointmentId: values.appointmentId || null,
+      serviceId: values.serviceId || null,
     };
     const res = await updatePatientPaymentAction(paymentId, payload);
     if (res.success) {
@@ -139,6 +167,20 @@ export function PaymentDetailActions({
   return (
     <>
       <div className="flex items-center gap-2">
+        <PaymentInvoice
+          patientName={patientName}
+          tenantName={tenantName}
+          payment={{
+            id: paymentId,
+            amount: payment.amount,
+            category: payment.category,
+            date: payment.date,
+            description: payment.description,
+            serviceName: payment.serviceName,
+            createdAt: payment.createdAt,
+            updatedAt: payment.updatedAt,
+          }}
+        />
         <Button variant="outline" size="sm" onClick={openEdit} className="gap-1.5">
           <Pencil className="w-4 h-4" />
           تعديل
@@ -155,7 +197,7 @@ export function PaymentDetailActions({
       </div>
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md font-sans">
           <DialogHeader>
             <DialogTitle>تعديل الدفعة</DialogTitle>
             <DialogDescription>
@@ -216,11 +258,46 @@ export function PaymentDetailActions({
                     </SelectItem>
                   ))}
                 </SelectContent>
+            </Select>
+          </div>
+
+          {categoryValue === "SERVICES" && (
+            <div className="space-y-1.5">
+              <Label>الخدمة</Label>
+              <Select
+                value={serviceValue}
+                onValueChange={(v) => {
+                  const sid = v === "none" ? null : v;
+                  form.setValue("serviceId", sid, { shouldValidate: true });
+                  if (sid) {
+                    const svc = services.find((s) => s.id === sid);
+                    if (svc?.price != null) {
+                      form.setValue("amount", svc.price, { shouldValidate: true });
+                    }
+                  }
+                }}
+                disabled={isServicesLoading}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue
+                    placeholder={isServicesLoading ? "جاري التحميل..." : "اختر الخدمة"}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">اختر الخدمة</SelectItem>
+                  {services.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name}
+                      {s.price != null ? ` · ${formatCurrency(s.price)}` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
             </div>
+          )}
 
-            <div className="space-y-1.5">
-              <Label htmlFor="edit-payment-description">الوصف (اختياري)</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-payment-description">الوصف (اختياري)</Label>
               <Textarea
                 id="edit-payment-description"
                 rows={2}
