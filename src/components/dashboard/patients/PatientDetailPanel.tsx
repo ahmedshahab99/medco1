@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { PrescriptionTab } from "./tabs/PrescriptionTab";
 import { PaymentsTab } from "./tabs/PaymentsTab";
+import { CasesTab } from "./tabs/CasesTab";
 
 interface PatientDetailPanelProps {
   patient: Patient;
@@ -318,44 +319,8 @@ export function PatientDetailPanel({
           <PrescriptionTab patientId={patient.id} patientName={patient.name} />
         )}
 
-        {activeTab === "history" && (
-          <div className="space-y-4">
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-              <div className="w-1 h-4 bg-amber-500 rounded-full" />
-              الحالات الطبية
-            </h3>
-            {patient.cases.length > 0 ? (
-              <div className="space-y-2">
-                {patient.cases.map((c, i) => (
-                  <div key={c.id} className="bg-white rounded-xl p-4 border border-amber-100 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-amber-50 flex items-center justify-center shrink-0 border border-amber-100">
-                        <Heart className="w-4 h-4 text-amber-600" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-bold text-slate-800">{c.title}</p>
-                        <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1.5">
-                          <CalendarDays className="w-3 h-3" />
-                          {formatDateFull(c.createdAt)}
-                        </p>
-                      </div>
-                      <div className="w-6 h-6 rounded-full bg-amber-50 flex items-center justify-center border border-amber-100">
-                        <span className="text-xs font-bold text-amber-600">{i + 1}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="bg-white rounded-2xl border border-slate-100 p-8 text-center">
-                <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center mx-auto mb-3 border border-slate-100">
-                  <ClipboardList className="w-6 h-6 text-slate-300" />
-                </div>
-                <p className="text-sm text-slate-400 font-medium">لا توجد حالات طبية</p>
-                <p className="text-xs text-slate-300 mt-1">ستظهر الحالات الطبية المسجّلة للمريض هنا</p>
-              </div>
-            )}
-          </div>
+        {activeTab === "cases" && (
+          <CasesTab patientId={patient.id} />
         )}
 
         {activeTab === "notes" && (
