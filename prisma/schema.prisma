@@ -239,6 +239,11 @@ enum InvitationStatus {
   CANCELLED
 }
 
+enum CaseStatus {
+  ACTIVE
+  INACTIVE
+}
+
 model Case {
   id           String        @id @default(uuid())
   tenantId     String
@@ -247,6 +252,7 @@ model Case {
   patient      Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
   title        String
   description  String?
+  status       CaseStatus    @default(ACTIVE)
   appointments Appointment[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt

@@ -36,7 +36,7 @@ export function Sidebar({ isCollapsed, onToggleCollapse, isMobileOpen, onCloseMo
       { title: "ملاحظات العلاج", href: `${baseUrl}?tab=notes`, icon: FileText },
       { title: "الملفات", href: `${baseUrl}?tab=files`, icon: Files },
       { title: "المواعيد", href: `${baseUrl}?tab=appointments`, icon: Calendar },
-      { title: "الحالات", href: `${baseUrl}?tab=history`, icon: Briefcase },
+      { title: "الحالات", href: `${baseUrl}?tab=cases`, icon: Briefcase },
       { title: "المدفوعات", href: `${baseUrl}?tab=payments`, icon: CreditCard },
       { title: "التذكيرات", href: `${baseUrl}?tab=reminders`, icon: Bell },
     ];
