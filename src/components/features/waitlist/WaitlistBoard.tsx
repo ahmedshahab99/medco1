@@ -30,7 +30,7 @@ const STAGE_ORDER: WaitlistStatus[] = [
 ];
 
 const BOOKING_STATUSES = new Set(["BOOKING", "SCHEDULED", "CONFIRMED"]);
-const WAITING_STATUSES = new Set(["WAITING", "ARRIVED"]);
+const WAITING_STATUSES = new Set(["WAITING"]);
 
 function mapAppointmentStatus(status: string): WaitlistStatus {
   if (BOOKING_STATUSES.has(status)) return "BOOKING";

@@ -23,7 +23,6 @@ const setupSchema = z.object({
   address: z.string().optional(),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
-  consultationFee: z.string().optional(),
 });
 
 export async function checkSlugAvailability(slug: string) {
@@ -75,7 +74,6 @@ export async function submitSetupWizard(formData: FormData) {
     address: formData.get("address")?.toString() || "",
     latitude: formData.get("latitude") ? parseFloat(formData.get("latitude") as string) : undefined,
     longitude: formData.get("longitude") ? parseFloat(formData.get("longitude") as string) : undefined,
-    consultationFee: formData.get("consultationFee")?.toString() || "",
   };
 
   const validation = setupSchema.safeParse(rawData);
@@ -84,7 +82,7 @@ export async function submitSetupWizard(formData: FormData) {
     return { error: validation.error.message };
   }
 
-  const { name, slug, phone, bio, logo, address, latitude, longitude, consultationFee } = validation.data;
+  const { name, slug, phone, bio, logo, address, latitude, longitude } = validation.data;
   const doctorName = formData.get("doctorName")?.toString() || "";
   const nameParts = doctorName.replace(/^د\.?\s*/i, "").split(" ");
   const firstName = nameParts[0] || doctorName;
@@ -191,7 +189,6 @@ export async function submitSetupWizard(formData: FormData) {
         }
 
         // Create new tenant with user-provided slug
-        const feeAmount = consultationFee ? parseFloat(consultationFee) : undefined;
         const newTenant = await tx.tenant.create({
           data: {
             name,
@@ -203,7 +200,6 @@ export async function submitSetupWizard(formData: FormData) {
             latitude: latitude || null,
             longitude: longitude || null,
             qrCode: qrCodeUrl,
-            defaultConsultationFee: (feeAmount && !isNaN(feeAmount)) ? feeAmount : undefined,
           }
         });
 

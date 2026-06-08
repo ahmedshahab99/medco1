@@ -36,7 +36,6 @@ type Transaction = {
 type Patient = {
   id: string;
   name: string;
-  consultationFee: number | null;
 };
 
 type RecurringExpense = {

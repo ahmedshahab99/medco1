@@ -51,7 +51,7 @@ export async function GET(
   const pastAppointments = await prisma.appointment.findMany({
     where: {
       patientId: id, tenantId: actor.tenantId,
-      status: { in: ["COMPLETED", "ARRIVED"] },
+      status: { in: ["COMPLETED"] },
     },
     orderBy: { startTime: "desc" },
     take: 50,
@@ -83,7 +83,6 @@ export async function GET(
     gender: patient.gender,
     status: patient.status,
     address: patient.address,
-    consultationFee: patient.consultationFee?.toString() ?? null,
     cases: patient.cases.map((c) => ({
       id: c.id, title: c.title, createdAt: c.createdAt.toISOString(),
     })),
@@ -95,8 +94,6 @@ export async function GET(
       service: a.service?.name ?? "",
       doctor: a.doctor ? formatName(a.doctor.firstName, a.doctor.lastName) : "",
       status: a.status,
-      consultationFee: a.consultationFee?.toString() ?? null,
-      paymentStatus: a.paymentStatus,
     })),
     transactions: transactions.map((t) => ({
       id: t.id,

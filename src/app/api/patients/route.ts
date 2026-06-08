@@ -187,7 +187,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { firstName, lastName, phone, dateOfBirth, gender, address, consultationFee } = parsed.data;
+  const { firstName, lastName, phone, dateOfBirth, gender, address } = parsed.data;
 
   const created = await prisma.patient.create({
     data: {
@@ -197,7 +197,6 @@ export async function POST(request: Request) {
       dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
       gender: gender || undefined,
       address: address || undefined,
-      consultationFee: consultationFee || undefined,
       tenantId: actor.tenantId,
     },
     include: {

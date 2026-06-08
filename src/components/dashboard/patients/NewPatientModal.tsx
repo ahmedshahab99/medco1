@@ -142,17 +142,6 @@ export function NewPatientModal({ isOpen, onClose }: NewPatientModalProps) {
           )}
         </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="consultationFee">
-            <DollarSign className="w-4 h-4 text-slate-400" />
-            الكشفية (دينار)
-          </Label>
-          <Input id="consultationFee" {...register("consultationFee")} type="text" inputMode="numeric" placeholder="مثال: 25000" dir="ltr" />
-          {errors.consultationFee && (
-            <p className="text-xs text-red-500">{errors.consultationFee.message}</p>
-          )}
-        </div>
-
         <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
           <Button type="button" variant="outline" onClick={handleClose}>
             إلغاء

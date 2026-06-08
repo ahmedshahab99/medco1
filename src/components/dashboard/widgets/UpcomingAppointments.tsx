@@ -17,7 +17,6 @@ export function UpcomingAppointments({ appointments }: { appointments?: Appointm
   const getBadgeVariant = (status: Appointment['status']) => {
     switch (status) {
       case "COMPLETED": return "success";
-      case "ARRIVED": return "success";
       case "CONFIRMED": return "default";
       case "SCHEDULED": return "warning";
       case "CANCELLED": case "NO_SHOW": return "danger";
@@ -28,7 +27,6 @@ export function UpcomingAppointments({ appointments }: { appointments?: Appointm
   const getStatusLabel = (status: Appointment['status']) => {
     switch (status) {
       case "COMPLETED": return "مكتمل";
-      case "ARRIVED": return "تم الوصول";
       case "CONFIRMED": return "مؤكد";
       case "SCHEDULED": return "مجدول";
       case "CANCELLED": return "ملغي";

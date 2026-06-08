@@ -22,7 +22,6 @@ const STAT_COLORS = [
 const STATUS_BADGE: Record<string, { label: string; dot: string; bg: string }> = {
   SCHEDULED:  { label: "مجدول",   dot: "bg-blue-500",   bg: "bg-blue-50 text-blue-700" },
   CONFIRMED:  { label: "مؤكد",    dot: "bg-indigo-500", bg: "bg-indigo-50 text-indigo-700" },
-  ARRIVED:    { label: "حاضر",    dot: "bg-emerald-500",bg: "bg-emerald-50 text-emerald-700" },
   COMPLETED:  { label: "مكتمل",   dot: "bg-teal-500",   bg: "bg-teal-50 text-teal-700" },
   CANCELLED:  { label: "ملغي",    dot: "bg-rose-500",   bg: "bg-rose-50 text-rose-700" },
   NO_SHOW:    { label: "غائب",    dot: "bg-amber-500",  bg: "bg-amber-50 text-amber-700" },
@@ -302,7 +301,7 @@ export default function DashboardClient({
             <div className="space-y-2 md:space-y-3">
               <SummaryRow icon={CalendarCheck} label="المواعيد" value={totalToday.toString()} color="text-emerald-600" bg="bg-emerald-100" />
               <SummaryRow icon={UserPlus} label="مرضى جدد" value={stats[2]?.value ?? "0"} color="text-blue-600" bg="bg-blue-100" />
-              <SummaryRow icon={Activity} label="مكتملة" value={sorted.filter(a => a.status === "COMPLETED" || a.status === "ARRIVED").length.toString()} color="text-teal-600" bg="bg-teal-100" />
+              <SummaryRow icon={Activity} label="مكتملة" value={sorted.filter(a => a.status === "COMPLETED").length.toString()} color="text-teal-600" bg="bg-teal-100" />
               <SummaryRow icon={DollarSign} label="الإيرادات" value={revenueFormatted} color="text-amber-600" bg="bg-amber-100" />
             </div>
           </div>

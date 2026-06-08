@@ -35,7 +35,6 @@ export default function ProfileForm({ initialData, isAdmin, doctorProfile }: Pro
       name: initialData.name, specialty: initialData.specialty ?? "", bio: initialData.bio ?? "",
       phone: initialData.phone ?? "", logo: initialData.logo ?? "", address: initialData.address ?? "",
       latitude: initialData.latitude ?? null, longitude: initialData.longitude ?? null,
-      defaultConsultationFee: initialData.defaultConsultationFee?.toString() ?? "",
       socialLinks: initialData.socialLinks.map((l) => ({ id: l.id, platform: l.platform, url: l.url })),
     },
   });
@@ -52,7 +51,6 @@ export default function ProfileForm({ initialData, isAdmin, doctorProfile }: Pro
       ...raw, specialty: raw.specialty?.trim() || null, bio: raw.bio?.trim() || null,
       phone: raw.phone?.trim() || null, logo: raw.logo?.trim() || null,
       address: raw.address?.trim() || null, latitude: raw.latitude ?? null, longitude: raw.longitude ?? null,
-      defaultConsultationFee: raw.defaultConsultationFee || "",
     };
     try {
       const res = await fetch("/api/tenant", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
@@ -129,12 +127,6 @@ export default function ProfileForm({ initialData, isAdmin, doctorProfile }: Pro
             <h3 className="font-black text-slate-800 flex items-center gap-2 mb-4"><QrCode className="w-4 h-4 text-indigo-500" /> رابط العيادة</h3>
             <div className="flex items-center gap-2 bg-slate-50 rounded-xl px-3 py-2.5 border border-slate-100"><span className="text-xs text-slate-600 truncate flex-1" dir="ltr">{clinicUrl}</span><button onClick={copyUrl} className="p-1.5 rounded-lg hover:bg-slate-200 transition-all">{copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4 text-slate-400" />}</button></div>
             {initialData.qrCode && <img src={initialData.qrCode} alt="QR" className="w-28 h-28 mx-auto mt-4" />}
-          </div>
-
-          {/* Consultation Fee */}
-          <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm">
-            <h3 className="font-black text-slate-800 flex items-center gap-2 mb-4"><DollarSign className="w-4 h-4 text-emerald-500" /> الكشفية</h3>
-            <Input {...register("defaultConsultationFee")} disabled={disabled} placeholder="مثال: 25000" className="text-center text-lg font-black" />
           </div>
 
           {/* Social Links */}

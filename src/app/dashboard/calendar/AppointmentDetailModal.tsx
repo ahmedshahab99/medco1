@@ -1,28 +1,47 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useTransition } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   XCircle,
   Calendar as CalendarIcon,
   Clock,
-  CheckCircle,
-  CreditCard,
   Edit2,
   Plus,
   RotateCcw,
   Trash2,
   User,
-  DollarSign,
   Wallet,
+  Receipt,
+  Loader2,
+  ArrowUpRight,
 } from "lucide-react";
 import { format } from "date-fns";
 import { arSA } from "date-fns/locale/ar-SA";
 import { toast } from "sonner";
+import Link from "next/link";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { Input } from "@/components/ui/Input";
+import { Label } from "@/components/ui/Label";
+import { Textarea } from "@/components/ui/Textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/Dialog";
 import type { CalendarAppointment } from "@/hooks/use-appointments";
 import type { AppointmentPatchInput } from "@/lib/schemas/appointment";
+import {
+  appointmentPaymentSchema,
+  type AppointmentPaymentInput,
+} from "@/lib/schemas/appointment-payment";
+import { recordAppointmentPaymentAction } from "./actions";
 import { STATUS_MAP } from "./utils";
 
 interface AppointmentDetailModalProps {
@@ -31,10 +50,17 @@ interface AppointmentDetailModalProps {
   isUpdating?: boolean;
   isDeleting?: boolean;
   onStatusChange: (id: string, status: AppointmentPatchInput["status"]) => void;
-  onMarkAsPaid?: (id: string) => void;
   onDelete: (id: string) => void;
   onBookAnother: (appt: CalendarAppointment) => void;
   onReschedule: (appt: CalendarAppointment) => void;
+}
+
+function todayIso() {
+  return new Date().toISOString().split("T")[0];
+}
+
+function formatDisplayDate(iso: string) {
+  return format(new Date(iso), "EEEE، d MMMM yyyy", { locale: arSA });
 }
 
 export default function AppointmentDetailModal({
@@ -43,20 +69,21 @@ export default function AppointmentDetailModal({
   isUpdating,
   isDeleting,
   onStatusChange,
-  onMarkAsPaid,
   onDelete,
   onBookAnother,
   onReschedule,
 }: AppointmentDetailModalProps) {
   const [panel, setPanel] = useState<"none" | "payment" | "notes" | "reschedule">("none");
   const [isDeleteOpen, setDeleteOpen] = useState(false);
-  const [showPaymentConfirm, setShowPaymentConfirm] = useState(false);
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [isPaymentSubmitting, startPaymentSubmit] = useTransition();
+  const [localHasTransactions, setLocalHasTransactions] = useState(false);
 
   useEffect(() => {
     if (appointment) {
       setPanel("none");
+      setLocalHasTransactions(appointment.hasTransactions);
     }
-     // Clear any existing toasts when opening a new appointment
   }, [appointment]);
 
   if (!appointment) return null;
@@ -92,7 +119,7 @@ export default function AppointmentDetailModal({
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs md:text-sm font-medium opacity-90">
               <span className="flex items-center gap-1.5">
                 <CalendarIcon className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                {format(new Date(appointment.startTime), "EEEE، d MMMM yyyy", { locale: arSA })}
+                {formatDisplayDate(appointment.startTime)}
               </span>
               <span className="flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 md:w-4 md:h-4" />
@@ -143,18 +170,6 @@ export default function AppointmentDetailModal({
           <div className="space-y-3">
             <div className="flex gap-2">
               <Button
-                className={`flex-1 gap-2 ${
-                  appointment.status === "ARRIVED"
-                    ? "bg-emerald-600 hover:bg-emerald-700"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 border-none"
-                }`}
-                disabled={isUpdating}
-                onClick={() => onStatusChange(appointment.id, "ARRIVED")}
-              >
-                <CheckCircle className="w-4 h-4" />
-                حضر
-              </Button>
-              <Button
                 variant="outline"
                 className={`flex-1 gap-2 ${
                   appointment.status === "NO_SHOW"
@@ -169,32 +184,45 @@ export default function AppointmentDetailModal({
               </Button>
             </div>
 
-            {appointment.consultationFee && (
+            {localHasTransactions ? (
               <div className="bg-gradient-to-r from-emerald-50 to-emerald-50/50 rounded-xl p-4 border border-emerald-200">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-bold text-emerald-800 flex items-center gap-1.5">
-                    <DollarSign className="w-4 h-4" />
-                    الكشفية
-                  </span>
-                  <span className="text-lg font-extrabold text-emerald-700">
-                    {Number(appointment.consultationFee).toLocaleString("ar-IQ")} د.ع
-                  </span>
-                </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-emerald-600 font-medium flex items-center gap-1">
-                    <Wallet className="w-3.5 h-3.5" />
-                    {appointment.paymentStatus === "PAID" ? "تم الدفع" : "بانتظار الدفع"}
+                  <span className="text-sm font-bold text-emerald-800 flex items-center gap-1.5">
+                    <Wallet className="w-4 h-4" />
+                    حالة الدفع
                   </span>
-                  {appointment.paymentStatus !== "PAID" && (
-                    <button
-                      onClick={() => setShowPaymentConfirm(true)}
-                      disabled={isUpdating}
-                      className="px-3 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-all disabled:opacity-50 shadow-sm shadow-emerald-200"
-                    >
-                      تأكيد الدفع
-                    </button>
-                  )}
+                  <span className="text-sm font-extrabold text-emerald-700">
+                    مدفوع
+                  </span>
                 </div>
+                {appointment.lastTransactionId && (
+                  <Link
+                    href={`/dashboard/patients/${appointment.patientId}/payments/${appointment.lastTransactionId}`}
+                    className="mt-2 flex items-center justify-center gap-1 text-xs font-bold text-emerald-600 hover:text-emerald-800 bg-emerald-100 hover:bg-emerald-200 rounded-lg py-1.5 transition-colors"
+                  >
+                    <ArrowUpRight className="w-3.5 h-3.5" />
+                    عرض الدفعة
+                  </Link>
+                )}
+              </div>
+            ) : (
+              <div className="bg-gradient-to-r from-amber-50 to-amber-50/50 rounded-xl p-4 border border-amber-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-bold text-amber-800 flex items-center gap-1.5">
+                    <Wallet className="w-4 h-4" />
+                    حالة الدفع
+                  </span>
+                  <span className="text-sm font-extrabold text-amber-700">
+                    غير مدفوع
+                  </span>
+                </div>
+                <button
+                  onClick={() => setShowPaymentForm(true)}
+                  disabled={isUpdating}
+                  className="w-full px-3 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-all disabled:opacity-50 shadow-sm shadow-emerald-200"
+                >
+                  تسجيل الدفع
+                </button>
               </div>
             )}
 
@@ -260,33 +288,169 @@ export default function AppointmentDetailModal({
         </div>
       </div>
     </Modal>
-      <ConfirmDialog
-        isOpen={isDeleteOpen}
-        title="حذف الموعد"
-        message="هل أنت متأكد من حذف هذا الموعد؟"
-        confirmLabel="حذف"
-        type="danger"
-        onConfirm={() => {
-          onDelete(appointment.id);
-          setDeleteOpen(false);
-        }}
-        onCancel={() => setDeleteOpen(false)}
-      />
-      {appointment?.consultationFee && appointment.paymentStatus !== "PAID" && (
-        <ConfirmDialog
-          isOpen={showPaymentConfirm}
-          title="تأكيد الدفع"
-          message={`سيتم تسجيل مبلغ ${Number(appointment.consultationFee).toLocaleString("ar-IQ")} د.ع كإيراد للعيادة. هل أنت متأكد؟`}
-          confirmLabel="قبول الدفع"
-          cancelLabel="إلغاء"
-          type="info"
-          onConfirm={() => {
-            onMarkAsPaid?.(appointment.id);
-            setShowPaymentConfirm(false);
-          }}
-          onCancel={() => setShowPaymentConfirm(false)}
-        />
-      )}
+
+    <ConfirmDialog
+      isOpen={isDeleteOpen}
+      title="حذف الموعد"
+      message="هل أنت متأكد من حذف هذا الموعد؟"
+      confirmLabel="حذف"
+      type="danger"
+      onConfirm={() => {
+        onDelete(appointment.id);
+        setDeleteOpen(false);
+      }}
+      onCancel={() => setDeleteOpen(false)}
+    />
+
+    <PaymentFormDialog
+      open={showPaymentForm}
+      onOpenChange={setShowPaymentForm}
+      appointment={appointment}
+      isSubmitting={isPaymentSubmitting}
+      onSubmit={async (input) => {
+        startPaymentSubmit(async () => {
+          const res = await recordAppointmentPaymentAction(appointment.id, input);
+          if (res.success) {
+            toast.success("تم تسجيل الدفعة بنجاح");
+            setLocalHasTransactions(true);
+            setShowPaymentForm(false);
+          } else {
+            toast.error(res.error ?? "فشل تسجيل الدفعة");
+          }
+        });
+      }}
+    />
     </>
+  );
+}
+
+function PaymentFormDialog({
+  open,
+  onOpenChange,
+  appointment,
+  isSubmitting,
+  onSubmit,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  appointment: CalendarAppointment;
+  isSubmitting: boolean;
+  onSubmit: (input: AppointmentPaymentInput) => void;
+}) {
+  const form = useForm<AppointmentPaymentInput>({
+    resolver: zodResolver(appointmentPaymentSchema),
+    defaultValues: {
+      amount: appointment.servicePrice ?? 0,
+      description: "",
+      date: todayIso(),
+    },
+  });
+
+  const { register, handleSubmit, formState: { errors } } = form;
+
+  useEffect(() => {
+    if (open) {
+      form.reset({
+        amount: appointment.servicePrice ?? 0,
+        description: "",
+        date: todayIso(),
+      });
+    }
+  }, [open, appointment.servicePrice, form]);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md font-sans">
+        <DialogHeader>
+          <DialogTitle>تسجيل دفعة</DialogTitle>
+          <DialogDescription>
+            أدخل تفاصيل الدفعة لهذا الموعد.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="pmt-amount">المبلغ</Label>
+              <Input
+                id="pmt-amount"
+                type="number"
+                step="any"
+                inputMode="decimal"
+                dir="ltr"
+                placeholder="0"
+                {...register("amount", { valueAsNumber: true })}
+              />
+              {errors.amount && (
+                <p className="text-xs text-destructive">{errors.amount.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="pmt-date">التاريخ</Label>
+              <Input
+                id="pmt-date"
+                type="date"
+                dir="ltr"
+                {...register("date")}
+              />
+              {errors.date && (
+                <p className="text-xs text-destructive">{errors.date.message}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>الفئة</Label>
+            <div className="flex items-center gap-2 h-10 rounded-md border border-slate-200 bg-slate-50 px-3 text-sm text-slate-600">
+              <Receipt className="w-4 h-4 text-violet-500 shrink-0" />
+              <span>خدمات</span>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>الخدمة</Label>
+            <div className="flex items-center h-10 rounded-md border border-slate-200 bg-slate-50 px-3 text-sm text-slate-600">
+              {appointment.serviceName}
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>الموعد</Label>
+            <div className="flex items-center h-10 rounded-md border border-slate-200 bg-slate-50 px-3 text-sm text-slate-600">
+              {appointment.patientName} · {formatDisplayDate(appointment.startTime)}
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="pmt-description">الوصف (اختياري)</Label>
+            <Textarea
+              id="pmt-description"
+              rows={2}
+              placeholder="ملاحظات إضافية..."
+              {...register("description")}
+            />
+            {errors.description && (
+              <p className="text-xs text-destructive">{errors.description.message}</p>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={isSubmitting}
+            >
+              إلغاء
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+              تسجيل الدفعة
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -359,9 +359,10 @@ function PaymentsTable({
             const meta = CATEGORY_META[p.category];
             const Icon = meta.icon;
             return (
-              <TableRow key={p.id} onClick={() => onView(p.id)} className="cursor-pointer">
-                <TableCell className="text-slate-600 text-sm whitespace-nowrap">
-                  <span className="inline-flex items-center gap-1.5">
+              <TableRow key={p.id} >
+                <TableCell onClick={() => onView(p.id)}  className="text-slate-600 text-sm whitespace-nowrap cursor-pointer ">
+                  
+                  <span className="inline-flex items-center gap-1.5 underline">
                     <Calendar className="w-3.5 h-3.5 text-slate-400" />
                     {formatDate(p.date)}
                   </span>
@@ -667,7 +668,6 @@ function PaymentFormDialog({
                 {appointments.map((a) => (
                   <SelectItem key={a.id} value={a.id}>
                     {a.serviceName ?? "موعد"} · {formatDate(a.startTime)}
-                    {a.consultationFee ? ` · ${formatCurrency(a.consultationFee)}` : ""}
                   </SelectItem>
                 ))}
               </SelectContent>

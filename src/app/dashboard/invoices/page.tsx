@@ -34,7 +34,7 @@ export default async function InvoicesPage() {
 
   const patients = await prisma.patient.findMany({
     where: { tenantId: actor.tenantId },
-    select: { id: true, firstName: true, lastName: true, consultationFee: true },
+    select: { id: true, firstName: true, lastName: true },
     orderBy: { createdAt: "desc" },
     take: 50,
   });
@@ -73,7 +73,6 @@ export default async function InvoicesPage() {
       patients={patients.map((p) => ({
         id: p.id,
         name: `${p.firstName} ${p.lastName}`,
-        consultationFee: p.consultationFee ? Number(p.consultationFee) : null,
       }))}
       currentMonth={now.getMonth() + 1}
       currentYear={now.getFullYear()}

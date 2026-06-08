@@ -182,7 +182,6 @@ export default function NewAppointmentModal({
           dateOfBirth: data.newPatient.dateOfBirth || undefined,
           gender: data.newPatient.gender || undefined,
           address: data.newPatient.address || undefined,
-          consultationFee: data.newPatient.consultationFee || undefined,
         }
         patientName = `${data.newPatient.firstName} ${data.newPatient.lastName}`.trim()
         patientPhone = data.newPatient.phone || null
@@ -191,10 +190,6 @@ export default function NewAppointmentModal({
         const entry = waitlist.find((w) => w.id === data.waitlistId)
         patientName = entry?.patientName ?? ""
         patientPhone = entry?.patientPhone ?? null
-      }
-
-      if (data.consultationFee) {
-        payload.consultationFee = data.consultationFee
       }
 
       const doctor = doctors.find((d) => d.id === data.doctorId)

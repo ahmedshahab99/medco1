@@ -18,7 +18,6 @@ import {
 const STATUS_STYLE: Record<string, { label: string; bg: string; dot: string; text: string }> = {
   SCHEDULED:  { label: "مجدول",   bg: "bg-blue-50",       dot: "bg-blue-500",   text: "text-blue-700" },
   CONFIRMED:  { label: "مؤكد",    bg: "bg-indigo-50",     dot: "bg-indigo-500", text: "text-indigo-700" },
-  ARRIVED:    { label: "حاضر",    bg: "bg-emerald-50",    dot: "bg-emerald-500",text: "text-emerald-700" },
   COMPLETED:  { label: "مكتمل",   bg: "bg-teal-50",       dot: "bg-teal-500",   text: "text-teal-700" },
   CANCELLED:  { label: "ملغي",    bg: "bg-rose-50",       dot: "bg-rose-500",   text: "text-rose-700" },
   NO_SHOW:    { label: "لم يحضر", bg: "bg-amber-50",      dot: "bg-amber-500",  text: "text-amber-700" },
