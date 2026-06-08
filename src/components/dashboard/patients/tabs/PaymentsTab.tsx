@@ -2,9 +2,6 @@
 
 import React, { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { useForm, useWatch } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import {
   Wallet,
   Plus,
@@ -14,31 +11,12 @@ import {
   Stethoscope,
   Syringe,
   Wrench,
-  AlertCircle,
   Pencil,
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Label } from "@/components/ui/Label";
-import { Textarea } from "@/components/ui/Textarea";
 import { Skeleton } from "@/components/ui/Skeleton";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/Select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/Dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -59,34 +37,16 @@ import {
 } from "@/components/ui/Table";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import {
-  PATIENT_PAYMENT_CATEGORIES,
-  type PatientAppointmentOption,
   type PatientPaymentCategory,
   type PatientPaymentRow,
   type PatientPaymentSummary,
-  type PaymentInput,
-  type ServiceOption,
 } from "@/lib/types/payments";
 import {
-  createPatientPaymentAction,
   deletePatientPaymentAction,
-  getClinicServicesAction,
-  getPatientAppointmentsAction,
   listPatientPaymentsAction,
-  updatePatientPaymentAction,
 } from "@/app/dashboard/patients/[id]/payments/actions";
 import { PaymentInvoice } from "@/components/dashboard/patients/payments/PaymentInvoice";
-
-const paymentFormSchema = z.object({
-  amount: z.number().positive("المبلغ يجب أن يكون أكبر من صفر"),
-  category: z.enum(["CONSULTATION", "MEDICATIONS", "SERVICES", "OTHER"]),
-  date: z.string().min(1, "التاريخ مطلوب"),
-  description: z.string().max(500, "الوصف طويل جداً").optional(),
-  appointmentId: z.string().nullable().optional(),
-  serviceId: z.string().nullable().optional(),
-});
-
-type PaymentFormValues = z.infer<typeof paymentFormSchema>;
+import { PaymentFormDialog } from "@/components/dashboard/patients/payments/PaymentFormDialog";
 
 const CATEGORY_META: Record<
   PatientPaymentCategory,
@@ -126,10 +86,6 @@ function formatDate(iso: string) {
     month: "short",
     year: "numeric",
   });
-}
-
-function todayIso() {
-  return new Date().toISOString().split("T")[0];
 }
 
 interface PaymentsTabProps {
@@ -264,7 +220,18 @@ export function PaymentsTab({ patientId }: PaymentsTabProps) {
         }}
         patientId={patientId}
         editingId={editingRow?.id ?? null}
-        editingRow={editingRow}
+        editingData={
+          editingRow
+            ? {
+                amount: editingRow.amount,
+                category: editingRow.category,
+                date: editingRow.date.split("T")[0],
+                description: editingRow.description,
+                appointmentId: editingRow.appointmentId,
+                serviceId: editingRow.serviceId,
+              }
+            : null
+        }
         onSaved={handleSaved}
       />
 
@@ -441,278 +408,3 @@ function PaymentsTable({
   );
 }
 
-function PaymentFormDialog({
-  open,
-  onOpenChange,
-  patientId,
-  editingId,
-  editingRow,
-  onSaved,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  patientId: string;
-  editingId: string | null;
-  editingRow: PatientPaymentRow | null;
-  onSaved: () => void;
-}) {
-  const [appointments, setAppointments] = useState<PatientAppointmentOption[]>([]);
-  const [isAppointmentsLoading, setIsAppointmentsLoading] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [services, setServices] = useState<ServiceOption[]>([]);
-  const [isServicesLoading, setIsServicesLoading] = useState(false);
-
-  const form = useForm<PaymentFormValues>({
-    resolver: zodResolver(paymentFormSchema),
-    defaultValues: {
-      amount: 0,
-      category: "CONSULTATION",
-      date: todayIso(),
-      description: "",
-      appointmentId: null,
-      serviceId: null,
-    },
-  });
-
-  useEffect(() => {
-    if (!open) return;
-    setIsAppointmentsLoading(true);
-    setIsServicesLoading(true);
-    getPatientAppointmentsAction(patientId)
-      .then((res) => {
-        if (res.success) setAppointments(res.data);
-      })
-      .finally(() => setIsAppointmentsLoading(false));
-    getClinicServicesAction()
-      .then((res) => {
-        if (res.success) setServices(res.data);
-      })
-      .finally(() => setIsServicesLoading(false));
-
-    if (editingRow) {
-      form.reset({
-        amount: editingRow.amount,
-        category: editingRow.category,
-        date: editingRow.date.split("T")[0],
-        description: editingRow.description ?? "",
-        appointmentId: editingRow.appointmentId,
-        serviceId: editingRow.serviceId,
-      });
-    } else {
-      form.reset({
-        amount: 0,
-        category: "CONSULTATION",
-        date: todayIso(),
-        description: "",
-        appointmentId: null,
-        serviceId: null,
-      });
-    }
-  }, [open, editingRow, patientId, form]);
-
-  async function onSubmit(values: PaymentFormValues) {
-    setIsSubmitting(true);
-    const payload: PaymentInput = {
-      amount: values.amount,
-      category: values.category,
-      date: values.date,
-      description: values.description?.trim() || undefined,
-      appointmentId: values.appointmentId || null,
-      serviceId: values.serviceId || null,
-    };
-    const res = editingId
-      ? await updatePatientPaymentAction(editingId, payload)
-      : await createPatientPaymentAction(patientId, payload);
-
-    setIsSubmitting(false);
-    if (res.success) {
-      toast.success(editingId ? "تم تحديث الدفعة" : "تم تسجيل الدفعة");
-      onSaved();
-    } else {
-      toast.error(res.error);
-    }
-  }
-
-  const appointmentId = useWatch({ control: form.control, name: "appointmentId" });
-  const categoryValue = useWatch({ control: form.control, name: "category" });
-  const serviceIdValue = useWatch({ control: form.control, name: "serviceId" });
-  const appointmentValue = appointmentId ?? "none";
-  const serviceValue = serviceIdValue ?? "none";
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md font-sans">
-        <DialogHeader>
-          <DialogTitle>{editingId ? "تعديل الدفعة" : "تسجيل دفعة جديدة"}</DialogTitle>
-          <DialogDescription>
-            {editingId
-              ? "حدّث بيانات الدفعة ثم اضغط حفظ."
-              : "أدخل تفاصيل الدفعة الجديدة لهذا المريض."}
-          </DialogDescription>
-        </DialogHeader>
-
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="payment-amount">المبلغ</Label>
-              <Input
-                id="payment-amount"
-                type="number"
-                step="any"
-                inputMode="decimal"
-                dir="ltr"
-                placeholder="0"
-                {...form.register("amount", { valueAsNumber: true })}
-                aria-invalid={!!form.formState.errors.amount}
-              />
-              {form.formState.errors.amount && (
-                <p className="text-xs text-destructive">
-                  {form.formState.errors.amount.message}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="payment-date">التاريخ</Label>
-              <Input
-                id="payment-date"
-                type="date"
-                dir="ltr"
-                {...form.register("date")}
-                aria-invalid={!!form.formState.errors.date}
-              />
-              {form.formState.errors.date && (
-                <p className="text-xs text-destructive">
-                  {form.formState.errors.date.message}
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>الفئة</Label>
-            <Select
-              value={categoryValue}
-              onValueChange={(v) =>
-                form.setValue("category", v as PatientPaymentCategory, {
-                  shouldValidate: true,
-                })
-              }
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {PATIENT_PAYMENT_CATEGORIES.map((c) => (
-                  <SelectItem key={c} value={c}>
-                    {CATEGORY_META[c].label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {categoryValue === "SERVICES" && (
-            <div className="space-y-1.5">
-              <Label>الخدمة</Label>
-              <Select
-                value={serviceValue}
-                onValueChange={(v) => {
-                  const serviceId = v === "none" ? null : v;
-                  form.setValue("serviceId", serviceId, { shouldValidate: true });
-                  if (serviceId) {
-                    const svc = services.find((s) => s.id === serviceId);
-                    if (svc?.price != null) {
-                      form.setValue("amount", svc.price, { shouldValidate: true });
-                    }
-                  }
-                }}
-                disabled={isServicesLoading}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue
-                    placeholder={isServicesLoading ? "جاري التحميل..." : "اختر الخدمة"}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">اختر الخدمة</SelectItem>
-                  {services.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.name}
-                      {s.price != null ? ` · ${formatCurrency(s.price)}` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          <div className="space-y-1.5">
-            <Label>الموعد (اختياري)</Label>
-            <Select
-              value={appointmentValue}
-              onValueChange={(v) =>
-                form.setValue("appointmentId", v === "none" ? null : v, {
-                  shouldValidate: true,
-                })
-              }
-              disabled={isAppointmentsLoading}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue
-                  placeholder={isAppointmentsLoading ? "جاري التحميل..." : "بدون ربط بموعد"}
-                />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">بدون ربط بموعد</SelectItem>
-                {appointments.map((a) => (
-                  <SelectItem key={a.id} value={a.id}>
-                    {a.serviceName ?? "موعد"} · {formatDate(a.startTime)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="payment-description">الوصف (اختياري)</Label>
-            <Textarea
-              id="payment-description"
-              rows={2}
-              placeholder="ملاحظات إضافية..."
-              {...form.register("description")}
-              aria-invalid={!!form.formState.errors.description}
-            />
-            {form.formState.errors.description && (
-              <p className="text-xs text-destructive">
-                {form.formState.errors.description.message}
-              </p>
-            )}
-          </div>
-
-          {Object.keys(form.formState.errors).length > 0 && (
-            <div className="flex items-center gap-2 text-xs text-destructive bg-destructive/5 px-3 py-2 rounded-lg">
-              <AlertCircle className="w-3.5 h-3.5" />
-              يرجى تصحيح الحقول المطلوبة قبل الحفظ
-            </div>
-          )}
-
-          <DialogFooter className="-mx-4 -mb-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={isSubmitting}
-            >
-              إلغاء
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-              {editingId ? "حفظ التعديلات" : "تسجيل الدفعة"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
