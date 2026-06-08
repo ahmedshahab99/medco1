@@ -10,6 +10,7 @@ import {
 import { PrescriptionTab } from "./tabs/PrescriptionTab";
 import { PaymentsTab } from "./tabs/PaymentsTab";
 import { CasesTab } from "./tabs/CasesTab";
+import { AppointmentsTab } from "./tabs/AppointmentsTab";
 
 interface PatientDetailPanelProps {
   patient: Patient;
@@ -409,9 +410,7 @@ export function PatientDetailPanel({
         )}
 
         {activeTab === "appointments" && (
-          <div className="flex flex-col items-center justify-center h-full py-20 text-slate-400">
-            <p className="text-lg font-medium">قريباً: عرض جميع المواعيد الخاصة بالمريض</p>
-          </div>
+          <AppointmentsTab patientId={patient.id} />
         )}
 
         {activeTab === "reminders" && (
