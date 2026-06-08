@@ -3,27 +3,21 @@ export type AppointmentStatus =
   | "WAITING"
   | "SCHEDULED"
   | "CONFIRMED"
-  | "ARRIVED"
   | "IN_PROGRESS"
   | "COMPLETED"
   | "CANCELLED"
   | "NO_SHOW";
-
-export type PaymentStatus = "PENDING" | "PAID";
 
 export const APPOINTMENT_STATUSES: readonly AppointmentStatus[] = [
   "BOOKING",
   "WAITING",
   "SCHEDULED",
   "CONFIRMED",
-  "ARRIVED",
   "IN_PROGRESS",
   "COMPLETED",
   "CANCELLED",
   "NO_SHOW",
 ] as const;
-
-export const PAYMENT_STATUSES: readonly PaymentStatus[] = ["PENDING", "PAID"] as const;
 
 export interface PatientAppointmentRow {
   id: string;
@@ -32,11 +26,10 @@ export interface PatientAppointmentRow {
   startTime: string;
   endTime: string;
   status: AppointmentStatus;
-  paymentStatus: PaymentStatus;
   caseName: string | null;
   caseId: string | null;
   notes: string | null;
-  consultationFee: number | null;
+  hasTransactions: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -63,8 +56,6 @@ export interface PatientAppointmentDetail {
   startTime: string;
   endTime: string;
   status: AppointmentStatus;
-  paymentStatus: PaymentStatus;
-  consultationFee: number | null;
   notes: string | null;
   caseId: string | null;
   caseName: string | null;
@@ -81,7 +72,6 @@ export interface PatientAppointmentDetail {
 
 export interface AppointmentInput {
   status?: AppointmentStatus;
-  paymentStatus?: PaymentStatus;
   notes?: string;
 }
 

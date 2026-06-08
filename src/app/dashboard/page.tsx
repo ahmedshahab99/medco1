@@ -45,7 +45,7 @@ export default async function DashboardPage() {
     date: app.startTime.toLocaleDateString('ar-EG', { day: 'numeric', month: 'long' }),
     time: app.startTime.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
     type: "consultation" as const,
-    status: (app.status || "SCHEDULED").toUpperCase() as "SCHEDULED" | "CONFIRMED" | "ARRIVED" | "COMPLETED" | "CANCELLED" | "NO_SHOW",
+    status: (app.status || "SCHEDULED").toUpperCase() as "SCHEDULED" | "CONFIRMED" | "COMPLETED" | "CANCELLED" | "NO_SHOW",
     doctor: app.doctor?.firstName ? `د. ${app.doctor.firstName}` : "",
     serviceName: app.service?.name ?? "",
   }));

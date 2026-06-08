@@ -11,7 +11,6 @@ export const tenantUpdateSchema = z.object({
   address: optionalString,
   latitude: optionalNumber,
   longitude: optionalNumber,
-  defaultConsultationFee: z.string().optional(),
   socialLinks: z
     .array(
       z.object({

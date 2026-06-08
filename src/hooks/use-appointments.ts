@@ -31,8 +31,9 @@ export interface CalendarAppointment {
   notes: string | null;
   caseId: string | null;
   caseName: string | null;
-  consultationFee: number | null;
-  paymentStatus: string;
+  hasTransactions: boolean;
+  lastTransactionId: string | null;
+  servicePrice: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -151,8 +152,9 @@ export function useCreateAppointment(from: Date, to: Date) {
         notes: args.input.notes ?? null,
         caseId: args.input.caseId ?? null,
         caseName: null,
-        consultationFee: args.input.consultationFee ? parseFloat(args.input.consultationFee) : null,
-        paymentStatus: "PENDING",
+        hasTransactions: false,
+        lastTransactionId: null,
+        servicePrice: null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -214,7 +216,6 @@ export function useUpdateAppointment(from: Date, to: Date) {
                 ...(data.caseId !== undefined && { caseId: data.caseId }),
                 ...(data.serviceId && { serviceId: data.serviceId }),
                 ...(data.doctorId && { doctorId: data.doctorId }),
-                ...(data.paymentStatus && { paymentStatus: data.paymentStatus }),
               }
             : a
         )

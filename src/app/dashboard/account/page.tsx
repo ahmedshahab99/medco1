@@ -11,7 +11,6 @@ interface AccountPageData {
   role: string;
   tenantName: string | null;
   tenantId: string | null;
-  defaultConsultationFee: number | null;
 }
 
 export default async function AccountPage() {
@@ -21,7 +20,7 @@ export default async function AccountPage() {
     where: { id: authProfile.id },
     include: {
       tenant: {
-        select: { name: true, id: true, defaultConsultationFee: true },
+        select: { name: true, id: true },
       },
     },
   });
@@ -38,7 +37,6 @@ export default async function AccountPage() {
     role: profile.role,
     tenantName: profile.tenant?.name ?? null,
     tenantId: profile.tenant?.id ?? null,
-    defaultConsultationFee: profile.tenant?.defaultConsultationFee ? Number(profile.tenant.defaultConsultationFee) : null,
   };
 
   return (

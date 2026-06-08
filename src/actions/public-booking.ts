@@ -349,11 +349,7 @@ export async function createPublicAppointment(
     });
   }
 
-  // Get clinic's default consultation fee (private, not shown to patients)
-  const tenantWithFee = await prisma.tenant.findUnique({
-    where: { id: tenant.id },
-    select: { defaultConsultationFee: true },
-  });
+
 
   const appointment = await prisma.appointment.create({
     data: {
@@ -365,8 +361,6 @@ export async function createPublicAppointment(
       endTime: endDate,
       notes: notes || undefined,
       status: "SCHEDULED",
-      consultationFee: tenantWithFee?.defaultConsultationFee ?? undefined,
-      paymentStatus: "PENDING",
     },
   });
 

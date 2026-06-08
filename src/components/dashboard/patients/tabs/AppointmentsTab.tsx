@@ -55,9 +55,7 @@ import {
 import { useAuthStore } from "@/lib/stores/auth-store";
 import {
   APPOINTMENT_STATUSES,
-  PAYMENT_STATUSES,
   type AppointmentStatus,
-  type PaymentStatus,
   type PatientAppointmentRow,
   type PatientAppointmentSummary,
 } from "@/lib/types/appointments";
@@ -69,9 +67,8 @@ import {
 
 const appointmentFormSchema = z.object({
   status: z
-    .enum(["BOOKING", "WAITING", "SCHEDULED", "CONFIRMED", "ARRIVED", "IN_PROGRESS", "COMPLETED", "CANCELLED", "NO_SHOW"])
+    .enum(["BOOKING", "WAITING", "SCHEDULED", "CONFIRMED", "IN_PROGRESS", "COMPLETED", "CANCELLED", "NO_SHOW"])
     .optional(),
-  paymentStatus: z.enum(["PENDING", "PAID"]).optional(),
   notes: z.string().max(1000, "الملاحظات طويلة جداً").optional(),
 });
 
@@ -84,16 +81,10 @@ const STATUS_META: Record<string, { label: string; badge: string }> = {
   WAITING: { label: "انتظار", badge: "bg-orange-50 text-orange-700 border-orange-200" },
   SCHEDULED: { label: "مجدول", badge: "bg-blue-50 text-blue-700 border-blue-200" },
   CONFIRMED: { label: "مؤكد", badge: "bg-indigo-50 text-indigo-700 border-indigo-200" },
-  ARRIVED: { label: "وصل", badge: "bg-cyan-50 text-cyan-700 border-cyan-200" },
   IN_PROGRESS: { label: "قيد التنفيذ", badge: "bg-yellow-50 text-yellow-700 border-yellow-200" },
   COMPLETED: { label: "مكتمل", badge: "bg-emerald-50 text-emerald-700 border-emerald-200" },
   CANCELLED: { label: "ملغي", badge: "bg-red-50 text-red-700 border-red-200" },
   NO_SHOW: { label: "لم يحضر", badge: "bg-slate-50 text-slate-500 border-slate-200" },
-};
-
-const PAYMENT_META: Record<string, { label: string; badge: string }> = {
-  PENDING: { label: "غير مدفوع", badge: "bg-slate-50 text-slate-500 border-slate-200" },
-  PAID: { label: "مدفوع", badge: "bg-emerald-50 text-emerald-700 border-emerald-200" },
 };
 
 function formatDate(iso: string) {
@@ -313,14 +304,12 @@ function AppointmentsTable({
             <TableHead className="text-start">الخدمة</TableHead>
             <TableHead className="text-start">الطبيب</TableHead>
             <TableHead className="text-start">الحالة</TableHead>
-            <TableHead className="text-start">الدفع</TableHead>
             <TableHead className="text-start w-28">إجراءات</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {appointments.map((a) => {
             const statusMeta = STATUS_META[a.status] ?? { label: a.status, badge: "bg-slate-50 text-slate-600 border-slate-200" };
-            const payMeta = PAYMENT_META[a.paymentStatus] ?? { label: a.paymentStatus, badge: "bg-slate-50 text-slate-600 border-slate-200" };
             return (
               <TableRow key={a.id} onClick={() => onView(a.id)} className="cursor-pointer">
                 <TableCell className="text-slate-600 text-sm whitespace-nowrap">
@@ -345,13 +334,6 @@ function AppointmentsTable({
                     className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-xs font-bold ${statusMeta.badge}`}
                   >
                     {statusMeta.label}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <span
-                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-xs font-bold ${payMeta.badge}`}
-                  >
-                    {payMeta.label}
                   </span>
                 </TableCell>
                 <TableCell>
@@ -404,7 +386,6 @@ function AppointmentFormDialog({
     resolver: zodResolver(appointmentFormSchema),
     defaultValues: {
       status: undefined,
-      paymentStatus: undefined,
       notes: "",
     },
   });
@@ -414,13 +395,11 @@ function AppointmentFormDialog({
     if (editingRow) {
       form.reset({
         status: editingRow.status,
-        paymentStatus: editingRow.paymentStatus,
         notes: editingRow.notes ?? "",
       });
     } else {
       form.reset({
         status: undefined,
-        paymentStatus: undefined,
         notes: "",
       });
     }
@@ -431,7 +410,6 @@ function AppointmentFormDialog({
     setIsSubmitting(true);
     const res = await updatePatientAppointmentAction(editingId, {
       status: values.status,
-      paymentStatus: values.paymentStatus,
       notes: values.notes?.trim() || undefined,
     });
     setIsSubmitting(false);
@@ -444,7 +422,6 @@ function AppointmentFormDialog({
   }
 
   const statusValue = form.watch("status") ?? "none";
-  const paymentValue = form.watch("paymentStatus") ?? "none";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -473,28 +450,6 @@ function AppointmentFormDialog({
                 {APPOINTMENT_STATUSES.map((s) => (
                   <SelectItem key={s} value={s}>
                     {STATUS_META[s]?.label ?? s}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>حالة الدفع</Label>
-            <Select
-              value={paymentValue}
-              onValueChange={(v) =>
-                form.setValue("paymentStatus", v === "none" ? undefined : (v as PaymentStatus), { shouldValidate: true })
-              }
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="اختر حالة الدفع" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">بدون تغيير</SelectItem>
-                {PAYMENT_STATUSES.map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {PAYMENT_META[s]?.label ?? s}
                   </SelectItem>
                 ))}
               </SelectContent>

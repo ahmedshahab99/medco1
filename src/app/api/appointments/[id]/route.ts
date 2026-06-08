@@ -59,42 +59,11 @@ export async function PATCH(
 
   const ops: Prisma.PrismaPromise<unknown>[] = [];
 
-  // If marking as paid, create a transaction
-  if (data.paymentStatus === "PAID" && existing.paymentStatus !== "PAID" && existing.consultationFee) {
-    ops.push(
-      prisma.transaction.create({
-        data: {
-          tenantId: actor.tenantId,
-          type: "INCOME",
-          category: "CONSULTATION",
-          amount: Number(existing.consultationFee),
-          description: "الكشفية",
-          date: new Date(),
-          patientId: existing.patientId,
-          appointmentId: existing.id,
-        },
-      })
-    );
-  }
-
-  // If payment reverted, delete the associated transaction
-  if (data.paymentStatus === "PENDING" && existing.paymentStatus === "PAID" && existing.consultationFee) {
-    ops.push(
-      prisma.transaction.deleteMany({
-        where: {
-          tenantId: actor.tenantId,
-          appointmentId: existing.id,
-        },
-      })
-    );
-  }
-
   ops.push(
     prisma.appointment.update({
       where: { id },
       data: {
         ...(data.status && { status: data.status }),
-        ...(data.paymentStatus && { paymentStatus: data.paymentStatus }),
         ...(data.startTime && { startTime: new Date(data.startTime) }),
         ...(data.endTime && { endTime: new Date(data.endTime) }),
         ...(data.notes !== undefined && { notes: data.notes }),
@@ -105,7 +74,7 @@ export async function PATCH(
       include: {
         patient: true,
         doctor: true,
-        service: true,
+        service: { select: { name: true, color: true, price: true } },
         case: true,
         transactions: {
           select: { id: true, amount: true, type: true, category: true, description: true, date: true },
@@ -144,8 +113,9 @@ export async function PATCH(
     notes: updated.notes,
     caseId: updated.caseId,
     caseName: updated.case?.title ?? null,
-    consultationFee: updated.consultationFee ? Number(updated.consultationFee) : null,
-    paymentStatus: updated.paymentStatus,
+    hasTransactions: updated.transactions.length > 0,
+    lastTransactionId: updated.transactions[0]?.id ?? null,
+    servicePrice: updated.service.price ? Number(updated.service.price) : null,
     transactions: updated.transactions.map((t) => ({
       id: t.id,
       amount: Number(t.amount),

@@ -38,16 +38,13 @@ import {
 import { updatePatientAppointmentAction, deletePatientAppointmentAction } from "../actions";
 import {
   APPOINTMENT_STATUSES,
-  PAYMENT_STATUSES,
   type AppointmentStatus,
-  type PaymentStatus,
 } from "@/lib/types/appointments";
 
 const appointmentFormSchema = z.object({
   status: z
-    .enum(["BOOKING", "WAITING", "SCHEDULED", "CONFIRMED", "ARRIVED", "IN_PROGRESS", "COMPLETED", "CANCELLED", "NO_SHOW"])
+    .enum(["BOOKING", "WAITING", "SCHEDULED", "CONFIRMED", "IN_PROGRESS", "COMPLETED", "CANCELLED", "NO_SHOW"])
     .optional(),
-  paymentStatus: z.enum(["PENDING", "PAID"]).optional(),
   notes: z.string().max(1000, "الملاحظات طويلة جداً").optional(),
 });
 
@@ -58,16 +55,10 @@ const STATUS_META: Record<string, { label: string }> = {
   WAITING: { label: "انتظار" },
   SCHEDULED: { label: "مجدول" },
   CONFIRMED: { label: "مؤكد" },
-  ARRIVED: { label: "وصل" },
   IN_PROGRESS: { label: "قيد التنفيذ" },
   COMPLETED: { label: "مكتمل" },
   CANCELLED: { label: "ملغي" },
   NO_SHOW: { label: "لم يحضر" },
-};
-
-const PAYMENT_META: Record<string, { label: string }> = {
-  PENDING: { label: "غير مدفوع" },
-  PAID: { label: "مدفوع" },
 };
 
 interface AppointmentDetailActionsProps {
@@ -75,7 +66,6 @@ interface AppointmentDetailActionsProps {
   patientId: string;
   appointmentData: {
     status: string;
-    paymentStatus: string;
     notes: string | null;
   };
 }
@@ -94,18 +84,15 @@ export function AppointmentDetailActions({
     resolver: zodResolver(appointmentFormSchema),
     defaultValues: {
       status: (appointmentData.status as AppointmentStatus) ?? undefined,
-      paymentStatus: (appointmentData.paymentStatus as PaymentStatus) ?? undefined,
       notes: appointmentData.notes ?? "",
     },
   });
 
   const statusValue = form.watch("status") ?? "none";
-  const paymentValue = form.watch("paymentStatus") ?? "none";
 
   function openEdit() {
     form.reset({
       status: (appointmentData.status as AppointmentStatus) ?? undefined,
-      paymentStatus: (appointmentData.paymentStatus as PaymentStatus) ?? undefined,
       notes: appointmentData.notes ?? "",
     });
     setEditOpen(true);
@@ -114,7 +101,6 @@ export function AppointmentDetailActions({
   async function handleEditSubmit(values: AppointmentFormValues) {
     const res = await updatePatientAppointmentAction(appointmentId, {
       status: values.status,
-      paymentStatus: values.paymentStatus,
       notes: values.notes?.trim() || undefined,
     });
     if (res.success) {
@@ -183,28 +169,6 @@ export function AppointmentDetailActions({
                   {APPOINTMENT_STATUSES.map((s) => (
                     <SelectItem key={s} value={s}>
                       {STATUS_META[s]?.label ?? s}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label>حالة الدفع</Label>
-              <Select
-                value={paymentValue}
-                onValueChange={(v) =>
-                  form.setValue("paymentStatus", v === "none" ? undefined : (v as PaymentStatus), { shouldValidate: true })
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="اختر حالة الدفع" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">بدون تغيير</SelectItem>
-                  {PAYMENT_STATUSES.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {PAYMENT_META[s]?.label ?? s}
                     </SelectItem>
                   ))}
                 </SelectContent>

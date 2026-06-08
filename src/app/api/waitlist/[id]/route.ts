@@ -30,15 +30,15 @@ export async function PATCH(
   });
   if (!entry) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const { consultationFee, ...patchData } = parsed.data as any;
+  const { notes, status: patchStatus, ...patchData } = parsed.data;
 
   const updated = await prisma.waitlist.update({
     where: { id },
-    data: patchData,
+    data: { ...(patchStatus && { status: patchStatus }), ...(notes !== undefined && { notes }) },
   });
 
   // Auto-create Appointment when waitlist entry is completed (for visit history)
-  if (patchData.status === "completed") {
+  if (patchStatus === "completed") {
     const today = new Date();
     const endTime = new Date(today.getTime() + 30 * 60 * 1000);
 
@@ -62,25 +62,11 @@ export async function PATCH(
           endTime,
           status: "COMPLETED",
           notes: entry.notes ? `مباشر - ${entry.notes}` : "مباشر",
-          consultationFee: consultationFee ? Number(consultationFee) : undefined,
-          paymentStatus: consultationFee ? "PAID" : "PENDING",
         },
       });
 
       // Create transaction if consultation fee was provided
-      if (consultationFee) {
-        await prisma.transaction.create({
-          data: {
-            tenantId: actor.tenantId,
-            type: "INCOME",
-            category: "CONSULTATION",
-            amount: Number(consultationFee),
-            description: "الكشفية - مباشر",
-            date: today,
-            patientId: entry.patientId,
-          },
-        });
-      }
+    // Payment now recorded separately via the payment form
     }
   }
 

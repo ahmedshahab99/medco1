@@ -250,7 +250,6 @@ export async function getPatientAppointmentsAction(
       startTime: a.startTime.toISOString(),
       serviceName: a.service?.name ?? null,
       status: a.status,
-      consultationFee: a.consultationFee ? Number(a.consultationFee) : null,
     })),
   };
 }

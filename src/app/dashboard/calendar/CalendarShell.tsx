@@ -211,7 +211,6 @@ export default function CalendarShell() {
         isUpdating={isUpdatingAppt}
         isDeleting={isDeletingAppt}
         onStatusChange={handleStatusChange}
-        onMarkAsPaid={(id) => updateAppt({ id, data: { paymentStatus: "PAID" } })}
         onDelete={handleDelete}
         onBookAnother={handleBookAnother}
         onReschedule={handleReschedule}

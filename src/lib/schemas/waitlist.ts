@@ -20,7 +20,6 @@ export const waitlistCreateSchema = z
 export const waitlistPatchSchema = z.object({
   notes: z.string().optional(),
   status: z.enum(["waiting", "in_progress", "completed", "converted", "cancelled"]).optional(),
-  consultationFee: z.string().optional(),
 });
 
 export type WaitlistCreateInput = z.infer<typeof waitlistCreateSchema>;

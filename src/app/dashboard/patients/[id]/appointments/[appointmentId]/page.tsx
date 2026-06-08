@@ -12,7 +12,6 @@ const STATUS_LABELS: Record<string, string> = {
   WAITING: "انتظار",
   SCHEDULED: "مجدول",
   CONFIRMED: "مؤكد",
-  ARRIVED: "وصل",
   IN_PROGRESS: "قيد التنفيذ",
   COMPLETED: "مكتمل",
   CANCELLED: "ملغي",
@@ -24,7 +23,6 @@ const STATUS_VARIANT: Record<string, string> = {
   WAITING: "slate",
   SCHEDULED: "blue",
   CONFIRMED: "indigo",
-  ARRIVED: "cyan",
   IN_PROGRESS: "amber",
   COMPLETED: "emerald",
   CANCELLED: "red",
@@ -96,7 +94,6 @@ export default async function AppointmentDetailPage({ params }: AppointmentDetai
           patientId={patientId}
           appointmentData={{
             status: a.status,
-            paymentStatus: a.paymentStatus,
             notes: a.notes,
           }}
         />
@@ -122,16 +119,9 @@ export default async function AppointmentDetailPage({ params }: AppointmentDetai
         />
         <DetailCard
           label="حالة الدفع"
-          value={a.paymentStatus === "PAID" ? "مدفوع" : "غير مدفوع"}
-          variant={a.paymentStatus === "PAID" ? "emerald" : undefined}
+          value={a.transactions && a.transactions.length > 0 ? "مدفوع" : "غير مدفوع"}
+          variant={a.transactions && a.transactions.length > 0 ? "emerald" : undefined}
         />
-        {a.consultationFee != null && (
-          <DetailCard
-            label="الكشفية"
-            value={formatCurrency(a.consultationFee)}
-            variant="emerald"
-          />
-        )}
         <DetailCard
           label="تاريخ التسجيل"
           value={formatDate(a.createdAt)}

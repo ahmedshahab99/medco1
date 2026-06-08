@@ -1,7 +1,6 @@
 import {
   CheckCircle,
   Clock,
-  User,
   XCircle,
   AlertCircle,
   CheckSquare,
@@ -22,11 +21,6 @@ export const STATUS_MAP: Record<
     label: "مؤكد",
     icon: CheckCircle,
     badgeClass: "bg-blue-100 text-blue-700",
-  },
-  ARRIVED: {
-    label: "تم الوصول",
-    icon: User,
-    badgeClass: "bg-emerald-100 text-emerald-700",
   },
   COMPLETED: {
     label: "مكتمل",

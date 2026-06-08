@@ -16,9 +16,8 @@ const APPOINTMENT_WRITE_ROLES = ["ADMIN", "DOCTOR", "RECEPTIONIST"] as const;
 
 const appointmentUpdateSchema = z.object({
   status: z
-    .enum(["BOOKING", "WAITING", "SCHEDULED", "CONFIRMED", "ARRIVED", "IN_PROGRESS", "COMPLETED", "CANCELLED", "NO_SHOW"])
+    .enum(["BOOKING", "WAITING", "SCHEDULED", "CONFIRMED", "IN_PROGRESS", "COMPLETED", "CANCELLED", "NO_SHOW"])
     .optional(),
-  paymentStatus: z.enum(["PENDING", "PAID"]).optional(),
   notes: z.string().max(1000, "الملاحظات طويلة جداً").optional(),
 });
 
@@ -63,6 +62,7 @@ export async function listPatientAppointmentsAction(
       service: { select: { name: true } },
       doctor: { select: { firstName: true, lastName: true } },
       case: { select: { id: true, title: true } },
+      transactions: { select: { id: true } },
     },
   });
 
@@ -73,11 +73,10 @@ export async function listPatientAppointmentsAction(
     startTime: a.startTime.toISOString(),
     endTime: a.endTime.toISOString(),
     status: a.status as PatientAppointmentRow["status"],
-    paymentStatus: a.paymentStatus as PatientAppointmentRow["paymentStatus"],
     caseName: a.case?.title ?? null,
     caseId: a.case?.id ?? null,
     notes: a.notes,
-    consultationFee: a.consultationFee ? Number(a.consultationFee) : null,
+    hasTransactions: a.transactions.length > 0,
     createdAt: a.createdAt.toISOString(),
     updatedAt: a.updatedAt.toISOString(),
   }));
@@ -151,8 +150,6 @@ export async function getPatientAppointmentAction(
       startTime: a.startTime.toISOString(),
       endTime: a.endTime.toISOString(),
       status: a.status as PatientAppointmentDetail["status"],
-      paymentStatus: a.paymentStatus as PatientAppointmentDetail["paymentStatus"],
-      consultationFee: a.consultationFee ? Number(a.consultationFee) : null,
       notes: a.notes,
       caseId: a.case?.id ?? null,
       caseName: a.case?.title ?? null,
@@ -187,7 +184,7 @@ export async function updatePatientAppointmentAction(
 
   const existing = await prisma.appointment.findFirst({
     where: { id: appointmentId, tenantId: auth.tenantId },
-    select: { id: true, patientId: true, paymentStatus: true },
+    select: { id: true, patientId: true },
   });
   if (!existing || !existing.patientId) {
     return { success: false, error: "الموعد غير موجود" };
@@ -196,36 +193,6 @@ export async function updatePatientAppointmentAction(
   const updateData: Record<string, unknown> = {};
   if (parsed.data.status !== undefined) updateData.status = parsed.data.status;
   if (parsed.data.notes !== undefined) updateData.notes = parsed.data.notes;
-
-  if (parsed.data.paymentStatus !== undefined) {
-    updateData.paymentStatus = parsed.data.paymentStatus;
-
-    if (parsed.data.paymentStatus === "PAID" && existing.paymentStatus !== "PAID") {
-      const amount = await prisma.appointment.findFirst({
-        where: { id: appointmentId },
-        select: { consultationFee: true, serviceId: true },
-      });
-      const fee = amount?.consultationFee ? Number(amount.consultationFee) : undefined;
-
-      await prisma.transaction.create({
-        data: {
-          tenantId: auth.tenantId,
-          type: "INCOME",
-          category: "CONSULTATION",
-          amount: fee ?? 0,
-          description: "دفع كشفية الموعد",
-          date: new Date(),
-          patientId: existing.patientId,
-          appointmentId,
-          serviceId: amount?.serviceId ?? null,
-        },
-      });
-    } else if (parsed.data.paymentStatus === "PENDING" && existing.paymentStatus === "PAID") {
-      await prisma.transaction.deleteMany({
-        where: { appointmentId, type: "INCOME" },
-      });
-    }
-  }
 
   await prisma.appointment.update({
     where: { id: appointmentId },

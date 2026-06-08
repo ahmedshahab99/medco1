@@ -20,7 +20,7 @@ export type Appointment = {
   date: string;
   time: string;
   type: "consultation" | "follow-up" | "treatment";
-  status: "BOOKING" | "WAITING" | "SCHEDULED" | "CONFIRMED" | "ARRIVED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "NO_SHOW";
+  status: "BOOKING" | "WAITING" | "SCHEDULED" | "CONFIRMED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "NO_SHOW";
   doctor: string;
 };
 

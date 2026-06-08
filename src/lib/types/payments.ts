@@ -48,7 +48,6 @@ export interface PatientAppointmentOption {
   startTime: string;
   serviceName: string | null;
   status: string;
-  consultationFee: number | null;
 }
 
 export interface ServiceOption {

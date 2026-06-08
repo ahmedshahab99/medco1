@@ -18,8 +18,7 @@ model Tenant {
   address                String?
   latitude               Float?
   longitude              Float?
-  defaultConsultationFee Decimal?
-  createdAt              DateTime @default(now())
+  createdAt DateTime @default(now())
   updatedAt              DateTime @updatedAt
 
   profiles           Profile[]
@@ -94,7 +93,6 @@ model Patient {
   gender          Gender?
   status          String    @default("active")
   address         String?
-  consultationFee Decimal?
 
   appointments  Appointment[]
   medicalNotes  MedicalNote[]
@@ -160,8 +158,6 @@ model Appointment {
   endTime         DateTime
   status          AppointmentStatus @default(SCHEDULED)
   notes           String?
-  consultationFee Decimal?
-  paymentStatus   PaymentStatus     @default(PENDING)
 
   medicalNotes MedicalNote[]
   transactions Transaction[]
@@ -175,16 +171,10 @@ enum AppointmentStatus {
   WAITING
   SCHEDULED
   CONFIRMED
-  ARRIVED
   IN_PROGRESS
   COMPLETED
   CANCELLED
   NO_SHOW
-}
-
-enum PaymentStatus {
-  PENDING
-  PAID
 }
 
 model MedicalNote {
