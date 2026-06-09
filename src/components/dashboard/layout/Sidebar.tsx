@@ -5,7 +5,7 @@ import { navigationGroups } from "../../../lib/constants/navigation";
 import { SidebarItem } from "./SidebarItem";
 import { 
   Activity, ChevronLeft, ChevronRight, User, FileText, 
-  Files, Calendar, Briefcase, CreditCard, Bell, PanelLeftClose, PanelLeft, Pill
+  Files, Calendar, Briefcase, CreditCard, Bell, PanelLeftClose, PanelLeft, Pill, Stethoscope
 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { usePatient } from "@/hooks/use-patients";
@@ -32,8 +32,7 @@ export function Sidebar({ isCollapsed, onToggleCollapse, isMobileOpen, onCloseMo
     const baseUrl = `/dashboard/patients/${patientId}`;
     return [
       { title: "تفاصيل المريض", href: `${baseUrl}?tab=overview`, icon: User },
-      { title: "الوصفات", href: `${baseUrl}?tab=prescriptions`, icon: Pill },
-      { title: "ملاحظات العلاج", href: `${baseUrl}?tab=notes`, icon: FileText },
+      { title: "زيارات", href: `${baseUrl}?tab=visits`, icon: Stethoscope },
       { title: "الملفات", href: `${baseUrl}?tab=files`, icon: Files },
       { title: "المواعيد", href: `${baseUrl}?tab=appointments`, icon: Calendar },
       { title: "الحالات", href: `${baseUrl}?tab=cases`, icon: Briefcase },

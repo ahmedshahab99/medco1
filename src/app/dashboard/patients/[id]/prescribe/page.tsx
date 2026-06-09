@@ -1,27 +1,16 @@
 "use client";
 
-import { useParams } from "next/navigation";
-import { usePatient } from "@/hooks/use-patients";
-import { Loader2 } from "lucide-react";
-import PrescriptionPage from "@/components/features/PrescriptionPage";
+import { useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
 
 export default function PrescribePage() {
   const params = useParams();
+  const router = useRouter();
   const id = params.id as string;
-  const { data: patient, isLoading } = usePatient(id);
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-      </div>
-    );
-  }
+  useEffect(() => {
+    router.replace(`/dashboard/patients/${id}?tab=visits`);
+  }, [id, router]);
 
-  return (
-    <PrescriptionPage
-      initialPatientId={id}
-      initialPatientName={patient?.name}
-    />
-  );
+  return null;
 }

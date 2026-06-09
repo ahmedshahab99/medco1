@@ -10,9 +10,10 @@ export interface PatientCase {
   createdAt: string;
 }
 
-export interface MedicalNote {
+export interface VisitNote {
   id: string;
-  content: string;
+  content?: string;
+  diagnosis?: string;
   createdAt: string;
 }
 
@@ -34,7 +35,7 @@ export interface Patient {
   status: string;
   address: string | null;
   cases: PatientCase[];
-  medicalNotes?: MedicalNote[];
+  visitNotes?: VisitNote[];
   patientFiles?: PatientFile[];
   tags?: string[];
   nextAppointment?: string;

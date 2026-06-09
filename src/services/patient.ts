@@ -70,7 +70,7 @@ export const PatientService = {
         appointments: {
           orderBy: { startTime: 'desc' }
         },
-        medicalNotes: {
+        visitNotes: {
           orderBy: { createdAt: 'desc' }
         },
         patientFiles: {
@@ -100,10 +100,11 @@ export const PatientService = {
         doctor: "دكتور",
         status: app.status.toLowerCase() as any,
       })),
-      notes: patient.medicalNotes.map(note => ({
+      notes: patient.visitNotes.map(note => ({
         id: note.id,
         appointmentId: note.appointmentId,
-        content: note.content,
+        content: note.content || "",
+        diagnosis: note.diagnosis || "",
         createdAt: note.createdAt.toISOString(),
         doctorName: "دكتور",
       })),
