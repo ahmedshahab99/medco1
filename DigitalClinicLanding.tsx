@@ -169,7 +169,7 @@ const T = {
         { icon: "👥", badge: "Core", title: "Patient Management", desc: "Complete patient records with medical history, allergies, medications, and chronic conditions.", list: ["Complete patient records", "Medical history tracking", "Allergies & medications"] },
         { icon: "📅", badge: "Popular", title: "Appointment Scheduling", desc: "Smart appointment system with doctor availability, reminders, and status tracking.", list: ["Easy booking system", "Doctor availability", "WhatsApp reminders"] },
         { icon: "🩺", badge: "Key", title: "Medical Sessions", desc: "Record diagnoses and treatments, create follow-up session chains for comprehensive care.", list: ["Record diagnoses", "Treatment tracking", "Follow-up chains"] },
-        { icon: "💊", badge: "Medical", title: "Prescriptions", desc: "Digital prescriptions with professional print layouts and medication tracking.", list: ["Digital prescriptions", "Professional printing", "Medication tracking"] },
+        { icon: "💊", badge: "Medical", title: "Visit Notes", desc: "Combined clinical notes and digital prescriptions with professional print layouts.", list: ["Clinical notes & diagnoses", "Digital prescriptions", "Professional printing"] },
         { icon: "💰", badge: "★ Most Used", title: "Financial Management", desc: "Track payments, manage expenses, and generate financial reports for your clinic.", list: ["Payment tracking", "Expense management", "Financial reports"] },
         { icon: "🏢", badge: "Scalable", title: "Multi-Clinic Support", desc: "Manage multiple clinic branches with isolated data and centralized control.", list: ["Multiple clinics", "Isolated data per clinic", "Central control"] },
       ]
@@ -198,8 +198,8 @@ const T = {
       toggle: ["Monthly", "Yearly"],
       save: "Save 17%",
       plans: [
-        { name: "Trial", tagline: "Try without commitment", monthlyPrice: "0", yearlyPrice: "0", doctors: "1 Doctor", highlight: false, features: ["50 patients", "200 appointments/mo", "Prescriptions", "Email support"], cta: "Start Free" },
-        { name: "Basic", tagline: "For solo practitioners", monthlyPrice: "25,000", yearlyPrice: "250,000", doctors: "1–2 Doctors", highlight: false, features: ["Unlimited records", "Unlimited appointments", "Prescriptions", "Financial reports", "Phone support"], cta: "Get Started" },
+        { name: "Trial", tagline: "Try without commitment", monthlyPrice: "0", yearlyPrice: "0", doctors: "1 Doctor", highlight: false, features: ["50 patients", "200 appointments/mo", "Visit Notes", "Email support"], cta: "Start Free" },
+        { name: "Basic", tagline: "For solo practitioners", monthlyPrice: "25,000", yearlyPrice: "250,000", doctors: "1–2 Doctors", highlight: false, features: ["Unlimited records", "Unlimited appointments", "Visit Notes", "Financial reports", "Phone support"], cta: "Get Started" },
         { name: "Silver", tagline: "For small clinics", monthlyPrice: "60,000", yearlyPrice: "600,000", doctors: "3–5 Doctors", highlight: false, features: ["All Basic features", "Multi-clinic", "WhatsApp reminders", "Advanced reports", "Priority support"], cta: "Get Started" },
         { name: "Gold", tagline: "Most Popular", monthlyPrice: "120,000", yearlyPrice: "1,200,000", doctors: "6–15 Doctors", highlight: true, features: ["All Silver features", "Lab integration", "Mobile app", "Dedicated account manager", "24/7 support"], cta: "Get Started" },
         { name: "Platinum", tagline: "For clinic chains", monthlyPrice: "300,000", yearlyPrice: "3,000,000", doctors: "Unlimited Doctors", highlight: false, features: ["All Gold features", "Custom API", "On-site training", "99.99% SLA", "VIP support"], cta: "Contact Us" },

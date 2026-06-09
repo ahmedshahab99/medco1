@@ -7,7 +7,7 @@ import {
   X, Phone, Mail, CalendarDays, MapPin, Stethoscope, ChevronLeft, Pencil, Trash2, FileText, Activity,
   ClipboardList, Heart, User, CalendarClock, Hash, Clock, Tag,
 } from "lucide-react";
-import { PrescriptionTab } from "./tabs/PrescriptionTab";
+import { VisitNoteTab } from "./tabs/VisitNoteTab";
 import { PaymentsTab } from "./tabs/PaymentsTab";
 import { CasesTab } from "./tabs/CasesTab";
 import { AppointmentsTab } from "./tabs/AppointmentsTab";
@@ -316,49 +316,12 @@ export function PatientDetailPanel({
           </div>
         )}
 
-        {activeTab === "prescriptions" && (
-          <PrescriptionTab patientId={patient.id} patientName={patient.name} />
+        {activeTab === "visits" && (
+          <VisitNoteTab patientId={patient.id} patientName={patient.name} />
         )}
 
         {activeTab === "cases" && (
           <CasesTab patientId={patient.id} />
-        )}
-
-        {activeTab === "notes" && (
-          <div className="space-y-4">
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-              <div className="w-1 h-4 bg-violet-500 rounded-full" />
-              ملاحظات العلاج
-            </h3>
-            {patient.medicalNotes && patient.medicalNotes.length > 0 ? (
-              <div className="space-y-2">
-                {patient.medicalNotes.map((note) => (
-                  <div key={note.id} className="bg-white rounded-xl p-4 border border-violet-100 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-violet-50 flex items-center justify-center shrink-0 border border-violet-100">
-                        <ClipboardList className="w-4 h-4 text-violet-600" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm text-slate-700 leading-relaxed">{note.content}</p>
-                        <p className="text-xs text-slate-400 mt-2 flex items-center gap-1.5">
-                          <CalendarDays className="w-3 h-3" />
-                          {formatDateFull(note.createdAt)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="bg-white rounded-2xl border border-slate-100 p-8 text-center">
-                <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center mx-auto mb-3 border border-slate-100">
-                  <ClipboardList className="w-6 h-6 text-slate-300" />
-                </div>
-                <p className="text-sm text-slate-400 font-medium">لا توجد ملاحظات</p>
-                <p className="text-xs text-slate-300 mt-1">ستظهر ملاحظات العلاج المسجّلة للمريض هنا</p>
-              </div>
-            )}
-          </div>
         )}
 
         {activeTab === "files" && (

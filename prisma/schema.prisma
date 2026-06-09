@@ -24,14 +24,13 @@ model Tenant {
   profiles           Profile[]
   patients           Patient[]
   appointments       Appointment[]
-  medicalNotes       MedicalNote[]
   patientFiles       PatientFile[]
   socialLinks        SocialLink[]
   services           Service[]
   invitations        Invitation[]
   cases              Case[]
   waitlist           Waitlist[]
-  prescriptions      Prescription[]
+  visitNotes         VisitNote[]
   transactions       Transaction[]
   clinicAvailability ClinicAvailability?
   recurringExpenses  RecurringExpense[]
@@ -95,11 +94,10 @@ model Patient {
   address         String?
 
   appointments  Appointment[]
-  medicalNotes  MedicalNote[]
   patientFiles  PatientFile[]
   cases         Case[]
   waitlist      Waitlist[]
-  prescriptions Prescription[]
+  visitNotes    VisitNote[]
   transactions  Transaction[]
 
   createdAt DateTime @default(now())
@@ -159,7 +157,7 @@ model Appointment {
   status          AppointmentStatus @default(SCHEDULED)
   notes           String?
 
-  medicalNotes MedicalNote[]
+  visitNotes   VisitNote[]
   transactions Transaction[]
 
   createdAt DateTime @default(now())
@@ -175,19 +173,6 @@ enum AppointmentStatus {
   COMPLETED
   CANCELLED
   NO_SHOW
-}
-
-model MedicalNote {
-  id            String      @id @default(uuid())
-  tenantId      String
-  tenant        Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  appointmentId String
-  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
-  patientId     String
-  patient       Patient     @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  content       String
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
 }
 
 model PatientFile {
@@ -260,34 +245,37 @@ model Waitlist {
   updatedAt DateTime @updatedAt
 }
 
-model Prescription {
-  id           String                   @id @default(uuid())
-  tenantId     String
-  tenant       Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  patientId    String
-  patient      Patient                  @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  diagnosis    String
-  medications  PrescriptionMedication[]
-  notes        String?
-  validityDays Int?                     @default(30)
-  createdAt    DateTime                 @default(now())
-  updatedAt    DateTime                 @updatedAt
+model VisitNote {
+  id            String       @id @default(uuid())
+  tenantId      String
+  tenant        Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patientId     String
+  patient       Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  appointmentId String?
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  content       String?      // free-text clinical notes
+  diagnosis     String?
+  medications   Medication[]
+  notes         String?
+  validityDays  Int?         @default(30)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 
   @@index([patientId, tenantId])
   @@index([createdAt])
 }
 
-model PrescriptionMedication {
-  id             String       @id @default(uuid())
-  prescriptionId String
-  prescription   Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
-  name           String
-  dose           String
-  frequency      String
-  duration       String
-  instructions   String?
+model Medication {
+  id          String    @id @default(uuid())
+  visitNoteId String
+  visitNote   VisitNote @relation(fields: [visitNoteId], references: [id], onDelete: Cascade)
+  name        String
+  dose        String
+  frequency   String
+  duration    String
+  instructions String?
 
-  @@index([prescriptionId])
+  @@index([visitNoteId])
 }
 
 enum TransactionType {
