@@ -33,6 +33,7 @@ export interface PatientPaymentDetail {
     id: string;
     startTime: string;
     service: { name: string } | null;
+    doctor:{ email: string; firstName: string | null; lastName: string | null } | null;
   } | null;
   serviceId: string | null;
   service: { name: string } | null;
@@ -160,6 +161,8 @@ export async function getPatientPaymentAction(
           id: true,
           startTime: true,
           service: { select: { name: true } },
+          doctor: { select: { email: true, firstName: true, lastName: true } },
+         
         },
       },
       service: { select: { name: true } },
@@ -190,6 +193,11 @@ export async function getPatientPaymentAction(
             id: payment.appointment.id,
             startTime: payment.appointment.startTime.toISOString(),
             service: payment.appointment.service,
+            doctor: payment.appointment.doctor? {
+              email: payment.appointment.doctor.email,
+              firstName: payment.appointment.doctor.firstName,
+              lastName: payment.appointment.doctor.lastName,
+            } : null
           }
         : null,
       serviceId: payment.serviceId,

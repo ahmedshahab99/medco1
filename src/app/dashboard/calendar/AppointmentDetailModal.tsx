@@ -16,6 +16,8 @@ import {
   Receipt,
   Loader2,
   ArrowUpRight,
+  Stethoscope,
+  FileText,
 } from "lucide-react";
 import { format } from "date-fns";
 import { arSA } from "date-fns/locale/ar-SA";
@@ -43,6 +45,9 @@ import {
 } from "@/lib/schemas/appointment-payment";
 import { recordAppointmentPaymentAction } from "./actions";
 import { STATUS_MAP } from "./utils";
+import { VisitNoteFormDialog } from "@/components/dashboard/patients/visit-notes/VisitNoteFormDialog";
+import { getVisitNotesByAppointmentAction } from "@/app/dashboard/patients/[id]/visit-notes/actions";
+import type { VisitNoteRow } from "@/app/dashboard/patients/[id]/visit-notes/actions";
 
 interface AppointmentDetailModalProps {
   appointment: CalendarAppointment | null;
@@ -78,13 +83,27 @@ export default function AppointmentDetailModal({
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [isPaymentSubmitting, startPaymentSubmit] = useTransition();
   const [localHasTransactions, setLocalHasTransactions] = useState(false);
+  const [showVisitNoteForm, setShowVisitNoteForm] = useState(false);
+  const [appointmentNotes, setAppointmentNotes] = useState<VisitNoteRow[]>([]);
+  const [isNotesLoading, setIsNotesLoading] = useState(false);
+
+  const loadAppointmentNotes = React.useCallback(async (appointmentId: string) => {
+    setIsNotesLoading(true);
+    const res = await getVisitNotesByAppointmentAction(appointmentId);
+    if (res.success) {
+      setAppointmentNotes(res.data);
+    }
+    setIsNotesLoading(false);
+  }, []);
 
   useEffect(() => {
     if (appointment) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPanel("none");
       setLocalHasTransactions(appointment.hasTransactions);
+      loadAppointmentNotes(appointment.id);
     }
-  }, [appointment]);
+  }, [appointment, loadAppointmentNotes]);
 
   if (!appointment) return null;
 
@@ -232,12 +251,59 @@ export default function AppointmentDetailModal({
                 className="w-full justify-between items-center text-slate-700 border-slate-200 h-11"
                 onClick={() => setPanel((p) => (p === "notes" ? "none" : "notes"))}
               >
-                <span className="flex items-center gap-2">ملاحظات العلاج</span>
+                <span className="flex items-center gap-2">
+                  <Stethoscope className="w-4 h-4 text-emerald-500" />
+                  ملاحظات العلاج
+                </span>
                 <Edit2 className="w-4 h-4 text-slate-400" />
               </Button>
               {panel === "notes" && (
-                <div className="mt-2 p-4 bg-slate-50 rounded-xl border border-slate-200 animate-in slide-in-from-top-2 duration-200">
-                  <p className="text-sm text-slate-500">قيد التطوير</p>
+                <div className="mt-2 p-4 bg-slate-50 rounded-xl border border-slate-200 animate-in slide-in-from-top-2 duration-200 space-y-3">
+                  {isNotesLoading ? (
+                    <div className="flex items-center justify-center py-4">
+                      <Loader2 className="w-5 h-5 text-emerald-500 animate-spin" />
+                    </div>
+                  ) : appointmentNotes.length > 0 ? (
+                    <div className="space-y-2">
+                      {appointmentNotes.map((note) => (
+                        <Link
+                          key={note.id}
+                          href={`/dashboard/patients/${appointment.patientId}/visit-notes/${note.id}`}
+                          className="flex items-center justify-between bg-white rounded-lg p-3 border border-emerald-100 hover:border-emerald-300 transition-colors group"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-bold text-slate-800 truncate">
+                              {note.diagnosis || note.content?.slice(0, 60) || "ملاحظة زيارة"}
+                            </p>
+                            <p className="text-xs text-slate-400 mt-0.5">
+                              {new Date(note.createdAt).toLocaleDateString("ar-SA")}
+                              {note.medications.length > 0 && ` · ${note.medications.length} دواء`}
+                            </p>
+                          </div>
+                          <ArrowUpRight className="w-4 h-4 text-emerald-400 group-hover:text-emerald-600 shrink-0" />
+                        </Link>
+                      ))}
+                      <button
+                        onClick={() => setShowVisitNoteForm(true)}
+                        className="w-full py-2 text-xs font-bold text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors flex items-center justify-center gap-1"
+                      >
+                        <Plus className="w-3 h-3" />
+                        إضافة ملاحظة أخرى
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="text-center py-3">
+                      <FileText className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                      <p className="text-sm text-slate-500 mb-3">لا توجد ملاحظات علاج لهذا الموعد</p>
+                      <button
+                        onClick={() => setShowVisitNoteForm(true)}
+                        className="px-4 py-2 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-colors inline-flex items-center gap-1.5"
+                      >
+                        <Plus className="w-4 h-4" />
+                        إنشاء ملاحظة علاج
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -318,6 +384,19 @@ export default function AppointmentDetailModal({
             toast.error(res.error ?? "فشل تسجيل الدفعة");
           }
         });
+      }}
+    />
+
+    <VisitNoteFormDialog
+      open={showVisitNoteForm}
+      onOpenChange={setShowVisitNoteForm}
+      patientId={appointment.patientId}
+      editingId={null}
+      editingData={null}
+      prefillAppointmentId={appointment.id}
+      onSaved={() => {
+        setShowVisitNoteForm(false);
+        loadAppointmentNotes(appointment.id);
       }}
     />
     </>

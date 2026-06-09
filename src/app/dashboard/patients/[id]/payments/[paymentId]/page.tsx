@@ -102,6 +102,13 @@ export default async function PaymentDetailPage({ params }: PaymentDetailPagePro
             value={`${payment.appointment.service?.name ?? "موعد"} · ${formatDate(payment.appointment.startTime)}`}
           />
         )}
+        {payment.appointment?.doctor && (
+          <DetailCard
+            label="الطبيب"
+            value={`${payment.appointment.doctor.firstName ?? payment.appointment.doctor.email} ${payment.appointment.doctor.lastName ?? ""}`}
+            subtle
+          />
+        )}
         <DetailCard
           label="تاريخ التسجيل"
           value={formatDate(payment.createdAt)}
@@ -121,8 +128,7 @@ export default async function PaymentDetailPage({ params }: PaymentDetailPagePro
           <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">الوصف</span>
           <p className="text-sm text-slate-700 mt-1 leading-relaxed">{payment.description}</p>
         </div>
-      )}
-
+      )}     
       {!payment.description && !payment.appointment && (
         <div className="bg-slate-50 rounded-xl border border-slate-100 p-8 text-center">
           <p className="text-sm text-slate-400">لا توجد تفاصيل إضافية لهذه الدفعة</p>
