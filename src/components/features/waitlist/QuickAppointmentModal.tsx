@@ -53,6 +53,7 @@ interface QuickAppointmentModalProps {
   onClose: () => void
   initialStatus: WaitlistStatus
   onCreate: (args: CreateAppointmentArgs) => void
+  initialPatientId?: string
 }
 
 export default function QuickAppointmentModal({
@@ -60,6 +61,7 @@ export default function QuickAppointmentModal({
   onClose,
   initialStatus,
   onCreate,
+  initialPatientId,
 }: QuickAppointmentModalProps) {
   const { data: servicesData } = useServices()
   const services = servicesData ?? []
@@ -82,7 +84,7 @@ export default function QuickAppointmentModal({
       doctorId: doctors[0]?.id ?? "",
       serviceId: initialService?.id ?? "",
       patientMode: "existing",
-      patientId: "",
+      patientId: initialPatientId ?? "",
       waitlistId: "",
       newPatient: undefined,
       caseId: "",
@@ -91,7 +93,7 @@ export default function QuickAppointmentModal({
       endTime: computeEndTime(dateStr, startTime, defaultDuration),
       notes: "",
     }
-  }, [doctors, initialService, defaultDuration])
+  }, [doctors, initialService, defaultDuration, initialPatientId])
 
   const form = useForm<AppointmentFormValues>({
     resolver: zodResolver(appointmentFormSchema),

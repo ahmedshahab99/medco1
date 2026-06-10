@@ -14,6 +14,7 @@ interface PatientCardProps {
 interface PatientCardStandaloneProps extends PatientCardProps {
   onAdvance?: (patientId: string) => void;
   isLastStage?: boolean;
+  onViewAppointment?: (patientId: string) => void;
 }
 
 export function PatientCard({
@@ -21,6 +22,7 @@ export function PatientCard({
   isDragOverlay = false,
   onAdvance,
   isLastStage = false,
+  onViewAppointment,
 }: PatientCardStandaloneProps) {
   const {
     attributes,
@@ -105,18 +107,32 @@ export function PatientCard({
         </div>
       </div>
 
-      {onAdvance && !isLastStage && (
-        <div className="flex justify-center px-2 pb-2">
-          <button
-            type="button"
-            onPointerDown={(e) => {
-              e.stopPropagation();
-              onAdvance(patient.id);
-            }}
-            className="flex size-8 items-center justify-center rounded-full bg-green-500 text-white hover:bg-green-600 transition-colors cursor-pointer"
-          >
-            <Check className="size-4" />
-          </button>
+      {(onViewAppointment || (onAdvance && !isLastStage)) && (
+        <div className="flex items-center justify-center gap-2 px-2 pb-2">
+          {onViewAppointment && (
+            <button
+              type="button"
+              onPointerDown={(e) => {
+                e.stopPropagation();
+                onViewAppointment(patient.id);
+              }}
+              className="flex size-8 items-center justify-center rounded-full bg-blue-500 text-white hover:bg-blue-600 transition-colors cursor-pointer"
+            >
+              <Calendar className="size-4" />
+            </button>
+          )}
+          {onAdvance && !isLastStage && (
+            <button
+              type="button"
+              onPointerDown={(e) => {
+                e.stopPropagation();
+                onAdvance(patient.id);
+              }}
+              className="flex size-8 items-center justify-center rounded-full bg-green-500 text-white hover:bg-green-600 transition-colors cursor-pointer"
+            >
+              <Check className="size-4" />
+            </button>
+          )}
         </div>
       )}
     </div>
