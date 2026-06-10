@@ -12,15 +12,18 @@ import {
   type DragEndEvent,
 } from "@dnd-kit/core";
 import { RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 import { WaitlistColumn } from "./WaitlistColumn";
 import { PatientCard } from "./PatientCard";
 import { COLUMNS } from "@/lib/types/waitlist-board";
 import type { BoardPatient, WaitlistStatus } from "@/lib/types/waitlist-board";
-import { useAppointments, useUpdateAppointment, useCreateAppointment } from "@/hooks/use-appointments";
+import { useAppointments, useUpdateAppointment, useCreateAppointment, useDeleteAppointment } from "@/hooks/use-appointments";
 import type { CalendarAppointment } from "@/hooks/use-appointments";
+import type { AppointmentPatchInput } from "@/lib/schemas/appointment";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Button } from "@/components/ui/Button";
 import QuickAppointmentModal from "./QuickAppointmentModal";
+import AppointmentDetailModal from "@/app/dashboard/calendar/AppointmentDetailModal";
 
 const STAGE_ORDER: WaitlistStatus[] = [
   "BOOKING",
@@ -118,9 +121,12 @@ export function WaitlistBoard({ doctorId }: WaitlistBoardProps) {
   } = useAppointments(from, to);
   const updateAppointment = useUpdateAppointment(from, to);
   const { mutate: createAppointment } = useCreateAppointment(from, to);
+  const { mutate: deleteAppt, isPending: isDeletingAppt } = useDeleteAppointment(from, to);
 
   const [isNewOpen, setIsNewOpen] = useState(false);
   const [targetStatus, setTargetStatus] = useState<WaitlistStatus>("BOOKING");
+  const [selectedAppointment, setSelectedAppointment] = useState<CalendarAppointment | null>(null);
+  const [quickPatientId, setQuickPatientId] = useState<string | undefined>();
 
   const columns = useMemo(() => {
     if (!appointments) {
@@ -212,6 +218,49 @@ export function WaitlistBoard({ doctorId }: WaitlistBoardProps) {
     [updateAppointment]
   );
 
+  const handleViewAppointment = useCallback(
+    (patientId: string) => {
+      const appt = appointments?.find((a) => a.id === patientId);
+      if (appt) {
+        setSelectedAppointment(appt);
+      }
+    },
+    [appointments]
+  );
+
+  const handleStatusChange = useCallback(
+    (id: string, status: AppointmentPatchInput["status"]) => {
+      if (!status) return;
+      updateAppointment.mutate({ id, data: { status } });
+      setSelectedAppointment((prev) =>
+        prev && prev.id === id ? { ...prev, status } : prev
+      );
+    },
+    [updateAppointment]
+  );
+
+  const handleDelete = useCallback(
+    (id: string) => {
+      deleteAppt(id);
+      setSelectedAppointment(null);
+    },
+    [deleteAppt]
+  );
+
+  const handleBookAnother = useCallback(
+    (appt: CalendarAppointment) => {
+      setQuickPatientId(appt.patientId);
+      setTargetStatus("BOOKING");
+      setSelectedAppointment(null);
+      setIsNewOpen(true);
+    },
+    []
+  );
+
+  const handleReschedule = useCallback(() => {
+    toast("الرجاء استخدام صفحة التقويم لإعادة جدولة الموعد");
+  }, []);
+
   if (isLoading) {
     return (
       <div className="flex flex-col gap-4 md:flex-row md:overflow-x-auto pb-4">
@@ -262,6 +311,7 @@ export function WaitlistBoard({ doctorId }: WaitlistBoardProps) {
               column={column}
               patients={columns[column.id]}
               onAdvance={handleAdvance}
+              onViewAppointment={handleViewAppointment}
               onAddClick={() => {
                 setTargetStatus(column.id);
                 setIsNewOpen(true);
@@ -279,9 +329,21 @@ export function WaitlistBoard({ doctorId }: WaitlistBoardProps) {
 
       <QuickAppointmentModal
         isOpen={isNewOpen}
-        onClose={() => setIsNewOpen(false)}
+        onClose={() => { setIsNewOpen(false); setQuickPatientId(undefined); }}
         initialStatus={targetStatus}
+        initialPatientId={quickPatientId}
         onCreate={(args) => createAppointment(args)}
+      />
+
+      <AppointmentDetailModal
+        appointment={selectedAppointment}
+        onClose={() => setSelectedAppointment(null)}
+        isUpdating={updateAppointment.isPending}
+        isDeleting={isDeletingAppt}
+        onStatusChange={handleStatusChange}
+        onDelete={handleDelete}
+        onBookAnother={handleBookAnother}
+        onReschedule={handleReschedule}
       />
     </>
   );

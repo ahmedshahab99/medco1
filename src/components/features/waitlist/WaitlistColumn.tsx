@@ -12,9 +12,10 @@ interface WaitlistColumnProps {
   patients: BoardPatient[];
   onAdvance?: (patientId: string) => void;
   onAddClick?: () => void;
+  onViewAppointment?: (patientId: string) => void;
 }
 
-export function WaitlistColumn({ column, patients, onAdvance, onAddClick }: WaitlistColumnProps) {
+export function WaitlistColumn({ column, patients, onAdvance, onAddClick, onViewAppointment }: WaitlistColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: column.id,
   });
@@ -82,6 +83,7 @@ export function WaitlistColumn({ column, patients, onAdvance, onAddClick }: Wait
                 patient={patient}
                 onAdvance={onAdvance}
                 isLastStage={isLastStage}
+                onViewAppointment={onViewAppointment}
               />
             ))
           )}
