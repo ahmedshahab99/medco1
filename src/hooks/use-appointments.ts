@@ -40,14 +40,21 @@ export interface CalendarAppointment {
 
 const API_BASE = "/api/appointments";
 
-function getQueryKey(from: Date, to: Date) {
-  return ["appointments", from.toISOString(), to.toISOString()];
+export interface AppointmentQueryOpts {
+  status?: string;
+  doctorId?: string;
 }
 
-async function fetchAppointments(from: Date, to: Date): Promise<CalendarAppointment[]> {
+function getQueryKey(from: Date, to: Date, opts?: AppointmentQueryOpts) {
+  return ["appointments", from.toISOString(), to.toISOString(), opts?.status, opts?.doctorId];
+}
+
+async function fetchAppointments(from: Date, to: Date, opts?: AppointmentQueryOpts): Promise<CalendarAppointment[]> {
   const url = new URL(API_BASE, window.location.origin);
   url.searchParams.set("from", from.toISOString());
   url.searchParams.set("to", to.toISOString());
+  if (opts?.status) url.searchParams.set("status", opts.status);
+  if (opts?.doctorId) url.searchParams.set("doctorId", opts.doctorId);
   const res = await fetch(url.toString());
   if (!res.ok) {
     const error = await res.json().catch(() => ({ error: "Failed to fetch appointments" }));
@@ -118,10 +125,13 @@ async function deleteAppointment(id: string): Promise<void> {
   }
 }
 
-export function useAppointments(from: Date, to: Date) {
+export function useAppointments(from: Date, to: Date, opts?: AppointmentQueryOpts) {
+  const queryKey = getQueryKey(from, to, opts);
+
   return useQuery({
-    queryKey: getQueryKey(from, to),
-    queryFn: () => fetchAppointments(from, to),
+    queryKey,
+    queryFn: () => fetchAppointments(from, to, opts),
+    refetchInterval: opts?.status || opts?.doctorId ? 30_000 : undefined,
   });
 }
 

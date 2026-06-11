@@ -8,6 +8,8 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const from = searchParams.get("from");
   const to = searchParams.get("to");
+  const status = searchParams.get("status");
+  const doctorId = searchParams.get("doctorId");
 
   const supabase = await createClient();
   const {
@@ -34,6 +36,14 @@ export async function GET(request: Request) {
       gte: new Date(from),
       lte: new Date(to),
     };
+  }
+
+  if (status) {
+    where.status = status;
+  }
+
+  if (doctorId) {
+    where.doctorId = doctorId;
   }
 
     const appointments = await prisma.appointment.findMany({
