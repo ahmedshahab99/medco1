@@ -4,6 +4,9 @@ import {
   XCircle,
   AlertCircle,
   CheckSquare,
+  Calendar,
+  CalendarPlus,
+  Activity,
   type LucideIcon,
 } from "lucide-react";
 import { START_HOUR, HOUR_HEIGHT } from "./constants";
@@ -12,15 +15,30 @@ export const STATUS_MAP: Record<
   string,
   { label: string; icon: LucideIcon; badgeClass: string }
 > = {
-  SCHEDULED: {
-    label: "قيد الانتظار",
+  BOOKING: {
+    label: "حجز",
+    icon: CalendarPlus,
+    badgeClass: "bg-purple-100 text-purple-700",
+  },
+  WAITING: {
+    label: "في الانتظار",
     icon: Clock,
     badgeClass: "bg-amber-100 text-amber-700",
+  },
+  SCHEDULED: {
+    label: "مجدول",
+    icon: Calendar,
+    badgeClass: "bg-blue-100 text-blue-700",
   },
   CONFIRMED: {
     label: "مؤكد",
     icon: CheckCircle,
     badgeClass: "bg-blue-100 text-blue-700",
+  },
+  IN_PROGRESS: {
+    label: "قيد المعاينة",
+    icon: Activity,
+    badgeClass: "bg-emerald-100 text-emerald-700",
   },
   COMPLETED: {
     label: "مكتمل",

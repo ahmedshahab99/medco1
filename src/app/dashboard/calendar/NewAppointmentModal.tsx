@@ -42,6 +42,7 @@ interface NewAppointmentModalProps {
   doctors: Doctor[]
   waitlist: WaitlistEntry[]
   initialPatientId?: string
+  initialDoctorId?: string
   initialStart?: Date
   initialEnd?: Date
   editingAppointment?: CalendarAppointment
@@ -56,6 +57,7 @@ export default function NewAppointmentModal({
   doctors,
   waitlist,
   initialPatientId,
+  initialDoctorId,
   initialStart,
   initialEnd,
   editingAppointment,
@@ -91,7 +93,7 @@ export default function NewAppointmentModal({
         };
       }
       return {
-        doctorId: doctors[0]?.id ?? "",
+        doctorId: initialDoctorId ?? doctors[0]?.id ?? "",
         serviceId: initialService?.id ?? "",
         patientMode: "existing",
         patientId: initialPatientId ?? "",
@@ -106,7 +108,7 @@ export default function NewAppointmentModal({
         notes: "",
       };
     },
-    [doctors, initialService, initialPatientId, initialStart, initialEnd, dateStr, defaultDuration, editingAppointment]
+    [doctors, initialService, initialPatientId, initialDoctorId, initialStart, initialEnd, dateStr, defaultDuration, editingAppointment]
   )
 
   const form = useForm<AppointmentFormValues>({
