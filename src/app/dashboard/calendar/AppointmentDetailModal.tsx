@@ -109,7 +109,6 @@ export default function AppointmentDetailModal({
 
   const statusMeta = STATUS_MAP[appointment.status] ?? STATUS_MAP.SCHEDULED;
   const StatusIcon = statusMeta.icon;
-
   return (
     <>
     <Modal isOpen={!!appointment} onClose={onClose} hideHeader width="max-w-2xl w-[95%] md:w-full">
@@ -196,7 +195,7 @@ export default function AppointmentDetailModal({
                     : "text-slate-500 border-slate-200"
                 }`}
                 disabled={isUpdating}
-                onClick={() => onStatusChange(appointment.id, "NO_SHOW")}
+                onClick={() => onStatusChange(appointment.id, appointment.status === "NO_SHOW" ? "SCHEDULED" : "NO_SHOW")}
               >
                 <XCircle className="w-4 h-4" />
                 لم يحضر

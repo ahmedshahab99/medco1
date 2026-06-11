@@ -2,11 +2,21 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import { addDays, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfDay, endOfDay } from "date-fns";
+import { Stethoscope } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/Select";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 import { useAppointments, useCreateAppointment, useUpdateAppointment, useDeleteAppointment, useRescheduleAppointment } from "@/hooks/use-appointments";
 import { useWaitlist, useCreateWaitlistEntry, useUpdateWaitlistEntry, useDeleteWaitlistEntry } from "@/hooks/use-waitlist";
 import { useDoctors } from "@/hooks/use-doctors";
 import { useAvailability } from "@/hooks/use-availability";
+import { useAuth } from "@/hooks/use-auth";
 import type { CalendarAppointment } from "@/hooks/use-appointments";
 import type { AppointmentPatchInput } from "@/lib/schemas/appointment";
 import type { ViewMode } from "./types";
@@ -42,6 +52,29 @@ export default function CalendarShell() {
   const { data: doctors } = useDoctors();
   const { data: waitlistData } = useWaitlist();
   const { data: availability, isLoading: availabilityLoading } = useAvailability();
+
+  const { user, role } = useAuth();
+  const [selectedDoctorId, setSelectedDoctorId] = useState<string>("all");
+
+  useEffect(() => {
+    if (role === "DOCTOR" && user?.id && selectedDoctorId !== user.id) {
+      setSelectedDoctorId(user.id);
+    }
+  }, [role, user?.id, selectedDoctorId]);
+
+  const filteredAppointments = useMemo(() => {
+    if (!appointments) return [];
+    if (selectedDoctorId === "all") return appointments;
+    return appointments.filter((a) => a.doctorId === selectedDoctorId);
+  }, [appointments, selectedDoctorId]);
+
+  const doctorName = useMemo(() => {
+    if (role !== "DOCTOR") return "";
+    if (user?.firstName && user?.lastName) {
+      return `د. ${user.firstName} ${user.lastName}`;
+    }
+    return user?.email ?? "";
+  }, [role, user]);
 
   const { dynamicStartHour, dynamicEndHour } = useMemo(() => {
     let minHour = 8;
@@ -144,6 +177,34 @@ export default function CalendarShell() {
         waitlistCount={waitlistData?.length ?? 0}
       />
 
+      {/* Doctor filter bar */}
+      {role === "DOCTOR" ? (
+        <div className="flex items-center gap-2 bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-200 mb-4 shrink-0">
+          <Stethoscope className="size-4 text-emerald-600 shrink-0" />
+          <span className="text-sm font-semibold text-emerald-700">{doctorName}</span>
+          <span className="text-xs text-emerald-500 bg-emerald-100 px-2 py-0.5 rounded-full">
+            جدول مواعيدي
+          </span>
+        </div>
+      ) : role === "ADMIN" || role === "RECEPTIONIST" ? (
+        <div className="flex items-center gap-2 mb-4 shrink-0">
+          <Stethoscope className="size-4 text-emerald-500 shrink-0" />
+          <Select value={selectedDoctorId} onValueChange={setSelectedDoctorId}>
+            <SelectTrigger className="h-9 w-56 bg-white">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">كل الأطباء</SelectItem>
+              {doctors?.map((d) => (
+                <SelectItem key={d.id} value={d.id}>
+                  {d.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      ) : null}
+
       <div className="flex-1 bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col relative">
         {(apptsLoading || availabilityLoading) && (
           <div className="absolute inset-0 z-50 bg-white/80 backdrop-blur-sm flex items-center justify-center">
@@ -156,7 +217,7 @@ export default function CalendarShell() {
 
         {viewMode === "day" && (
           <DayView
-            appointments={appointments ?? []}
+            appointments={filteredAppointments}
             currentDate={currentDate}
             startHour={dynamicStartHour}
             endHour={dynamicEndHour}
@@ -173,7 +234,7 @@ export default function CalendarShell() {
 
         {viewMode === "week" && (
           <WeekView
-            appointments={appointments ?? []}
+            appointments={filteredAppointments}
             currentDate={currentDate}
             startHour={dynamicStartHour}
             endHour={dynamicEndHour}
@@ -190,7 +251,7 @@ export default function CalendarShell() {
 
         {viewMode === "month" && (
           <MonthView
-            appointments={appointments ?? []}
+            appointments={filteredAppointments}
             currentDate={currentDate}
             onChangeDate={setCurrentDate}
             onSelectAppt={setSelectedAppt}
@@ -223,6 +284,7 @@ export default function CalendarShell() {
         doctors={doctors ?? []}
         waitlist={waitlistData ?? []}
         initialPatientId={rescheduleAppt ? rescheduleAppt.patientId : newApptPatientId}
+        initialDoctorId={selectedDoctorId !== "all" ? selectedDoctorId : undefined}
         initialStart={newApptSlot?.start}
         initialEnd={newApptSlot?.end}
         editingAppointment={rescheduleAppt ?? undefined}
