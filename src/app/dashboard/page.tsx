@@ -4,34 +4,41 @@ import { DashboardService } from "@/services/dashboard";
 import prisma from "@/lib/prisma";
 import { getUserId } from "@/lib/tenant";
 import { createClient } from "@/utils/supabase/server";
+import type { UserRole } from "@/lib/types/auth";
 
 export default async function DashboardPage() {
   const userId = await getUserId();
   let profile = await prisma.profile.findUnique({
     where: { id: userId },
+    select: { id: true, email: true, firstName: true, lastName: true, role: true },
   });
 
-  // If no profile by ID, try to find by email (handles Google OAuth with existing email)
   if (!profile) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (user?.email) {
-      profile = await prisma.profile.findUnique({ where: { email: user.email } });
+      profile = await prisma.profile.findUnique({
+        where: { email: user.email },
+        select: { id: true, email: true, firstName: true, lastName: true, role: true },
+      });
       if (profile) {
-        // Update profile ID to match current auth user
         await prisma.profile.update({
           where: { id: profile.id },
           data: { id: userId },
-        }).catch(() => {
-          // If FK constraint fails, keep old ID — lookup by email next time
-        });
+        }).catch(() => {});
       }
     }
   }
 
-  const statsData = await DashboardService.getStats();
-  const upcomingData = await DashboardService.getUpcomingAppointments();
-  
+  const role: UserRole = profile?.role ?? "DOCTOR";
+  const doctorId = role === "DOCTOR" ? userId : undefined;
+
+  const [statsData, upcomingData, monthlyAppointments] = await Promise.all([
+    DashboardService.getStats(doctorId),
+    DashboardService.getUpcomingAppointments(doctorId ? { doctorId } : undefined),
+    DashboardService.getLastSixMonthsAppointments(doctorId),
+  ]);
+
   const stats = statsData.map((s) => ({
     title: s.title,
     value: s.value,
@@ -50,13 +57,19 @@ export default async function DashboardPage() {
     serviceName: app.service?.name ?? "",
   }));
 
-  const profileName = profile?.firstName ? `د. ${profile.firstName}` : "دكتور";
+  const isDoctorRole = role === "DOCTOR" || role === "ADMIN";
+  const profileName = profile?.firstName
+    ? (isDoctorRole ? `د. ${profile.firstName}` : profile.firstName)
+    : (isDoctorRole ? "دكتور" : "مستخدم");
 
   return (
     <DashboardClient
       profileName={profileName}
+      role={role}
+      doctorId={doctorId ?? null}
       stats={stats}
       initAppointments={appointments}
+      monthlyAppointments={monthlyAppointments}
     />
   );
 }
