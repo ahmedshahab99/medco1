@@ -40,11 +40,7 @@ export function Topbar({ onOpenMobileSidebar }: TopbarProps) {
         </button>
 
         <button
-          onClick={async () => {
-            localStorage.removeItem("salesrep");
-            try { await logout(); } catch {}
-            window.location.href = "/signup";
-          }}
+          onClick={logout}
           className="p-2.5 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-all group"
         >
           <LogOut className="w-4.5 h-4.5 group-hover:scale-110 transition-transform" />

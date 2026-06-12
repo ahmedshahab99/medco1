@@ -78,7 +78,7 @@ export function VisitNoteInvoice({
 <div class="doctor-line">الطبيب: ${esc(doctorName)}</div>
 <div class="patient-info"><table><tr><td>اسم المريض:</td><td>${esc(patientName)}</td></tr><tr><td>التاريخ:</td><td>${createdDate}</td></tr><tr><td>رقم الملاحظة:</td><td>#${esc(note.id.slice(0, 8))}</td></tr></table></div>
 ${note.content ? `<div class="content-box"><div class="content-label">ملاحظات الزيارة</div><div class="content-text">${esc(note.content)}</div></div>` : ""}
-${note.diagnosis ? `<div class="diagnosis-box"><div class="diagnosis-label">التشخيص</div><div class="diagnosis-text">${esc(note.diagnosis)}</div></div>` : ""}
+
 ${hasMeds ? `<div class="medications"><div class="medications-title">الأدوية الموصوفة</div><table class="med-table"><thead><tr><th>#</th><th>اسم الدواء</th><th>الجرعة</th><th>التكرار</th><th>المدة</th>${hasInstructions ? "<th>تعليمات</th>" : ""}</tr></thead><tbody>${medRows}</tbody></table></div>` : ""}
 ${note.notes ? `<div class="notes-box"><div class="notes-label">ملاحظات إضافية</div><div>${esc(note.notes)}</div></div>` : ""}
 ${note.validityDays && hasMeds ? `<div class="validity">صالحة لمدة ${note.validityDays} يوماً من تاريخ الإصدار</div>` : ""}
