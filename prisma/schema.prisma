@@ -29,7 +29,6 @@ model Tenant {
   services           Service[]
   invitations        Invitation[]
   cases              Case[]
-  waitlist           Waitlist[]
   visitNotes         VisitNote[]
   transactions       Transaction[]
   clinicAvailability ClinicAvailability?
@@ -96,7 +95,6 @@ model Patient {
   appointments  Appointment[]
   patientFiles  PatientFile[]
   cases         Case[]
-  waitlist      Waitlist[]
   visitNotes    VisitNote[]
   transactions  Transaction[]
 
@@ -231,18 +229,6 @@ model Case {
   appointments Appointment[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
-}
-
-model Waitlist {
-  id        String   @id @default(uuid())
-  tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  patientId String
-  patient   Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  notes     String?
-  status    String   @default("waiting")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }
 
 model VisitNote {

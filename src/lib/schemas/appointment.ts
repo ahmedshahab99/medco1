@@ -27,7 +27,6 @@ export const appointmentCreateSchema = z.object({
         .or(z.literal("")),
     })
     .optional(),
-  waitlistId: z.string().optional(),
   doctorId: z.string().min(1, "الطبيب مطلوب"),
   serviceId: z.string().min(1, "الخدمة مطلوبة"),
   caseId: z.string().optional(),

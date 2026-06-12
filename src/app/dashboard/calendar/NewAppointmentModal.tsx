@@ -13,7 +13,6 @@ import { appointmentFormSchema } from "@/lib/schemas/appointment-form"
 import type { AppointmentFormValues } from "@/lib/schemas/appointment-form"
 import type { AppointmentCreateInput, AppointmentPatchInput } from "@/lib/schemas/appointment"
 import type { Doctor } from "@/hooks/use-doctors"
-import type { WaitlistEntry } from "@/hooks/use-waitlist"
 import type { CalendarAppointment, CreateAppointmentArgs } from "@/hooks/use-appointments"
 import AppointmentServiceFields from "./AppointmentServiceFields"
 import AppointmentPatientSection from "./AppointmentPatientSection"
@@ -40,7 +39,6 @@ interface NewAppointmentModalProps {
   onClose: () => void
   initialDate: Date
   doctors: Doctor[]
-  waitlist: WaitlistEntry[]
   initialPatientId?: string
   initialDoctorId?: string
   initialStart?: Date
@@ -55,7 +53,6 @@ export default function NewAppointmentModal({
   onClose,
   initialDate,
   doctors,
-  waitlist,
   initialPatientId,
   initialDoctorId,
   initialStart,
@@ -83,7 +80,6 @@ export default function NewAppointmentModal({
           serviceId: editingAppointment.serviceId,
           patientMode: "existing",
           patientId: editingAppointment.patientId ?? "",
-          waitlistId: "",
           newPatient: undefined,
           caseId: editingAppointment.caseId ?? "",
           date: format(new Date(editingAppointment.startTime), "yyyy-MM-dd"),
@@ -97,7 +93,6 @@ export default function NewAppointmentModal({
         serviceId: initialService?.id ?? "",
         patientMode: "existing",
         patientId: initialPatientId ?? "",
-        waitlistId: "",
         newPatient: undefined,
         caseId: "",
         date: dateStr,
@@ -187,11 +182,6 @@ export default function NewAppointmentModal({
         }
         patientName = `${data.newPatient.firstName} ${data.newPatient.lastName}`.trim()
         patientPhone = data.newPatient.phone || null
-      } else       if (data.patientMode === "waitlist" && data.waitlistId) {
-        payload.waitlistId = data.waitlistId
-        const entry = waitlist.find((w) => w.id === data.waitlistId)
-        patientName = entry?.patientName ?? ""
-        patientPhone = entry?.patientPhone ?? null
       }
 
       const doctor = doctors.find((d) => d.id === data.doctorId)
@@ -218,7 +208,7 @@ export default function NewAppointmentModal({
       })
       onClose()
     },
-    [onCreate, onUpdate, onClose, doctors, services, patients, waitlist, editingAppointment, isSubmitting]
+    [onCreate, onUpdate, onClose, doctors, services, patients, editingAppointment, isSubmitting]
   )
 
   return (
@@ -241,7 +231,6 @@ export default function NewAppointmentModal({
             </div>
           ) : (
             <AppointmentPatientSection
-              waitlist={waitlist}
               initialPatientId={initialPatientId}
             />
           )}

@@ -3,42 +3,29 @@
 import React from "react"
 import { useFormContext, useWatch } from "react-hook-form"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs"
-import { Input } from "@/components/ui/Input"
 import {
   FormField,
   FormItem,
   FormControl,
   FormMessage,
-  FormLabel,
 } from "@/components/ui/form"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/Select"
 import PatientSearchField from "@/components/features/PatientSearchField"
 import PatientFormFields from "@/components/features/PatientFormFields"
-import type { WaitlistEntry } from "@/hooks/use-waitlist"
 
 interface AppointmentPatientSectionProps {
-  waitlist: WaitlistEntry[]
   initialPatientId?: string
 }
 
 export default function AppointmentPatientSection({
-  waitlist,
   initialPatientId,
 }: AppointmentPatientSectionProps) {
   const { control, setValue } = useFormContext()
   const patientMode = useWatch({ control, name: "patientMode" })
 
   const handleModeChange = (mode: string) => {
-    setValue("patientMode", mode as "existing" | "new" | "waitlist")
+    setValue("patientMode", mode as "existing" | "new")
     setValue("caseId", "")
     setValue("patientId", "")
-    setValue("waitlistId", "")
     setValue("newPatient", undefined)
   }
 
@@ -49,7 +36,6 @@ export default function AppointmentPatientSection({
         <TabsList variant="line" className="w-full bg-slate-100 rounded-lg p-1">
           <TabsTrigger value="existing">مريض موجود</TabsTrigger>
           <TabsTrigger value="new">مريض جديد</TabsTrigger>
-          <TabsTrigger value="waitlist">من الانتظار</TabsTrigger>
         </TabsList>
 
         <TabsContent value="existing" className="mt-4">
@@ -75,31 +61,6 @@ export default function AppointmentPatientSection({
           <PatientFormFields />
         </TabsContent>
 
-        <TabsContent value="waitlist" className="mt-4">
-          <FormField
-            control={control}
-            name="waitlistId"
-            render={({ field }) => (
-              <FormItem>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="اختر من القائمة..." />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {waitlist.map((w) => (
-                      <SelectItem key={w.id} value={w.id}>
-                        {w.patientName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </TabsContent>
       </Tabs>
     </div>
   )

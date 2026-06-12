@@ -5,9 +5,8 @@ export const appointmentFormSchema = z
   .object({
     doctorId: z.string().min(1, "الطبيب مطلوب"),
     serviceId: z.string().min(1, "الخدمة مطلوبة"),
-    patientMode: z.enum(["existing", "new", "waitlist"]),
+    patientMode: z.enum(["existing", "new"]),
     patientId: z.string().optional(),
-    waitlistId: z.string().optional(),
     newPatient: patientCreateSchema.optional(),
     caseId: z.string().optional(),
     newCase: z
@@ -49,14 +48,6 @@ export const appointmentFormSchema = z
           }
         }
       }
-    }
-
-    if (data.patientMode === "waitlist" && !data.waitlistId) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "يرجى اختيار مريض من قائمة الانتظار",
-        path: ["waitlistId"],
-      });
     }
   });
 
