@@ -121,7 +121,7 @@ export async function getAvailableSlots(
 
   if (!tenant) return { slots: [], error: "العيادة غير موجودة" };
 
-  const serviceDuration = tenant.services[0]?.duration ?? 30;
+  const serviceDuration = tenant.services[0]?.duration < 10 ? 30 : tenant.services[0]?.duration;
   const schedule = tenant.clinicAvailability?.schedule as WeekSchedule | undefined;
   const settings = tenant.clinicAvailability?.settings as AdvancedSettings | undefined;
 
