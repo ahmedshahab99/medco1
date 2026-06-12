@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { useToast, type ToastType } from "@/components/ui/Toast";
+import { logout } from "@/app/auth/logout/action";
 
 const POLL_INTERVAL_MS = 60_000;
 
@@ -41,9 +42,7 @@ export function useSessionWatch(): SessionWatchResult {
 
           // Small delay so the user sees the toast before redirect
           setTimeout(async () => {
-            const supabase = createClient();
-            await supabase.auth.signOut({ scope: "local" });
-            router.push("/signup");
+            logout();
           }, 3500);
         }
       } catch {
