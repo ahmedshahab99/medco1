@@ -14,7 +14,6 @@ import type { AppointmentFormValues } from "@/lib/schemas/appointment-form"
 import type { AppointmentCreateInput } from "@/lib/schemas/appointment"
 import type { CreateAppointmentArgs } from "@/hooks/use-appointments"
 import { useDoctors } from "@/hooks/use-doctors"
-import { useWaitlist } from "@/hooks/use-waitlist"
 import { usePatients } from "@/hooks/use-patients"
 import AppointmentServiceFields from "@/app/dashboard/calendar/AppointmentServiceFields"
 import AppointmentPatientSection from "@/app/dashboard/calendar/AppointmentPatientSection"
@@ -69,8 +68,6 @@ export default function QuickAppointmentModal({
   const doctors = doctorsData ?? []
   const { data: patientsData } = usePatients()
   const patients = patientsData ?? []
-  const { data: waitlistData } = useWaitlist()
-  const waitlist = waitlistData ?? []
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const initialService = services[0]
@@ -85,7 +82,6 @@ export default function QuickAppointmentModal({
       serviceId: initialService?.id ?? "",
       patientMode: "existing",
       patientId: initialPatientId ?? "",
-      waitlistId: "",
       newPatient: undefined,
       caseId: "",
       date: dateStr,
@@ -151,11 +147,6 @@ export default function QuickAppointmentModal({
         }
         patientName = `${data.newPatient.firstName} ${data.newPatient.lastName}`.trim()
         patientPhone = data.newPatient.phone || null
-      } else if (data.patientMode === "waitlist" && data.waitlistId) {
-        payload.waitlistId = data.waitlistId
-        const entry = waitlist.find((w) => w.id === data.waitlistId)
-        patientName = entry?.patientName ?? ""
-        patientPhone = entry?.patientPhone ?? null
       }
 
       const doctor = doctors.find((d) => d.id === data.doctorId)
@@ -182,7 +173,7 @@ export default function QuickAppointmentModal({
       })
       onClose()
     },
-    [onCreate, onClose, doctors, services, patients, waitlist, initialStatus]
+    [onCreate, onClose, doctors, services, patients, initialStatus]
   )
 
   return (
@@ -196,7 +187,7 @@ export default function QuickAppointmentModal({
 
           <div className="border-t border-slate-100 pt-5" />
 
-          <AppointmentPatientSection waitlist={waitlist} />
+          <AppointmentPatientSection />
 
           <AppointmentCaseSection patients={patients} isEditing={false} />
 

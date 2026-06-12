@@ -126,27 +126,6 @@ export async function POST(request: Request) {
 
   let patientId = data.patientId;
 
-  // ─── WAITLIST CONVERSION (highest priority) ───
-  if (data.waitlistId) {
-    const entry = await prisma.waitlist.findFirst({
-      where: { id: data.waitlistId, tenantId: actor.tenantId },
-    });
-
-    if (!entry) {
-      return NextResponse.json(
-        { error: "Waitlist entry not found" },
-        { status: 404 }
-      );
-    }
-
-    patientId = entry.patientId;
-
-    // Remove from waitlist once converted to an appointment
-    await prisma.waitlist.deleteMany({
-      where: { id: data.waitlistId, tenantId: actor.tenantId },
-    });
-  }
-
   // ─── NEW PATIENT CREATION (with duplicate check) ───
   if (!patientId && data.newPatient) {
     // Search for existing patient by phone first

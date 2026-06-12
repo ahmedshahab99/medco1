@@ -198,8 +198,6 @@ export function useCreateAppointment(from: Date, to: Date) {
       
         
       queryClient.invalidateQueries({ queryKey: getQueryKey(from, to) });
-    
-      queryClient.invalidateQueries({ queryKey: ["waitlist"] });
     },
   });
 }

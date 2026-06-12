@@ -13,7 +13,6 @@ import {
 import { Skeleton } from "@/components/ui/Skeleton";
 
 import { useAppointments, useCreateAppointment, useUpdateAppointment, useDeleteAppointment, useRescheduleAppointment } from "@/hooks/use-appointments";
-import { useWaitlist, useCreateWaitlistEntry, useUpdateWaitlistEntry, useDeleteWaitlistEntry } from "@/hooks/use-waitlist";
 import { useDoctors } from "@/hooks/use-doctors";
 import { useAvailability } from "@/hooks/use-availability";
 import { useAuth } from "@/hooks/use-auth";
@@ -26,14 +25,12 @@ import WeekView from "./WeekView";
 import MonthView from "./MonthView";
 import AppointmentDetailModal from "./AppointmentDetailModal";
 import NewAppointmentModal from "./NewAppointmentModal";
-import WaitlistModal from "./WaitlistModal";
 
 export default function CalendarShell() {
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>("day");
   const [selectedAppt, setSelectedAppt] = useState<CalendarAppointment | null>(null);
   const [isNewApptOpen, setIsNewApptOpen] = useState(false);
-  const [isWaitlistOpen, setIsWaitlistOpen] = useState(false);
   const [newApptPatientId, setNewApptPatientId] = useState<string | undefined>();
   const [newApptSlot, setNewApptSlot] = useState<{ start: Date; end: Date } | null>(null);
   const [rescheduleAppt, setRescheduleAppt] = useState<CalendarAppointment | null>(null);
@@ -50,7 +47,6 @@ export default function CalendarShell() {
 
   const { data: appointments, isLoading: apptsLoading } = useAppointments(from, to);
   const { data: doctors } = useDoctors();
-  const { data: waitlistData } = useWaitlist();
   const { data: availability, isLoading: availabilityLoading } = useAvailability();
 
   const { user, role } = useAuth();
@@ -108,10 +104,6 @@ export default function CalendarShell() {
   const { mutate: updateAppt, isPending: isUpdatingAppt } = useUpdateAppointment(from, to);
   const { mutate: deleteAppt, isPending: isDeletingAppt } = useDeleteAppointment(from, to);
   const { mutateAsync: rescheduleApptAsync } = useRescheduleAppointment(from, to);
-
-  const { mutate: createWaitlist } = useCreateWaitlistEntry();
-  const updateWaitlist = useUpdateWaitlistEntry();
-  const deleteWaitlist = useDeleteWaitlistEntry();
 
   const handlePrev = () => {
     if (viewMode === "week") setCurrentDate((prev) => subDays(prev, 7));
@@ -173,8 +165,6 @@ export default function CalendarShell() {
           setNewApptSlot(null);
           setIsNewApptOpen(true);
         }}
-        onOpenWaitlist={() => setIsWaitlistOpen(true)}
-        waitlistCount={waitlistData?.length ?? 0}
       />
 
       {/* Doctor filter bar */}
@@ -282,7 +272,6 @@ export default function CalendarShell() {
         onClose={() => { setIsNewApptOpen(false); setRescheduleAppt(null); setNewApptSlot(null); }}
         initialDate={currentDate}
         doctors={doctors ?? []}
-        waitlist={waitlistData ?? []}
         initialPatientId={rescheduleAppt ? rescheduleAppt.patientId : newApptPatientId}
         initialDoctorId={selectedDoctorId !== "all" ? selectedDoctorId : undefined}
         initialStart={newApptSlot?.start}
@@ -292,14 +281,6 @@ export default function CalendarShell() {
         onUpdate={async (args) => {await rescheduleApptAsync(args); }}
       />
 
-      <WaitlistModal
-        isOpen={isWaitlistOpen}
-        onClose={() => setIsWaitlistOpen(false)}
-        waitlist={waitlistData ?? []}
-        onCreate={(args) => createWaitlist(args)}
-        onUpdate={(id, data) => updateWaitlist.mutate({ id, data })}
-        onDelete={(id) => deleteWaitlist.mutate(id)}
-      />
     </div>
   );
 }

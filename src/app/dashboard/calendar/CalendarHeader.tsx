@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { ChevronRight, ChevronLeft, Plus, Users } from "lucide-react";
+import { ChevronRight, ChevronLeft, Plus } from "lucide-react";
 import { format, endOfWeek } from "date-fns";
 import { arSA } from "date-fns/locale/ar-SA";
 import type { ViewMode } from "./types";
@@ -14,13 +14,11 @@ interface CalendarHeaderProps {
   onNext: () => void;
   onToday: () => void;
   onNewAppointment: () => void;
-  onOpenWaitlist: () => void;
-  waitlistCount: number;
 }
 
 export default function CalendarHeader({
   currentDate, viewMode, onChangeView, onPrev, onNext,
-  onToday, onNewAppointment, onOpenWaitlist, waitlistCount,
+  onToday, onNewAppointment,
 }: CalendarHeaderProps) {
   const weekStart = new Date(currentDate);
   weekStart.setDate(weekStart.getDate() - weekStart.getDay());
@@ -65,16 +63,6 @@ export default function CalendarHeader({
             </button>
           ))}
         </div>
-
-        {/* Waitlist */}
-        <button onClick={onOpenWaitlist}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 rounded-lg transition-all">
-          <Users className="w-3.5 h-3.5" />
-          الانتظار
-          {waitlistCount > 0 && (
-            <span className="w-4 h-4 rounded-full bg-amber-500 text-white text-[10px] flex items-center justify-center font-bold">{waitlistCount}</span>
-          )}
-        </button>
 
         {/* New Appointment */}
         <button onClick={onNewAppointment}
