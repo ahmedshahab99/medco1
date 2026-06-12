@@ -1,19 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 
-export default function ProfileError({
+export default function Error({
   error,
   reset,
 }: {
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  const [showDetails, setShowDetails] = useState(false);
-
   useEffect(() => {
-    console.error("Profile page error:", error);
+    console.error(error);
   }, [error]);
 
   return (
@@ -24,17 +22,7 @@ export default function ProfileError({
       <p className="text-slate-500">
         تعذر تحميل بيانات العيادة، يرجى المحاولة مرة أخرى.
       </p>
-      {showDetails && error && (
-        <p className="text-xs text-red-500 bg-red-50 p-3 rounded-xl max-w-md font-mono" dir="ltr">
-          {error.message}
-        </p>
-      )}
-      <div className="flex gap-3">
-        <Button onClick={() => reset()}>إعادة المحاولة</Button>
-        <Button variant="outline" onClick={() => setShowDetails(!showDetails)}>
-          {showDetails ? "إخفاء التفاصيل" : "عرض التفاصيل"}
-        </Button>
-      </div>
+      <Button onClick={() => reset()}>إعادة المحاولة</Button>
     </div>
   );
 }
