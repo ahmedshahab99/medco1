@@ -33,6 +33,7 @@ model Tenant {
   transactions       Transaction[]
   clinicAvailability ClinicAvailability?
   recurringExpenses  RecurringExpense[]
+  doctorUnavailable  DoctorUnavailable[]
 }
 
 model SocialLink {
@@ -66,6 +67,7 @@ model Profile {
   tenant   Tenant? @relation(fields: [tenantId], references: [id], onDelete: SetNull)
 
   appointments        Appointment[] @relation("DoctorAppointments")
+  doctorUnavailable   DoctorUnavailable[]
   sentInvitations     Invitation[]  @relation("SentInvitations")
   acceptedInvitations Invitation[]  @relation("AcceptedInvitations")
 
@@ -136,6 +138,22 @@ model ClinicAvailability {
   settings  Json
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model DoctorUnavailable {
+  id        String   @id @default(uuid())
+  tenantId  String
+  doctorId  String
+  startTime DateTime
+  endTime   DateTime
+  reason    String?
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  doctor    Profile  @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([doctorId, startTime])
+  @@index([tenantId])
 }
 
 model Appointment {

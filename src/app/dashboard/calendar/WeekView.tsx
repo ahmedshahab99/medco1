@@ -4,9 +4,11 @@ import React, { useMemo, useState, useEffect } from "react";
 import { format, startOfWeek, addDays, isSameDay, endOfWeek } from "date-fns";
 import { arSA } from "date-fns/locale/ar-SA";
 import { enUS } from "date-fns/locale/en-US";
+import { X } from "lucide-react";
 import type { CalendarAppointment } from "@/hooks/use-appointments";
 import { HOUR_HEIGHT } from "./constants";
 import { STATUS_MAP } from "./utils";
+import type { DoctorUnavailableBlock } from "./types";
 
 interface WeekViewProps {
   appointments: CalendarAppointment[];
@@ -14,8 +16,10 @@ interface WeekViewProps {
   startHour: number;
   endHour: number;
   schedule?: any;
+  unavailableBlocks?: DoctorUnavailableBlock[];
   onSelectAppt: (appt: CalendarAppointment) => void;
   onChangeDate: (date: Date) => void;
+  onDeleteBlock?: (id: string) => void;
   onNewAppointment: (date: Date) => void;
 }
 
@@ -67,7 +71,7 @@ function getUnavailableBlocks(daySettings: any, startHour: number, endHour: numb
   return blocks;
 }
 
-export default function WeekView({ appointments, currentDate, startHour, endHour, schedule, onSelectAppt, onChangeDate, onNewAppointment }: WeekViewProps) {
+export default function WeekView({ appointments, currentDate, startHour, endHour, schedule, unavailableBlocks, onSelectAppt, onChangeDate, onDeleteBlock, onNewAppointment }: WeekViewProps) {
   const [currentTimeLine, setCurrentTimeLine] = useState<number | null>(null);
 
   const weekStart = useMemo(() => startOfWeek(currentDate, { weekStartsOn: 0 }), [currentDate]);
@@ -173,7 +177,11 @@ export default function WeekView({ appointments, currentDate, startHour, endHour
               const isToday = isSameDay(day, new Date());
               
               const dayKey = format(day, "EEEE", { locale: enUS }).toLowerCase();
-              const unavailableBlocks = schedule ? getUnavailableBlocks(schedule[dayKey], startHour, endHour) : [];
+              const scheduleGapBlocks = schedule ? getUnavailableBlocks(schedule[dayKey], startHour, endHour) : [];
+
+              const dayDoctorBlocks = (unavailableBlocks ?? []).filter((block) =>
+                isSameDay(new Date(block.startTime), day)
+              );
 
               return (
                 <div
@@ -185,7 +193,7 @@ export default function WeekView({ appointments, currentDate, startHour, endHour
                   }}
                 >
                   {/* Unavailable blocks */}
-                  {unavailableBlocks.map((block, i) => (
+                  {scheduleGapBlocks.map((block, i) => (
                     <div
                       key={`unavail-${i}`}
                       className="absolute w-full bg-slate-100/50 pointer-events-none z-0"
@@ -196,6 +204,55 @@ export default function WeekView({ appointments, currentDate, startHour, endHour
                       }}
                     />
                   ))}
+
+                  {/* Doctor-unavailable blocks */}
+                  {dayDoctorBlocks.map((block) => {
+                    const start = new Date(block.startTime);
+                    const end = new Date(block.endTime);
+                    const startH = start.getHours() + start.getMinutes() / 60;
+                    const endH = end.getHours() + end.getMinutes() / 60;
+                    const topOffset = (startH - startHour) * HOUR_HEIGHT;
+                    const height = (endH - startH) * HOUR_HEIGHT;
+                    return (
+                      <div
+                        key={block.id}
+                        onPointerDown={(e) => e.stopPropagation()}
+                        className="absolute right-0.5 left-0.5 md:right-1.5 md:left-1.5 z-10 rounded border border-rose-200 bg-rose-50/70 flex flex-col overflow-hidden group"
+                        style={{
+                          top: `${topOffset}px`,
+                          height: `${height}px`,
+                          backgroundImage: "repeating-linear-gradient(-45deg, transparent, transparent 6px, rgba(244,63,94,0.06) 6px, rgba(244,63,94,0.06) 12px)",
+                        }}
+                      >
+                        {height >= 28 && (
+                          <div className="flex items-center justify-between px-1 py-0.5">
+                            <div className="flex-1 min-w-0">
+                              {block.doctorName && (
+                                <span className="text-[7px] md:text-[8px] font-medium text-rose-600 truncate block">
+                                  {block.doctorName}
+                                </span>
+                              )}
+                              <span className={`${block.doctorName ? "text-[7px]" : "text-[8px] md:text-[9px]"} text-rose-500 truncate block`}>
+                                {block.reason || "محجوز"}
+                              </span>
+                            </div>
+                            {onDeleteBlock && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onDeleteBlock(block.id);
+                                }}
+                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-rose-100 shrink-0 ms-0.5"
+                                title="إلغاء الحجز"
+                              >
+                                <X className="size-2.5 md:size-3 text-rose-500" />
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
 
                   {isToday && currentTimeLine !== null && (
                     <div
