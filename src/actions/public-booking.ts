@@ -182,6 +182,23 @@ export async function getAvailableSlots(
     end: timeToMinutes(extractTime(apt.endTime)) + bufferAfter,
   }));
 
+  // Add doctor-unavailable blocks to blocked intervals
+  const unavailableBlocks = await prisma.doctorUnavailable.findMany({
+    where: {
+      tenantId: tenant.id,
+      doctorId,
+      startTime: { gte: dayStart, lte: dayEnd },
+    },
+    select: { startTime: true, endTime: true },
+  });
+
+  for (const block of unavailableBlocks) {
+    blockedIntervals.push({
+      start: timeToMinutes(extractTime(block.startTime)),
+      end: timeToMinutes(extractTime(block.endTime)),
+    });
+  }
+
   // Min notice cutoff (in minutes from midnight)
   let minNoticeCutoff = -1;
   const isToday = dateStr === toDateKey(now);
@@ -304,6 +321,22 @@ export async function createPublicAppointment(
 
   if (conflict) {
     return { success: false, error: "هذا الوقت لم يعد متاحاً، يرجى اختيار وقت آخر" };
+  }
+
+  // Check against doctor-unavailable blocks
+  const blockConflict = await prisma.doctorUnavailable.findFirst({
+    where: {
+      tenantId: tenant.id,
+      doctorId,
+      AND: [
+        { startTime: { lt: endDate } },
+        { endTime: { gt: startDate } },
+      ],
+    },
+  });
+
+  if (blockConflict) {
+    return { success: false, error: "هذا الوقت غير متاح، يرجى اختيار وقت آخر" };
   }
 
   // Check maxPerDay

@@ -4,10 +4,11 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import { format, isSameDay } from "date-fns";
 import { arSA } from "date-fns/locale/ar-SA";
 import { enUS } from "date-fns/locale/en-US";
+import { X } from "lucide-react";
 import type { CalendarAppointment } from "@/hooks/use-appointments";
 import { HOUR_HEIGHT } from "./constants";
 import { snapToQuarter, getTimeFromPointer } from "./utils";
-import type { InteractionState } from "./types";
+import type { InteractionState, DoctorUnavailableBlock } from "./types";
 
 interface DayViewProps {
   appointments: CalendarAppointment[];
@@ -15,8 +16,10 @@ interface DayViewProps {
   startHour: number;
   endHour: number;
   schedule?: any;
+  unavailableBlocks?: DoctorUnavailableBlock[];
   onSelectAppt: (appt: CalendarAppointment) => void;
   onUpdateTime: (id: string, start: Date, end: Date) => void;
+  onDeleteBlock?: (id: string) => void;
   onSlotSelect?: (start: Date, end: Date) => void;
 }
 
@@ -103,7 +106,7 @@ function getUnavailableBlocks(daySettings: any, startHour: number, endHour: numb
   return blocks;
 }
 
-export default function DayView({ appointments, currentDate, startHour, endHour, schedule, onSelectAppt, onUpdateTime, onSlotSelect }: DayViewProps) {
+export default function DayView({ appointments, currentDate, startHour, endHour, schedule, unavailableBlocks, onSelectAppt, onUpdateTime, onDeleteBlock, onSlotSelect }: DayViewProps) {
   const [interaction, setInteraction] = useState<InteractionState | null>(null);
   const [slotSelection, setSlotSelection] = useState<{ start: Date; end: Date } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -168,11 +171,27 @@ export default function DayView({ appointments, currentDate, startHour, endHour,
     update(); const i = setInterval(update, 60000); return () => clearInterval(i);
   }, [currentDate, startHour, endHour]);
 
-  const unavailableBlocks = useMemo(() => {
+  const scheduleGapBlocks = useMemo(() => {
     if (!schedule) return [];
     const dayKey = format(currentDate, "EEEE", { locale: enUS }).toLowerCase();
     return getUnavailableBlocks(schedule[dayKey], startHour, endHour);
   }, [schedule, currentDate, startHour, endHour]);
+
+  const dayDoctorBlocks = useMemo(() => {
+    if (!unavailableBlocks) return [];
+    return unavailableBlocks
+      .filter((block) => {
+        const blockStart = new Date(block.startTime);
+        return isSameDay(blockStart, currentDate);
+      })
+      .map((block) => {
+        const start = new Date(block.startTime);
+        const end = new Date(block.endTime);
+        const startH = start.getHours() + start.getMinutes() / 60;
+        const endH = end.getHours() + end.getMinutes() / 60;
+        return { ...block, _startH: startH, _endH: endH };
+      });
+  }, [unavailableBlocks, currentDate]);
 
   const onInteractionStart = useCallback((e: React.PointerEvent, appt: any, type: InteractionState["type"]) => {
     e.stopPropagation();
@@ -324,9 +343,57 @@ export default function DayView({ appointments, currentDate, startHour, endHour,
             )}
 
             {/* Unavailable blocks */}
-            {unavailableBlocks.map((block, i) => (
+            {scheduleGapBlocks.map((block, i) => (
               <div key={i} className="absolute w-full bg-slate-50/60 pointer-events-none z-0" style={{ top: `${(block.start - startHour) * HOUR_HEIGHT}px`, height: `${(block.end - block.start) * HOUR_HEIGHT}px` }} />
             ))}
+
+            {/* Doctor-unavailable blocks */}
+            {dayDoctorBlocks.map((block) => {
+              const topOffset = (block._startH - startHour) * HOUR_HEIGHT;
+              const height = (block._endH - block._startH) * HOUR_HEIGHT;
+              return (
+                <div
+                  key={block.id}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  className="absolute right-1 left-1 z-10 rounded-lg border border-rose-200 bg-rose-50/70 flex flex-col overflow-hidden group"
+                  style={{
+                    top: `${topOffset}px`,
+                    height: `${height}px`,
+                    backgroundImage: "repeating-linear-gradient(-45deg, transparent, transparent 8px, rgba(244,63,94,0.06) 8px, rgba(244,63,94,0.06) 16px)",
+                  }}
+                >
+                  <div className="flex items-center justify-between px-2 py-1">
+                    <div className="flex-1 min-w-0">
+                      {block.doctorName && (
+                        <span className="text-[10px] font-medium text-rose-600 truncate block">
+                          {block.doctorName}
+                        </span>
+                      )}
+                      <span className={`${block.doctorName ? "text-[8px]" : "text-[10px]"} text-rose-500 truncate block`}>
+                        {block.reason || "وقت محجوز"}
+                      </span>
+                    </div>
+                    {onDeleteBlock && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteBlock(block.id);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-rose-100 shrink-0 ms-1"
+                        title="إلغاء الحجز"
+                      >
+                        <X className="size-3 text-rose-500" />
+                      </button>
+                    )}
+                  </div>
+                  {height >= 35 && (
+                    <div className="text-[9px] text-rose-400 px-2 pb-1" dir="ltr">
+                      {format(new Date(block.startTime), "HH:mm")} - {format(new Date(block.endTime), "HH:mm")}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
 
             {/* Appointments */}
             {dailyAppointmentsWithLayout.map((appt: any) => (

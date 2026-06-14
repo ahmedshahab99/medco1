@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { ChevronRight, ChevronLeft, Plus } from "lucide-react";
+import { ChevronRight, ChevronLeft, Plus, ClockAlert } from "lucide-react";
 import { format, endOfWeek } from "date-fns";
 import { arSA } from "date-fns/locale/ar-SA";
 import type { ViewMode } from "./types";
@@ -14,11 +14,13 @@ interface CalendarHeaderProps {
   onNext: () => void;
   onToday: () => void;
   onNewAppointment: () => void;
+  onBlockTime?: () => void;
+  showBlockTime?: boolean;
 }
 
 export default function CalendarHeader({
   currentDate, viewMode, onChangeView, onPrev, onNext,
-  onToday, onNewAppointment,
+  onToday, onNewAppointment, onBlockTime, showBlockTime,
 }: CalendarHeaderProps) {
   const weekStart = new Date(currentDate);
   weekStart.setDate(weekStart.getDate() - weekStart.getDay());
@@ -70,6 +72,15 @@ export default function CalendarHeader({
           <Plus className="w-3.5 h-3.5" />
           موعد جديد
         </button>
+
+        {/* Block Time */}
+        {showBlockTime && onBlockTime && (
+          <button onClick={onBlockTime}
+            className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg border border-rose-200 transition-all">
+            <ClockAlert className="w-3.5 h-3.5" />
+            حجز وقت
+          </button>
+        )}
       </div>
     </div>
   );

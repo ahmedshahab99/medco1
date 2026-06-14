@@ -183,6 +183,25 @@ export async function POST(request: Request) {
     caseId = newCase.id;
   }
 
+  // Check against doctor-unavailable blocks
+  const blockConflict = await prisma.doctorUnavailable.findFirst({
+    where: {
+      tenantId: actor.tenantId,
+      doctorId: data.doctorId,
+      AND: [
+        { startTime: { lt: new Date(data.endTime) } },
+        { endTime: { gt: new Date(data.startTime) } },
+      ],
+    },
+  });
+
+  if (blockConflict) {
+    return NextResponse.json(
+      { error: "هذا الوقت غير متاح (محجوز من قبل الطبيب)" },
+      { status: 409 }
+    );
+  }
+
   const appointment = await prisma.appointment.create({
     data: {
       tenantId: actor.tenantId,

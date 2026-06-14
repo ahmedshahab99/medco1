@@ -10,3 +10,12 @@ export interface InteractionState {
   currentStartTime: Date;
   currentEndTime: Date;
 }
+
+export interface DoctorUnavailableBlock {
+  id: string;
+  doctorId: string;
+  doctorName?: string;
+  startTime: string;
+  endTime: string;
+  reason: string | null;
+}

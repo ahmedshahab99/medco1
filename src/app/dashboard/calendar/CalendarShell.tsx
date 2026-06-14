@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { addDays, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfDay, endOfDay } from "date-fns";
 import { Stethoscope } from "lucide-react";
 import {
@@ -15,16 +15,18 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { useAppointments, useCreateAppointment, useUpdateAppointment, useDeleteAppointment, useRescheduleAppointment } from "@/hooks/use-appointments";
 import { useDoctors } from "@/hooks/use-doctors";
 import { useAvailability } from "@/hooks/use-availability";
+import { useUnavailableBlocks, useCreateUnavailableBlock, useDeleteUnavailableBlock } from "@/hooks/use-unavailable-blocks";
 import { useAuth } from "@/hooks/use-auth";
 import type { CalendarAppointment } from "@/hooks/use-appointments";
 import type { AppointmentPatchInput } from "@/lib/schemas/appointment";
-import type { ViewMode } from "./types";
+import type { ViewMode, DoctorUnavailableBlock } from "./types";
 import CalendarHeader from "./CalendarHeader";
 import DayView from "./DayView";
 import WeekView from "./WeekView";
 import MonthView from "./MonthView";
 import AppointmentDetailModal from "./AppointmentDetailModal";
 import NewAppointmentModal from "./NewAppointmentModal";
+import UnavailableBlockModal from "./UnavailableBlockModal";
 
 export default function CalendarShell() {
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
@@ -34,6 +36,7 @@ export default function CalendarShell() {
   const [newApptPatientId, setNewApptPatientId] = useState<string | undefined>();
   const [newApptSlot, setNewApptSlot] = useState<{ start: Date; end: Date } | null>(null);
   const [rescheduleAppt, setRescheduleAppt] = useState<CalendarAppointment | null>(null);
+  const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
 
   const { from, to } = useMemo(() => {
     if (viewMode === "week") {
@@ -71,6 +74,11 @@ export default function CalendarShell() {
     }
     return user?.email ?? "";
   }, [role, user]);
+
+  const unavailableDoctorId = role === "DOCTOR" ? user?.id : (selectedDoctorId !== "all" ? selectedDoctorId : undefined);
+  const { data: unavailableBlocks } = useUnavailableBlocks(from, to, unavailableDoctorId);
+  const { mutate: createUnavailableBlock, isPending: isCreatingBlock } = useCreateUnavailableBlock(from, to, unavailableDoctorId);
+  const { mutate: deleteUnavailableBlock } = useDeleteUnavailableBlock(from, to, unavailableDoctorId);
 
   const { dynamicStartHour, dynamicEndHour } = useMemo(() => {
     let minHour = 8;
@@ -149,6 +157,22 @@ export default function CalendarShell() {
     setSelectedAppt(null);
   };
 
+  const handleBlockTime = useCallback(
+    (data: { doctorId: string; startTime: string; endTime: string; reason?: string }) => {
+      createUnavailableBlock(data, {
+        onSuccess: () => setIsBlockModalOpen(false),
+      });
+    },
+    [createUnavailableBlock]
+  );
+
+  const handleDeleteBlock = useCallback(
+    (id: string) => {
+      deleteUnavailableBlock(id);
+    },
+    [deleteUnavailableBlock]
+  );
+
   
 
   return (
@@ -165,6 +189,8 @@ export default function CalendarShell() {
           setNewApptSlot(null);
           setIsNewApptOpen(true);
         }}
+        onBlockTime={() => setIsBlockModalOpen(true)}
+        showBlockTime={role === "DOCTOR" || role === "ADMIN" || role === "RECEPTIONIST"}
       />
 
       {/* Doctor filter bar */}
@@ -212,8 +238,10 @@ export default function CalendarShell() {
             startHour={dynamicStartHour}
             endHour={dynamicEndHour}
             schedule={availability?.schedule}
+            unavailableBlocks={unavailableBlocks ?? []}
             onSelectAppt={setSelectedAppt}
             onUpdateTime={handleUpdateTime}
+            onDeleteBlock={handleDeleteBlock}
             onSlotSelect={(start, end) => {
               setNewApptSlot({ start, end });
               
@@ -229,8 +257,10 @@ export default function CalendarShell() {
             startHour={dynamicStartHour}
             endHour={dynamicEndHour}
             schedule={availability?.schedule}
+            unavailableBlocks={unavailableBlocks ?? []}
             onSelectAppt={setSelectedAppt}
             onChangeDate={setCurrentDate}
+            onDeleteBlock={handleDeleteBlock}
             onNewAppointment={(date) => {
               setCurrentDate(date);
               setNewApptSlot(null);
@@ -279,6 +309,17 @@ export default function CalendarShell() {
         editingAppointment={rescheduleAppt ?? undefined}
         onCreate={(args) => createAppt(args)}
         onUpdate={async (args) => {await rescheduleApptAsync(args); }}
+      />
+
+      <UnavailableBlockModal
+        isOpen={isBlockModalOpen}
+        onClose={() => setIsBlockModalOpen(false)}
+        initialDate={currentDate}
+        doctorId={user?.id ?? ""}
+        doctors={doctors ?? []}
+        userRole={role ?? "DOCTOR"}
+        onSubmit={handleBlockTime}
+        isSubmitting={isCreatingBlock}
       />
 
     </div>
