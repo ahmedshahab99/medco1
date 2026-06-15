@@ -31,22 +31,30 @@ export interface CalendarAppointment {
   notes: string | null;
   caseId: string | null;
   caseName: string | null;
-  consultationFee: number | null;
-  paymentStatus: string;
+  hasTransactions: boolean;
+  lastTransactionId: string | null;
+  servicePrice: number | null;
   createdAt: string;
   updatedAt: string;
 }
 
 const API_BASE = "/api/appointments";
 
-function getQueryKey(from: Date, to: Date) {
-  return ["appointments", from.toISOString(), to.toISOString()];
+export interface AppointmentQueryOpts {
+  status?: string;
+  doctorId?: string;
 }
 
-async function fetchAppointments(from: Date, to: Date): Promise<CalendarAppointment[]> {
+function getQueryKey(from: Date, to: Date, opts?: AppointmentQueryOpts) {
+  return ["appointments", from.toISOString(), to.toISOString(), opts?.status, opts?.doctorId];
+}
+
+async function fetchAppointments(from: Date, to: Date, opts?: AppointmentQueryOpts): Promise<CalendarAppointment[]> {
   const url = new URL(API_BASE, window.location.origin);
   url.searchParams.set("from", from.toISOString());
   url.searchParams.set("to", to.toISOString());
+  if (opts?.status) url.searchParams.set("status", opts.status);
+  if (opts?.doctorId) url.searchParams.set("doctorId", opts.doctorId);
   const res = await fetch(url.toString());
   if (!res.ok) {
     const error = await res.json().catch(() => ({ error: "Failed to fetch appointments" }));
@@ -83,8 +91,21 @@ async function updateAppointment(id: string, data: AppointmentPatchInput): Promi
       signal: controller.signal,
     });
     if (!res.ok) {
-      const error = await res.json().catch(() => ({ error: "Failed to update appointment" }));
-      throw new Error(error.error || "Failed to update appointment");
+      const text = await res.text();
+      console.error("[updateAppointment] FAILED", {
+        id,
+        status: res.status,
+        statusText: res.statusText,
+        body: text,
+        sentData: data,
+      });
+      let parsed: { error?: string } = {};
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        // response was not JSON
+      }
+      throw new Error(parsed.error || `HTTP ${res.status}: ${res.statusText}`);
     }
     return res.json();
   } finally {
@@ -104,10 +125,13 @@ async function deleteAppointment(id: string): Promise<void> {
   }
 }
 
-export function useAppointments(from: Date, to: Date) {
+export function useAppointments(from: Date, to: Date, opts?: AppointmentQueryOpts) {
+  const queryKey = getQueryKey(from, to, opts);
+
   return useQuery({
-    queryKey: getQueryKey(from, to),
-    queryFn: () => fetchAppointments(from, to),
+    queryKey,
+    queryFn: () => fetchAppointments(from, to, opts),
+    refetchInterval: opts?.status || opts?.doctorId ? 30_000 : undefined,
   });
 }
 
@@ -121,8 +145,9 @@ export function useCreateAppointment(from: Date, to: Date) {
       await queryClient.cancelQueries({ queryKey });
       const previous = queryClient.getQueryData<CalendarAppointment[]>(queryKey);
 
+      const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
       const optimistic: CalendarAppointment = {
-        id: `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+        id: tempId,
         patientId: args.input.patientId ?? `temp-patient-${Date.now()}`,
         patientName: args.optimistic.patientName,
         patientPhone: args.optimistic.patientPhone,
@@ -131,14 +156,15 @@ export function useCreateAppointment(from: Date, to: Date) {
         serviceId: args.input.serviceId,
         serviceName: args.optimistic.serviceName,
         serviceColor: args.optimistic.serviceColor,
-        status: "SCHEDULED",
+        status: args.input.status ?? "SCHEDULED",
         startTime: args.input.startTime,
         endTime: args.input.endTime,
         notes: args.input.notes ?? null,
         caseId: args.input.caseId ?? null,
         caseName: null,
-        consultationFee: args.input.consultationFee ? parseFloat(args.input.consultationFee) : null,
-        paymentStatus: "PENDING",
+        hasTransactions: false,
+        lastTransactionId: null,
+        servicePrice: null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -147,10 +173,20 @@ export function useCreateAppointment(from: Date, to: Date) {
         old ? [...old, optimistic] : [optimistic]
       );
 
-      return { previous, queryKey };
+      return { previous, queryKey, tempId };
     },
-    onSuccess: () => {
+    onSuccess: (data, _vars, context) => {
       toast.success("تم حجز الموعد بنجاح");
+      if (context?.tempId) {
+        const queryKey = context.queryKey;
+        queryClient.setQueryData<CalendarAppointment[]>(queryKey, (old) => {
+          if (!old) return [data];
+          const next = old.filter(
+            (a) => a.id !== context.tempId && a.id !== data.id
+          );
+          return [...next, data];
+        });
+      }
     },
     onError: (err, _args, context) => {
       toast.error(err instanceof Error ? err.message : "فشل إنشاء الموعد");
@@ -190,7 +226,6 @@ export function useUpdateAppointment(from: Date, to: Date) {
                 ...(data.caseId !== undefined && { caseId: data.caseId }),
                 ...(data.serviceId && { serviceId: data.serviceId }),
                 ...(data.doctorId && { doctorId: data.doctorId }),
-                ...(data.paymentStatus && { paymentStatus: data.paymentStatus }),
               }
             : a
         )

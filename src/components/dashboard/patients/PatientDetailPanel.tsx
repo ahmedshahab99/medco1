@@ -1,14 +1,16 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import React from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Patient } from "../../../hooks/use-patients";
 import {
-  X, Phone, Mail, CalendarDays, MapPin, Stethoscope, ChevronLeft, Pencil, Trash2, FileText, Pill, Activity,
-  Syringe, ClipboardList, Heart, User, CalendarClock, Hash, Sparkles, ChevronDown,
-  Clock, Shield, Tag,
+  X, Phone, Mail, CalendarDays, MapPin, Stethoscope, ChevronLeft, Pencil, Trash2, FileText, Activity,
+  ClipboardList, Heart, User, CalendarClock, Hash, Clock, Tag,
 } from "lucide-react";
-import { PrescriptionTab } from "./tabs/PrescriptionTab";
+import { VisitNoteTab } from "./tabs/VisitNoteTab";
+import { PaymentsTab } from "./tabs/PaymentsTab";
+import { CasesTab } from "./tabs/CasesTab";
+import { AppointmentsTab } from "./tabs/AppointmentsTab";
 
 interface PatientDetailPanelProps {
   patient: Patient;
@@ -84,25 +86,11 @@ export function PatientDetailPanel({
   onDelete,
 }: PatientDetailPanelProps) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"overview" | "prescriptions" | "medical" | "files">("overview");
-  const [prescriptionHistory, setPrescriptionHistory] = useState<{ id: string; diagnosis: string; createdAt: string }[]>([]);
+  const searchParams = useSearchParams();
+  const activeTab = searchParams.get("tab") || "overview";
   const age = calcAge(patient.dateOfBirth);
   const cIdx = getColorIndex(patient.id);
-
-  useEffect(() => {
-    fetch(`/api/patients/${patient.id}/prescriptions`)
-      .then(r => r.ok ? r.json() : [])
-      .then((data: { id: string; diagnosis: string; createdAt: string }[]) => setPrescriptionHistory(data))
-      .catch(() => {});
-  }, [patient.id]);
   const status = statusConfig(patient.status);
-
-  const tabs = [
-    { key: "overview" as const, icon: Activity, label: "نظرة عامة" },
-    { key: "prescriptions" as const, icon: Pill, label: "الوصفات" },
-    { key: "medical" as const, icon: ClipboardList, label: "السجل الطبي" },
-    { key: "files" as const, icon: FileText, label: "الملفات" },
-  ];
 
   return (
     <div className={`flex flex-col bg-gradient-to-br from-slate-50 to-white h-full ${fullPage ? "w-full" : "w-full border-r border-slate-100 shadow-xl"}`}>
@@ -247,29 +235,6 @@ export function PatientDetailPanel({
         </div>
       </div>
 
-      {/* ═══════ TAB NAVIGATION ═══════ */}
-      <div className="px-5 mt-4">
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-1 flex gap-1">
-          {tabs.map((tab) => {
-            const active = activeTab === tab.key;
-            return (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-bold transition-all ${
-                  active
-                    ? "bg-gradient-to-l from-emerald-600 to-emerald-500 text-white shadow-md shadow-emerald-200"
-                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-                }`}
-              >
-                <tab.icon className={`w-4 h-4 ${active ? "" : "text-slate-400"}`} />
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
       {/* ═══════ TAB CONTENT ═══════ */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-5 pt-4">
         {activeTab === "overview" && (
@@ -351,81 +316,12 @@ export function PatientDetailPanel({
           </div>
         )}
 
-        {activeTab === "prescriptions" && (
-          <PrescriptionTab patientId={patient.id} patientName={patient.name} />
+        {activeTab === "visits" && (
+          <VisitNoteTab patientId={patient.id} patientName={patient.name} />
         )}
 
-        {activeTab === "medical" && (
-          <div className="space-y-4">
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-              <div className="w-1 h-4 bg-violet-500 rounded-full" />
-              السجل الطبي
-            </h3>
-
-            {/* Prescription diagnoses as medical history */}
-            {prescriptionHistory.length > 0 && (
-              <div className="space-y-2">
-                <h4 className="text-[11px] font-bold text-emerald-600 flex items-center gap-1.5">
-                  <Pill className="w-3.5 h-3.5" />
-                  سجل الوصفات الطبية
-                </h4>
-                {prescriptionHistory.map((rx) => (
-                  <div key={rx.id} className="bg-white rounded-xl p-4 border border-emerald-100 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0 border border-emerald-100">
-                        <Pill className="w-4 h-4 text-emerald-600" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-bold text-slate-800">{rx.diagnosis}</p>
-                        <p className="text-xs text-slate-400 mt-1 flex items-center gap-1.5">
-                          <CalendarDays className="w-3 h-3" />
-                          {formatDateFull(rx.createdAt)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Medical notes */}
-            {patient.medicalNotes && patient.medicalNotes.length > 0 && (
-              <div className="space-y-2">
-                {prescriptionHistory.length > 0 && (
-                  <h4 className="text-[11px] font-bold text-violet-600 flex items-center gap-1.5">
-                    <ClipboardList className="w-3.5 h-3.5" />
-                    ملاحظات الطبيب
-                  </h4>
-                )}
-                {patient.medicalNotes.map((note) => (
-                  <div key={note.id} className="bg-white rounded-xl p-4 border border-violet-100 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-violet-50 flex items-center justify-center shrink-0 border border-violet-100">
-                        <ClipboardList className="w-4 h-4 text-violet-600" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm text-slate-700 leading-relaxed">{note.content}</p>
-                        <p className="text-xs text-slate-400 mt-2 flex items-center gap-1.5">
-                          <CalendarDays className="w-3 h-3" />
-                          {formatDateFull(note.createdAt)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {prescriptionHistory.length === 0 && (!patient.medicalNotes || patient.medicalNotes.length === 0) && (
-              <div className="bg-white rounded-2xl border border-slate-100 p-8 text-center">
-                <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center mx-auto mb-3 border border-slate-100">
-                  <ClipboardList className="w-6 h-6 text-slate-300" />
-                </div>
-                <p className="text-sm text-slate-400 font-medium">لا توجد سجلات طبية</p>
-                <p className="text-xs text-slate-300 mt-1">ستظهر هنا الوصفات والملاحظات الطبية المسجّلة للمريض</p>
-              </div>
-            )}
-          </div>
+        {activeTab === "cases" && (
+          <CasesTab patientId={patient.id} />
         )}
 
         {activeTab === "files" && (
@@ -469,6 +365,20 @@ export function PatientDetailPanel({
                 <p className="text-xs text-slate-300 mt-1">سيتم عرض الملفات المرفوعة للمريض هنا</p>
               </div>
             )}
+          </div>
+        )}
+
+        {activeTab === "payments" && (
+          <PaymentsTab patientId={patient.id} />
+        )}
+
+        {activeTab === "appointments" && (
+          <AppointmentsTab patientId={patient.id} />
+        )}
+
+        {activeTab === "reminders" && (
+          <div className="flex flex-col items-center justify-center h-full py-20 text-slate-400">
+            <p className="text-lg font-medium">قريباً: التذكيرات والإشعارات</p>
           </div>
         )}
       </div>

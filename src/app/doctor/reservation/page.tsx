@@ -13,7 +13,6 @@ export default function ReservationPage({ params }: { params: Promise<{ doctor: 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "CONFIRMED": return "bg-green-100 text-green-800";
-      case "ARRIVED": return "bg-emerald-100 text-emerald-800";
       case "SCHEDULED": return "bg-yellow-100 text-yellow-800";
       case "CANCELLED": return "bg-red-100 text-red-800";
       case "NO_SHOW": return "bg-red-100 text-red-800";
@@ -24,7 +23,6 @@ export default function ReservationPage({ params }: { params: Promise<{ doctor: 
   const getStatusText = (status: string) => {
     switch (status) {
       case "CONFIRMED": return "مؤكد";
-      case "ARRIVED": return "تم الوصول";
       case "SCHEDULED": return "قيد الانتظار";
       case "CANCELLED": return "ملغي";
       case "NO_SHOW": return "لم يحضر";

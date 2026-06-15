@@ -8,6 +8,8 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const from = searchParams.get("from");
   const to = searchParams.get("to");
+  const status = searchParams.get("status");
+  const doctorId = searchParams.get("doctorId");
 
   const supabase = await createClient();
   const {
@@ -36,13 +38,22 @@ export async function GET(request: Request) {
     };
   }
 
-  const appointments = await prisma.appointment.findMany({
+  if (status) {
+    where.status = status;
+  }
+
+  if (doctorId) {
+    where.doctorId = doctorId;
+  }
+
+    const appointments = await prisma.appointment.findMany({
     where,
     include: {
       patient: true,
       doctor: true,
-      service: true,
+      service: { select: { name: true, color: true, price: true } },
       case: true,
+      transactions: { select: { id: true }, take: 1, orderBy: { date: "desc" } },
     },
     orderBy: { startTime: "asc" },
   });
@@ -63,8 +74,9 @@ export async function GET(request: Request) {
     notes: appt.notes,
     caseId: appt.caseId,
     caseName: appt.case?.title ?? null,
-    consultationFee: appt.consultationFee ? Number(appt.consultationFee) : null,
-    paymentStatus: appt.paymentStatus,
+    hasTransactions: appt.transactions.length > 0,
+    lastTransactionId: appt.transactions[0]?.id ?? null,
+    servicePrice: appt.service.price ? Number(appt.service.price) : null,
     createdAt: appt.createdAt.toISOString(),
     updatedAt: appt.updatedAt.toISOString(),
   }));
@@ -165,7 +177,6 @@ export async function POST(request: Request) {
           firstName: data.newPatient.firstName,
           lastName: data.newPatient.lastName,
           phone: data.newPatient.phone,
-          consultationFee: data.consultationFee || undefined,
         },
       });
       patientId = newPatient.id;
@@ -193,8 +204,6 @@ export async function POST(request: Request) {
     caseId = newCase.id;
   }
 
-  const consultationFee = data.consultationFee ? parseFloat(data.consultationFee) : undefined;
-
   const appointment = await prisma.appointment.create({
     data: {
       tenantId: actor.tenantId,
@@ -205,15 +214,14 @@ export async function POST(request: Request) {
       startTime: new Date(data.startTime),
       endTime: new Date(data.endTime),
       notes: data.notes,
-      status: "SCHEDULED",
-      consultationFee,
-      paymentStatus: "PENDING",
+      status: data.status ?? "SCHEDULED",
     },
     include: {
       patient: true,
       doctor: true,
-      service: true,
+      service: { select: { name: true, color: true, price: true } },
       case: true,
+      transactions: { select: { id: true }, take: 1, orderBy: { date: "desc" } },
     },
   });
 
@@ -233,8 +241,9 @@ export async function POST(request: Request) {
     notes: appointment.notes,
     caseId: appointment.caseId,
     caseName: appointment.case?.title ?? null,
-    consultationFee: appointment.consultationFee ? Number(appointment.consultationFee) : null,
-    paymentStatus: appointment.paymentStatus,
+    hasTransactions: appointment.transactions.length > 0,
+    lastTransactionId: appointment.transactions[0]?.id ?? null,
+    servicePrice: appointment.service.price ? Number(appointment.service.price) : null,
     createdAt: appointment.createdAt.toISOString(),
     updatedAt: appointment.updatedAt.toISOString(),
   };

@@ -12,6 +12,7 @@ import { TodaySchedule } from "@/components/dashboard/patients/TodaySchedule";
 import { NewPatientModal } from "@/components/dashboard/patients/NewPatientModal";
 import { usePatients, PaginatedPatients } from "@/hooks/use-patients";
 import { useAppointments } from "@/hooks/use-appointments";
+import { useAuth } from "@/hooks/use-auth";
 
 const PAGE_SIZE = 10;
 
@@ -41,8 +42,16 @@ const [page, setPage] = useState(1);
 
 const { data: result, isLoading, error, refetch } = usePatients({ search, page, pageSize: PAGE_SIZE, status: filters.status === "all" ? undefined : filters.status });
 
+const { user, role } = useAuth();
+
 const today = new Date();
-const { data: todayApps, isLoading: appsLoading, error: appsError, refetch: refetchApps } = useAppointments(startOfDay(today), endOfDay(today));
+const { data: todayApps, isLoading: appsLoading, error: appsError, refetch: refetchApps } = useAppointments(
+  startOfDay(today),
+  endOfDay(today),
+  role && role !== "RECEPTIONIST" ? { status: "IN_PROGRESS", doctorId: user?.id } : undefined,
+);
+
+const showTodaySchedule = role && role !== "RECEPTIONIST";
 
   const patients = (result as PaginatedPatients)?.data ?? [];
   const total = (result as PaginatedPatients)?.total ?? 0;
@@ -72,7 +81,9 @@ const { data: todayApps, isLoading: appsLoading, error: appsError, refetch: refe
 
       <div className="flex gap-5 flex-1 min-h-0">
         <div className="flex flex-col gap-5 flex-1 min-h-0 overflow-y-auto custom-scrollbar">
-          <TodaySchedule appointments={todayApps} isLoading={appsLoading} error={appsError} onRefetch={refetchApps} />
+          {showTodaySchedule && (
+            <TodaySchedule appointments={todayApps} isLoading={appsLoading} error={appsError} onRefetch={refetchApps} />
+          )}
 
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden shrink-0">
           <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center gap-3">

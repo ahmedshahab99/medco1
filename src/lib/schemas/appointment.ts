@@ -25,11 +25,6 @@ export const appointmentCreateSchema = z.object({
         .min(3, "العنوان يجب أن يكون 3 أحرف على الأقل")
         .optional()
         .or(z.literal("")),
-      consultationFee: z
-        .string()
-        .regex(/^\d+$/, "الكشفية يجب أن تكون رقماً")
-        .optional()
-        .or(z.literal("")),
     })
     .optional(),
   waitlistId: z.string().optional(),
@@ -45,25 +40,33 @@ export const appointmentCreateSchema = z.object({
   startTime: z.string().datetime(),
   endTime: z.string().datetime(),
   notes: z.string().optional(),
-  consultationFee: z
-    .string()
-    .regex(/^\d+$/, "الكشفية يجب أن تكون رقماً")
-    .optional()
-    .or(z.literal("")),
-});
-
-export const appointmentPatchSchema = z.object({
   status: z
     .enum([
+      "BOOKING",
+      "WAITING",
       "SCHEDULED",
       "CONFIRMED",
-      "ARRIVED",
+      "IN_PROGRESS",
       "COMPLETED",
       "CANCELLED",
       "NO_SHOW",
     ])
     .optional(),
-  paymentStatus: z.enum(["PENDING", "PAID"]).optional(),
+});
+
+export const appointmentPatchSchema = z.object({
+  status: z
+    .enum([
+      "BOOKING",
+      "WAITING",
+      "SCHEDULED",
+      "CONFIRMED",
+      "IN_PROGRESS",
+      "COMPLETED",
+      "CANCELLED",
+      "NO_SHOW",
+    ])
+    .optional(),
   startTime: z.string().datetime().optional(),
   endTime: z.string().datetime().optional(),
   notes: z.string().optional(),

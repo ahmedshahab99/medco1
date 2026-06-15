@@ -14,6 +14,7 @@ const createTransactionSchema = z.object({
   description: z.string().optional(),
   date: z.string(),
   patientId: z.string().optional(),
+  appointmentId: z.string().uuid().optional(),
 });
 
 export async function GET(request: Request) {
@@ -55,7 +56,16 @@ export async function GET(request: Request) {
     prisma.transaction.findMany({
       where: where as any,
       orderBy: { date: "desc" },
-      include: { patient: { select: { id: true, firstName: true, lastName: true } } },
+      include: {
+        patient: { select: { id: true, firstName: true, lastName: true } },
+        appointment: {
+          select: {
+            id: true,
+            startTime: true,
+            service: { select: { name: true } },
+          },
+        },
+      },
       ...(skip !== undefined && { skip }),
       ...(pageSize !== undefined && { take: pageSize }),
     }),

@@ -25,12 +25,17 @@ type Transaction = {
   date: string;
   patientId: string | null;
   patient: { id: string; firstName: string; lastName: string } | null;
+  appointmentId?: string | null;
+  appointment?: {
+    id: string;
+    startTime: string;
+    service: { name: string } | null;
+  } | null;
 };
 
 type Patient = {
   id: string;
   name: string;
-  consultationFee: number | null;
 };
 
 type RecurringExpense = {

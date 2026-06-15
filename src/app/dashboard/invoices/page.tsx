@@ -17,7 +17,16 @@ export default async function InvoicesPage() {
   const transactions = await prisma.transaction.findMany({
     where: { tenantId: actor.tenantId, date: { gte: start, lte: end } },
     orderBy: { date: "desc" },
-    include: { patient: { select: { id: true, firstName: true, lastName: true } } },
+    include: {
+      patient: { select: { id: true, firstName: true, lastName: true } },
+      appointment: {
+        select: {
+          id: true,
+          startTime: true,
+          service: { select: { name: true } },
+        },
+      },
+    },
   });
 
   const totalIncome = transactions.filter((t) => t.type === "INCOME").reduce((s, t) => s + Number(t.amount), 0);
@@ -25,7 +34,7 @@ export default async function InvoicesPage() {
 
   const patients = await prisma.patient.findMany({
     where: { tenantId: actor.tenantId },
-    select: { id: true, firstName: true, lastName: true, consultationFee: true },
+    select: { id: true, firstName: true, lastName: true },
     orderBy: { createdAt: "desc" },
     take: 50,
   });
@@ -48,6 +57,13 @@ export default async function InvoicesPage() {
         date: t.date.toISOString(),
         createdAt: t.createdAt.toISOString(),
         updatedAt: t.updatedAt.toISOString(),
+        appointment: t.appointment
+          ? {
+              id: t.appointment.id,
+              startTime: t.appointment.startTime.toISOString(),
+              service: t.appointment.service,
+            }
+          : null,
       }))}
       initialSummary={{ totalIncome, totalExpense, net: totalIncome - totalExpense }}
       initialRecurringExpenses={recurringExpenses.map((r) => ({
@@ -57,7 +73,6 @@ export default async function InvoicesPage() {
       patients={patients.map((p) => ({
         id: p.id,
         name: `${p.firstName} ${p.lastName}`,
-        consultationFee: p.consultationFee ? Number(p.consultationFee) : null,
       }))}
       currentMonth={now.getMonth() + 1}
       currentYear={now.getFullYear()}

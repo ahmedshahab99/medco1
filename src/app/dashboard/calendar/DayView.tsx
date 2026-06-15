@@ -39,7 +39,6 @@ type ApptWithLayout = ReturnType<typeof parseApptDates> & {
 const statusColors: Record<string, string> = {
   SCHEDULED: "border-r-emerald-400",
   CONFIRMED: "border-r-blue-400",
-  ARRIVED: "border-r-amber-400",
   COMPLETED: "border-r-slate-400",
   CANCELLED: "border-r-rose-400",
   NO_SHOW: "border-r-red-400",
@@ -74,11 +73,6 @@ function CalendarAppointmentCard({ appt, isInteracting, interactionStartTs, inte
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
             <p className="font-semibold text-slate-800 truncate text-xs">{appt.patientName}</p>
-            {appt.consultationFee && (
-              <span className={`shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-full ${appt.paymentStatus === "PAID" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
-                {Number(appt.consultationFee).toLocaleString("ar-IQ")}
-              </span>
-            )}
           </div>
           {height >= 45 && appt.serviceName && <p className="text-[10px] text-slate-400 truncate">{appt.serviceName}</p>}
         </div>

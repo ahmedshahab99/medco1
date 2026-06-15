@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getTenantId, getUserId } from "@/lib/tenant";
 import prisma from "@/lib/prisma";
-import { prescriptionCreateSchema } from "@/lib/schemas/prescription";
+import { visitNoteCreateSchema } from "@/lib/schemas/visit-note";
 
 /**
- * GET /api/patients/[id]/prescriptions
- * Fetch all prescriptions for a patient
+ * GET /api/patients/[id]/visit-notes
+ * Fetch all visit notes for a patient
  */
 export async function GET(
   request: NextRequest,
@@ -23,7 +23,6 @@ export async function GET(
       );
     }
 
-    // Verify patient belongs to tenant
     const patient = await prisma.patient.findUnique({
       where: { id: patientId },
       select: { tenantId: true },
@@ -36,41 +35,40 @@ export async function GET(
       );
     }
 
-    // Fetch prescriptions with medications
     const rows = await prisma.$queryRaw`
-      SELECT * FROM "Prescription"
+      SELECT * FROM "VisitNote"
       WHERE "patientId" = ${patientId} AND "tenantId" = ${tenantId}
       ORDER BY "createdAt" DESC
     `;
     const medRows = await prisma.$queryRaw`
-      SELECT * FROM "PrescriptionMedication"
-      WHERE "prescriptionId" IN (SELECT id FROM "Prescription" WHERE "patientId" = ${patientId} AND "tenantId" = ${tenantId})
+      SELECT * FROM "Medication"
+      WHERE "visitNoteId" IN (SELECT id FROM "VisitNote" WHERE "patientId" = ${patientId} AND "tenantId" = ${tenantId})
       ORDER BY name ASC
     `;
-    const medsByRx = new Map<string, any[]>();
+    const medsByNote = new Map<string, any[]>();
     for (const m of medRows as any[]) {
-      const list = medsByRx.get(m.prescriptionId) ?? [];
+      const list = medsByNote.get(m.visitNoteId) ?? [];
       list.push(m);
-      medsByRx.set(m.prescriptionId, list);
+      medsByNote.set(m.visitNoteId, list);
     }
-    const prescriptions = (rows as any[]).map((r: any) => ({
+    const visitNotes = (rows as any[]).map((r: any) => ({
       ...r,
-      medications: medsByRx.get(r.id) ?? [],
+      medications: medsByNote.get(r.id) ?? [],
     }));
 
-    return NextResponse.json(prescriptions);
+    return NextResponse.json(visitNotes);
   } catch (error) {
-    console.error("Error fetching prescriptions:", error);
+    console.error("Error fetching visit notes:", error);
     return NextResponse.json(
-      { error: "Failed to fetch prescriptions" },
+      { error: "Failed to fetch visit notes" },
       { status: 500 }
     );
   }
 }
 
 /**
- * POST /api/patients/[id]/prescriptions
- * Create a new prescription for a patient
+ * POST /api/patients/[id]/visit-notes
+ * Create a new visit note for a patient
  */
 export async function POST(
   request: NextRequest,
@@ -95,8 +93,7 @@ export async function POST(
 
     const body = await request.json();
 
-    // Validate input
-    const validationResult = prescriptionCreateSchema.safeParse(body);
+    const validationResult = visitNoteCreateSchema.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
         { error: "Invalid input", details: validationResult.error.issues },
@@ -104,9 +101,9 @@ export async function POST(
       );
     }
 
-    const { diagnosis, medications, notes, validityDays } = validationResult.data;
+    const { appointmentId, content, diagnosis, medications, notes, validityDays } =
+      validationResult.data;
 
-    // Verify patient exists and belongs to tenant
     const patient = await prisma.patient.findUnique({
       where: { id: patientId },
       select: { tenantId: true, id: true },
@@ -119,38 +116,35 @@ export async function POST(
       );
     }
 
-    // Create prescription via raw SQL (bypasses model accessor issue)
-    const rxId = crypto.randomUUID();
+    const noteId = crypto.randomUUID();
     await prisma.$executeRaw`
-      INSERT INTO "Prescription" (id, "tenantId", "patientId", diagnosis, notes, "validityDays", "createdAt", "updatedAt")
-      VALUES (${rxId}, ${tenantId}, ${patientId}, ${diagnosis}, ${notes ?? null}, ${validityDays ?? 30}, NOW(), NOW())
+      INSERT INTO "VisitNote" (id, "tenantId", "patientId", "appointmentId", content, diagnosis, notes, "validityDays", "createdAt", "updatedAt")
+      VALUES (${noteId}, ${tenantId}, ${patientId}, ${appointmentId ?? null}, ${content ?? null}, ${diagnosis ?? null}, ${notes ?? null}, ${validityDays ?? 30}, NOW(), NOW())
     `;
 
-    // Insert medications
     for (const med of medications) {
       await prisma.$executeRaw`
-        INSERT INTO "PrescriptionMedication" (id, "prescriptionId", name, dose, frequency, duration, instructions)
-        VALUES (${crypto.randomUUID()}, ${rxId}, ${med.name}, ${med.dose}, ${med.frequency}, ${med.duration}, ${med.instructions ?? null})
+        INSERT INTO "Medication" (id, "visitNoteId", name, dose, frequency, duration, instructions)
+        VALUES (${crypto.randomUUID()}, ${noteId}, ${med.name}, ${med.dose}, ${med.frequency}, ${med.duration}, ${med.instructions ?? null})
       `;
     }
 
-    // Fetch the created prescription with medications
-    const prescription = await prisma.$queryRaw`
-      SELECT * FROM "Prescription" WHERE id = ${rxId}
+    const visitNote = await prisma.$queryRaw`
+      SELECT * FROM "VisitNote" WHERE id = ${noteId}
     `;
-    const prescriptionMeds = await prisma.$queryRaw`
-      SELECT * FROM "PrescriptionMedication" WHERE "prescriptionId" = ${rxId}
+    const noteMeds = await prisma.$queryRaw`
+      SELECT * FROM "Medication" WHERE "visitNoteId" = ${noteId}
       ORDER BY name ASC
     `;
 
     return NextResponse.json(
-      { ...(prescription as any[])[0], medications: prescriptionMeds },
+      { ...(visitNote as any[])[0], medications: noteMeds },
       { status: 201 }
     );
   } catch (error) {
-    console.error("Error creating prescription:", error);
+    console.error("Error creating visit note:", error);
     return NextResponse.json(
-      { error: "فشل إنشاء الوصفة الطبية" },
+      { error: "فشل إنشاء ملاحظة الزيارة" },
       { status: 500 }
     );
   }

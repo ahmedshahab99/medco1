@@ -1,16 +1,14 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Card, CardTitle } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
-import { Label } from "@/components/ui/Label";
 import { Toast, useToast } from "@/components/ui/Toast";
-import { DollarSign } from "lucide-react";
 import { profileUpdateSchema, type ProfileUpdateInput } from "@/lib/schemas/profile";
-import { updateProfile, updateFees } from "./actions";
+import { updateProfile } from "./actions";
 
 interface AccountFormProps {
   initialData: {
@@ -21,7 +19,6 @@ interface AccountFormProps {
     role: string;
     tenantName: string | null;
     tenantId: string | null;
-    defaultConsultationFee: number | null;
   };
 }
 
@@ -33,9 +30,7 @@ const roleLabels: Record<string, string> = {
 
 export default function AccountForm({ initialData }: AccountFormProps) {
   const [isPending, startTransition] = useTransition();
-  const [feePending, startFeeTransition] = useTransition();
   const { toast, showToast, hideToast } = useToast();
-  const [feeValue, setFeeValue] = useState(initialData.defaultConsultationFee?.toString() ?? "");
 
   const {
     register,
@@ -60,17 +55,6 @@ export default function AccountForm({ initialData }: AccountFormProps) {
         showToast(result.error, "error");
       } else {
         showToast("تم تحديث الملف الشخصي بنجاح", "success");
-      }
-    });
-  };
-
-  const handleFeeSave = () => {
-    startFeeTransition(async () => {
-      const result = await updateFees(initialData.tenantId!, feeValue);
-      if (result.error) {
-        showToast(result.error, "error");
-      } else {
-        showToast("تم تحديث الكشفية بنجاح", "success");
       }
     });
   };
@@ -111,30 +95,6 @@ export default function AccountForm({ initialData }: AccountFormProps) {
           </div>
         </form>
       </Card>
-
-      {initialData.tenantId && (
-        <Card className="max-w-2xl">
-          <CardTitle>
-            <div className="flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-emerald-500" />
-              إعدادات الكشفية
-            </div>
-          </CardTitle>
-          <div className="space-y-4 mt-4">
-            <p className="text-sm text-slate-500">سعر الكشفية الافتراضي للمواعيد الجديدة (لن يكون ظاهراً للمرضى)</p>
-            <div className="flex items-end gap-3">
-              <div className="flex-1">
-                <Label htmlFor="consultationFee">الكشفية (دينار)</Label>
-                <Input id="consultationFee" type="text" inputMode="numeric" dir="ltr" placeholder="مثال: 25000"
-                  value={feeValue} onChange={(e) => setFeeValue(e.target.value.replace(/\D/g, ""))} />
-              </div>
-              <Button onClick={handleFeeSave} disabled={feePending} className="mb-0.5">
-                {feePending ? "جاري الحفظ..." : "حفظ"}
-              </Button>
-            </div>
-          </div>
-        </Card>
-      )}
 
       <Toast message={toast.message} type={toast.type} isVisible={toast.visible} onClose={hideToast} />
     </div>

@@ -2,7 +2,7 @@
 "use client"
 
 import React, { useState } from "react"
-import { Plus, Edit2, Trash2, Clock, Activity, Power, Stethoscope } from "lucide-react"
+import { Plus, Edit2, Trash2, Clock, Activity, Power, Stethoscope, Banknote } from "lucide-react"
 import { Card } from "@/components/ui/Card"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
@@ -22,6 +22,7 @@ interface FormData {
   description: string
   duration: number
   color: string
+  price: number | null
   isActive: boolean
 }
 
@@ -30,6 +31,7 @@ const INITIAL_FORM: FormData = {
   description: "",
   duration: 30,
   color: COLORS[0],
+  price: null,
   isActive: true,
 }
 
@@ -56,6 +58,7 @@ export default function ServicesPage() {
         description: service.description || "",
         duration: service.duration,
         color: service.color,
+        price: service.price !== null && service.price !== undefined ? Number(service.price) : null,
         isActive: service.isActive,
       })
     } else {
@@ -90,6 +93,7 @@ export default function ServicesPage() {
             description: formData.description || null,
             duration: formData.duration,
             color: formData.color,
+            price: formData.price !== null ? Number(formData.price) : null,
             isActive: formData.isActive,
           },
         })
@@ -100,6 +104,7 @@ export default function ServicesPage() {
           description: formData.description || null,
           duration: formData.duration,
           color: formData.color,
+          price: formData.price !== null ? Number(formData.price) : null,
           isActive: formData.isActive,
         })
         showToast("تمت إضافة الخدمة بنجاح", "success")
@@ -126,6 +131,7 @@ export default function ServicesPage() {
     if (!targetId) return
 
     closeConfirm()
+    setDeletingId(targetId)
     try {
       await deleteMutation.mutateAsync(targetId)
       showToast("تم حذف الخدمة بنجاح", "success")
@@ -203,10 +209,7 @@ export default function ServicesPage() {
                       <Edit2 className="w-4 h-4" />
                     </button>
                     <button 
-                      onClick={() => {
-                        setDeletingId(service.id)
-                        handleDeleteClick(service.id, service.name)
-                      }}
+                      onClick={() => handleDeleteClick(service.id, service.name)}
                       disabled={isPending}
                       className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                     >
@@ -281,20 +284,44 @@ export default function ServicesPage() {
 
             <div className="space-y-2">
               <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                <Power className="w-4 h-4 text-slate-400" />
-                حالة الخدمة
+                <Banknote className="w-4 h-4 text-slate-400" />
+                السعر (اختياري)
               </label>
-              <div 
-                className="flex items-center gap-3 p-2.5 rounded-xl border border-slate-200 cursor-pointer select-none hover:bg-slate-50 transition-colors"
-                onClick={() => setFormData({ ...formData, isActive: !formData.isActive })}
-              >
-                <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${formData.isActive ? 'bg-emerald-500' : 'bg-slate-300'}`}>
-                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.isActive ? '-translate-x-6' : '-translate-x-1'}`} />
+              <div className="relative">
+                <Input 
+                  type="number" 
+                  min="0" 
+                  step="any"
+                  placeholder="0"
+                  className="pr-4 pl-12"
+                  value={formData.price ?? ""} 
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    price: e.target.value === "" ? null : Number(e.target.value),
+                  })}
+                />
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-slate-400">
+                  د.ع
                 </div>
-                <span className={`font-medium ${formData.isActive ? 'text-emerald-600' : 'text-slate-500'}`}>
-                  {formData.isActive ? 'نشطة (متاحة للمرضى)' : 'غير نشطة'}
-                </span>
               </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+              <Power className="w-4 h-4 text-slate-400" />
+              حالة الخدمة
+            </label>
+            <div 
+              className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 cursor-pointer select-none hover:bg-slate-50 transition-colors"
+              onClick={() => setFormData({ ...formData, isActive: !formData.isActive })}
+            >
+              <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${formData.isActive ? 'bg-emerald-500' : 'bg-slate-300'}`}>
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.isActive ? '-translate-x-6' : '-translate-x-1'}`} />
+              </div>
+              <span className={`font-medium ${formData.isActive ? 'text-emerald-600' : 'text-slate-500'}`}>
+                {formData.isActive ? 'نشطة (متاحة للمرضى)' : 'غير نشطة'}
+              </span>
             </div>
           </div>
 

@@ -101,28 +101,6 @@ export default function AppointmentPatientSection({
           />
         </TabsContent>
       </Tabs>
-
-      <FormField
-        control={control}
-        name="consultationFee"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>الكشفية (دينار)</FormLabel>
-            <FormControl>
-              <Input
-                dir="ltr"
-                type="text"
-                inputMode="numeric"
-                placeholder="مثال: 25000"
-                value={field.value ?? ""}
-                onChange={field.onChange}
-                onBlur={field.onBlur}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
     </div>
   )
 }
