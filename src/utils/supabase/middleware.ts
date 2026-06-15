@@ -51,17 +51,14 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  const isSalesRepRoute =
-    request.nextUrl.pathname.startsWith('/signup/salesrep') ||
-    request.nextUrl.pathname.startsWith('/salesrep') ||
-    request.nextUrl.pathname.startsWith('/auth/salesrep-callback')
+
 
   // Auth routes: redirect clinic users to /dashboard if already logged in.
   // Sales reps complete onboarding under /signup/salesrep and do not have a clinic tenant.
   const authRoutes = ['/signup']
   const isAuthRoute = authRoutes.some(route => request.nextUrl.pathname.startsWith(route))
 
-  if (user && isAuthRoute && !isSalesRepRoute) {
+  if (user && isAuthRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)

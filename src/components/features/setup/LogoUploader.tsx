@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { UploadCloud, X, Loader2 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
+import { sha256Hex } from "@/lib/utils/hash";
 
 interface LogoUploaderProps {
   onUpload: (url: string) => void;
@@ -34,15 +35,27 @@ export function LogoUploader({ onUpload, defaultImage, disabled }: LogoUploaderP
       setError(null);
       const supabase = createClient();
       const fileExt = file.name.split(".").pop();
-      const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
-      const filePath = `logos/${fileName}`;
+      const hash = await sha256Hex(file);
+      const filePath = `logos/${hash}.${fileExt}`;
 
-      const { data, error: uploadError } = await supabase.storage
+      const { data: existing, error: listError } = await supabase.storage
         .from("clinic-assets")
-        .upload(filePath, file);
+        .list("logos", { search: hash });
 
-      if (uploadError) {
-        throw uploadError;
+      if (listError) {
+        throw listError;
+      }
+
+      const alreadyUploaded = existing?.some((entry) => entry.name === `${hash}.${fileExt}`);
+
+      if (!alreadyUploaded) {
+        const { error: uploadError } = await supabase.storage
+          .from("clinic-assets")
+          .upload(filePath, file);
+
+        if (uploadError) {
+          throw uploadError;
+        }
       }
 
       const { data: publicURLData } = supabase.storage
