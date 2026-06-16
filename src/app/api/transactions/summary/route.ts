@@ -1,32 +1,55 @@
+import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import prisma from "@/lib/prisma";
-import { FinancePage } from "@/components/dashboard/finance/FinancePage";
 
-export default async function InvoicesPage() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const actor = await prisma.profile.findUnique({ where: { id: user.id } });
-  if (!actor?.tenantId) return null;
+  if (!actor?.tenantId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const tenantId = actor.tenantId;
-  const now = new Date();
-  const currentMonth = now.getMonth() + 1;
-  const currentYear = now.getFullYear();
+  const startDate = searchParams.get("startDate");
+  const endDate = searchParams.get("endDate");
+  const yearParam = searchParams.get("year");
+  const pageParam = searchParams.get("page");
+  const pageSizeParam = searchParams.get("pageSize");
 
-  const start = new Date(currentYear, currentMonth - 1, 1);
-  const end = new Date(currentYear, currentMonth, 0, 23, 59, 59, 999);
+  const now = new Date();
+  const year = yearParam ? parseInt(yearParam) : now.getFullYear();
+
+  let start: Date;
+  let end: Date;
+
+  if (startDate && endDate) {
+    start = new Date(startDate);
+    end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+  } else {
+    start = new Date(now.getFullYear(), now.getMonth(), 1);
+    end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+  }
+
+  const page = pageParam ? parseInt(pageParam) : 1;
+  const pageSize = pageSizeParam ? Math.min(parseInt(pageSizeParam), 100) : 50;
+  const skip = (page - 1) * pageSize;
+
   const dateFilter = { gte: start, lte: end };
 
   const [
     transactions,
+    totalTransactions,
     incomeByAppointment,
     recurringExpenses,
   ] = await Promise.all([
     prisma.transaction.findMany({
       where: { tenantId, date: dateFilter },
       orderBy: { date: "desc" },
+      skip,
+      take: pageSize,
       include: {
         patient: { select: { firstName: true, lastName: true } },
         appointment: {
@@ -37,6 +60,7 @@ export default async function InvoicesPage() {
         },
       },
     }),
+    prisma.transaction.count({ where: { tenantId, date: dateFilter } }),
     prisma.transaction.groupBy({
       by: ["appointmentId"],
       where: {
@@ -87,22 +111,14 @@ export default async function InvoicesPage() {
       })
     : [];
 
-  const doctorMap = new Map<string, {
-    doctorId: string;
-    doctorName: string;
-    totalIncome: number;
-    appointmentCount: number;
-  }>();
-
+  const doctorMap = new Map<string, { doctorId: string; doctorName: string; totalIncome: number; appointmentCount: number }>();
   for (const item of incomeByAppointment) {
     const appt = appointments.find((a) => a.id === item.appointmentId);
     if (!appt?.doctor) continue;
     const dId = appt.doctor.id;
     const existing = doctorMap.get(dId) || {
       doctorId: dId,
-      doctorName:
-        `${appt.doctor.firstName || ""} ${appt.doctor.lastName || ""}`.trim() ||
-        dId.slice(0, 8),
+      doctorName: `${appt.doctor.firstName || ""} ${appt.doctor.lastName || ""}`.trim() || dId.slice(0, 8),
       totalIncome: 0,
       appointmentCount: 0,
     };
@@ -110,21 +126,20 @@ export default async function InvoicesPage() {
     existing.appointmentCount += 1;
     doctorMap.set(dId, existing);
   }
-
   const incomeByDoctor = Array.from(doctorMap.values()).sort(
     (a, b) => b.totalIncome - a.totalIncome
   );
 
-  // Monthly trends (12 months)
+  // Monthly trends (12 months of selected year)
   const monthNames = [
     "يناير", "فبراير", "مارس", "إبريل", "مايو", "يونيو",
     "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر",
   ];
 
-  const monthlyTrend = [];
+  const monthlyTrends: Array<{ month: number; label: string; income: number; expense: number; net: number }> = [];
   for (let m = 1; m <= 12; m++) {
-    const mStart = new Date(currentYear, m - 1, 1);
-    const mEnd = new Date(currentYear, m, 0, 23, 59, 59, 999);
+    const mStart = new Date(year, m - 1, 1);
+    const mEnd = new Date(year, m, 0, 23, 59, 59, 999);
 
     const [incomeAgg, expenseAgg] = await Promise.all([
       prisma.transaction.aggregate({
@@ -139,18 +154,12 @@ export default async function InvoicesPage() {
 
     const income = Number(incomeAgg._sum.amount ?? 0);
     const expense = Number(expenseAgg._sum.amount ?? 0);
-    monthlyTrend.push({
-      month: m,
-      label: monthNames[m - 1],
-      income,
-      expense,
-      net: income - expense,
-    });
+    monthlyTrends.push({ month: m, label: monthNames[m - 1], income, expense, net: income - expense });
   }
 
-  const serializedTransactions = transactions.map((t) => ({
+  const serialized = transactions.map((t) => ({
     id: t.id,
-    type: t.type as "INCOME" | "EXPENSE",
+    type: t.type,
     category: t.category,
     amount: Number(t.amount),
     description: t.description,
@@ -165,43 +174,30 @@ export default async function InvoicesPage() {
           doctor: t.appointment.doctor
             ? {
                 id: t.appointment.doctor.id,
-                name:
-                  `${t.appointment.doctor.firstName || ""} ${t.appointment.doctor.lastName || ""}`.trim() ||
-                  t.appointment.doctor.id.slice(0, 8),
+                name: `${t.appointment.doctor.firstName || ""} ${t.appointment.doctor.lastName || ""}`.trim() || t.appointment.doctor.id.slice(0, 8),
               }
             : null,
         }
       : null,
   }));
 
-  return (
-    <div className="p-4 md:p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">الإدارة المالية</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          الفواتير، المصروفات، والإيرادات
-        </p>
-      </div>
-      <FinancePage
-        initialData={{
-          summary: { totalIncome, totalExpense, net: totalIncome - totalExpense },
-          incomeByDoctor,
-          categoryBreakdown,
-          monthlyTrend,
-          transactions: serializedTransactions,
-          recurringExpenses: recurringExpenses.map((r) => ({
-            id: r.id,
-            category: r.category,
-            amount: Number(r.amount),
-            description: r.description,
-            notes: r.notes,
-            dayOfMonth: r.dayOfMonth,
-            isActive: r.isActive,
-          })),
-        }}
-        currentMonth={currentMonth}
-        currentYear={currentYear}
-      />
-    </div>
-  );
+  return NextResponse.json({
+    summary: { totalIncome, totalExpense, net: totalIncome - totalExpense },
+    incomeByDoctor,
+    categoryBreakdown,
+    monthlyTrend: monthlyTrends,
+    transactions: serialized,
+    totalTransactions,
+    recurringExpenses: recurringExpenses.map((r) => ({
+      id: r.id,
+      category: r.category,
+      amount: Number(r.amount),
+      description: r.description,
+      notes: r.notes,
+      dayOfMonth: r.dayOfMonth,
+      isActive: r.isActive,
+    })),
+    page,
+    pageSize,
+  });
 }
