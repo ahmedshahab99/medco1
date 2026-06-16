@@ -21,7 +21,10 @@ export interface PatientFile {
   id: string;
   name: string;
   url: string;
-  size: string;
+  size: number;
+  mimeType: string;
+  hash: string;
+  storagePath: string;
   createdAt: string;
 }
 

@@ -111,10 +111,12 @@ export const PatientService = {
       files: patient.patientFiles.map(file => ({
         id: file.id,
         name: file.name,
-        type: file.type as any,
-        size: Number(file.size),
+        mimeType: file.mimeType,
+        size: file.size,
         date: file.createdAt.toISOString(),
-        url: file.url,
+        storagePath: file.storagePath,
+        hash: file.hash,
+        url: "",
       })),
       communications: [],
     } as Patient;
