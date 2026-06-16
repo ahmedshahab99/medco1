@@ -59,8 +59,10 @@ export type PatientNote = {
 export type PatientFile = {
   id: string;
   name: string;
-  type: string;
+  mimeType: string;
   size: number;
+  hash: string;
+  storagePath: string;
   date: string;
   url: string;
 };

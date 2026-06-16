@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { getVisitNoteAction } from "../actions";
+import { listPatientFilesAction } from "../../files/actions";
 import { VisitNoteDetailActions } from "./note-actions";
+import { VisitNoteFilesSection } from "@/components/dashboard/patients/visit-notes/VisitNoteFilesSection";
 
 interface VisitNoteDetailPageProps {
   params: Promise<{ id: string; visitNoteId: string }>;
@@ -36,6 +38,11 @@ export default async function VisitNoteDetailPage({ params }: VisitNoteDetailPag
   }
 
   const note = result.data;
+
+  const filesResult = await listPatientFilesAction(patientId, {
+    visitNoteId: note.id,
+  });
+  const attachedFiles = filesResult.success ? filesResult.data : [];
 
   return (
     <div className="flex flex-col gap-6">
@@ -168,6 +175,12 @@ export default async function VisitNoteDetailPage({ params }: VisitNoteDetailPag
           <p className="text-sm text-amber-950 leading-relaxed">{note.notes}</p>
         </div>
       )}
+
+      <VisitNoteFilesSection
+        patientId={patientId}
+        visitNoteId={note.id}
+        initialFiles={attachedFiles}
+      />
 
       {!note.content && !note.diagnosis && note.medications.length === 0 && (
         <div className="bg-slate-50 rounded-xl border border-slate-100 p-8 text-center">

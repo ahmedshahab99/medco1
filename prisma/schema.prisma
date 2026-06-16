@@ -70,6 +70,7 @@ model Profile {
   doctorUnavailable   DoctorUnavailable[]
   sentInvitations     Invitation[]  @relation("SentInvitations")
   acceptedInvitations Invitation[]  @relation("AcceptedInvitations")
+  patientFilesUploaded PatientFile[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -197,13 +198,38 @@ model PatientFile {
   tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   patientId     String
   patient       Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  appointmentId String?
-  name          String
-  url           String
-  type          String
-  size          String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+
+  name        String
+  storagePath String
+  hash        String
+  mimeType    String
+  size        Int
+
+  uploadedById String?
+  uploadedBy   Profile? @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  visitNoteLinks VisitNoteFile[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([patientId, tenantId])
+  @@index([hash])
+  @@index([tenantId, createdAt])
+}
+
+model VisitNoteFile {
+  id          String      @id @default(uuid())
+  tenantId    String
+  visitNoteId String
+  visitNote   VisitNote   @relation(fields: [visitNoteId], references: [id], onDelete: Cascade)
+  fileId      String
+  file        PatientFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  createdAt   DateTime    @default(now())
+
+  @@unique([visitNoteId, fileId])
+  @@index([fileId])
+  @@index([tenantId, visitNoteId])
 }
 
 model Invitation {
@@ -264,6 +290,8 @@ model VisitNote {
   validityDays  Int?         @default(30)
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
+
+  patientFiles VisitNoteFile[]
 
   @@index([patientId, tenantId])
   @@index([createdAt])

@@ -4,13 +4,14 @@ import React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Patient } from "../../../hooks/use-patients";
 import {
-  X, Phone, Mail, CalendarDays, MapPin, Stethoscope, ChevronLeft, Pencil, Trash2, FileText, Activity,
-  ClipboardList, Heart, User, CalendarClock, Hash, Clock, Tag,
+  X, Phone, Mail, CalendarDays, MapPin, Stethoscope, ChevronLeft, Pencil, Trash2,
+  Heart, User, CalendarClock, Hash, Clock, Tag,
 } from "lucide-react";
 import { VisitNoteTab } from "./tabs/VisitNoteTab";
 import { PaymentsTab } from "./tabs/PaymentsTab";
 import { CasesTab } from "./tabs/CasesTab";
 import { AppointmentsTab } from "./tabs/AppointmentsTab";
+import { FilesTab } from "./tabs/FilesTab";
 
 interface PatientDetailPanelProps {
   patient: Patient;
@@ -325,47 +326,7 @@ export function PatientDetailPanel({
         )}
 
         {activeTab === "files" && (
-          <div className="space-y-4">
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-              <div className="w-1 h-4 bg-cyan-500 rounded-full" />
-              الملفات
-            </h3>
-            {patient.patientFiles && patient.patientFiles.length > 0 ? (
-              <div className="grid grid-cols-1 gap-3">
-                {patient.patientFiles.map((file) => (
-                  <div key={file.id} className="bg-white rounded-xl p-4 border border-cyan-100 shadow-sm hover:shadow-md transition-all group">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-10 h-10 rounded-xl bg-cyan-50 flex items-center justify-center shrink-0 border border-cyan-100 group-hover:bg-cyan-100 transition-colors">
-                          <FileText className="w-5 h-5 text-cyan-600" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-bold text-slate-800 truncate">{file.name}</p>
-                          <p className="text-xs text-slate-400">{file.size || "—"}</p>
-                        </div>
-                      </div>
-                      <a
-                        href={file.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-3 py-1.5 bg-cyan-50 text-cyan-700 text-xs font-bold rounded-lg hover:bg-cyan-100 transition-colors border border-cyan-200 shrink-0"
-                      >
-                        تحميل
-                      </a>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="bg-white rounded-2xl border border-slate-100 p-8 text-center">
-                <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center mx-auto mb-3 border border-slate-100">
-                  <FileText className="w-6 h-6 text-slate-300" />
-                </div>
-                <p className="text-sm text-slate-400 font-medium">لا توجد ملفات</p>
-                <p className="text-xs text-slate-300 mt-1">سيتم عرض الملفات المرفوعة للمريض هنا</p>
-              </div>
-            )}
-          </div>
+          <FilesTab patientId={patient.id} />
         )}
 
         {activeTab === "payments" && (
