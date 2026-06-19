@@ -46,7 +46,7 @@ export const navigationGroups: NavGroup[] = [
     label: "المرضى",
     items: [
       { title: "قائمة المرضى", href: "/dashboard/patients", icon: UsersRound },
-      { title: "تفاصيل المريض", href: "/dashboard/patients/details", icon: UserSquare2, disabled: true },
+      
       { title: "التصنيفات", href: "/dashboard/patients/tags", icon: Tags },
     ],
   },
@@ -72,7 +72,7 @@ export const navigationGroups: NavGroup[] = [
   {
     label: "التحليلات",
     items: [
-      { title: "إحصاءات الإيرادات", href: "/dashboard/analytics/revenue", icon: PieChart, disabled: true },
+      { title: "إحصاءات ", href: "/dashboard/analytics", icon: PieChart},
     ],
   },
   {

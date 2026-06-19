@@ -1,0 +1,111 @@
+"use client";
+
+import React from "react";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { CalendarCheck } from "lucide-react";
+
+type DataPoint = {
+  label: string;
+  appointments: number;
+  completed: number;
+};
+
+type AppointmentsTrendChartProps = {
+  data: DataPoint[];
+};
+
+export function AppointmentsTrendChart({ data }: AppointmentsTrendChartProps) {
+  if (data.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CalendarCheck className="size-4 text-chart-1" />
+            المواعيد مقابل المكتملة
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center h-[250px] text-muted-foreground text-sm">
+          لا توجد بيانات كافية
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2">
+          <CalendarCheck className="size-4 text-chart-1" />
+          المواعيد مقابل المكتملة
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ResponsiveContainer width="100%" height={250}>
+          <AreaChart data={data} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+            <defs>
+              <linearGradient id="apptGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0} />
+              </linearGradient>
+              <linearGradient id="completedGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="var(--chart-income)" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="var(--chart-income)" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+            <XAxis
+              dataKey="label"
+              tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
+              axisLine={{ stroke: "var(--border)" }}
+              tickLine={false}
+            />
+            <YAxis
+              tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+              axisLine={false}
+              tickLine={false}
+              allowDecimals={false}
+            />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: "var(--popover)",
+                border: "1px solid var(--border)",
+                borderRadius: "var(--radius-md)",
+                fontSize: 12,
+                direction: "rtl",
+              }}
+              formatter={(value, name) => [
+                Number(value),
+                name === "appointments" ? "المواعيد" : "المكتملة",
+              ]}
+            />
+            <Area
+              type="monotone"
+              dataKey="appointments"
+              stroke="var(--chart-1)"
+              fill="url(#apptGradient)"
+              strokeWidth={2}
+              name="appointments"
+            />
+            <Area
+              type="monotone"
+              dataKey="completed"
+              stroke="var(--chart-income)"
+              fill="url(#completedGradient)"
+              strokeWidth={2}
+              name="completed"
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  );
+}
