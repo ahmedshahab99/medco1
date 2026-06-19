@@ -36,6 +36,7 @@ import {
   TableRow,
 } from "@/components/ui/Table";
 import { useAuthStore } from "@/lib/stores/auth-store";
+import { formatCurrency, formatDate } from "@/lib/date-utils";
 import {
   type PatientPaymentCategory,
   type PatientPaymentRow,
@@ -75,18 +76,6 @@ const CATEGORY_META: Record<
 };
 
 const PAYMENT_WRITE_ROLES = ["ADMIN", "DOCTOR", "RECEPTIONIST"] as const;
-
-function formatCurrency(amount: number) {
-  return new Intl.NumberFormat("ar-IQ", { maximumFractionDigits: 0 }).format(amount) + " د.ع";
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("ar-IQ", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
 
 interface PaymentsTabProps {
   patientId: string;
@@ -331,7 +320,7 @@ function PaymentsTable({
                   
                   <span className="inline-flex items-center gap-1.5 underline">
                     <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                    {formatDate(p.date)}
+                    {formatDate(p.date, { month: "short" })}
                   </span>
                 </TableCell>
                 <TableCell>
@@ -350,7 +339,7 @@ function PaymentsTable({
                     <span className="line-clamp-1">
                       {p.appointment.service?.name ?? "موعد"}{" "}
                       <span className="text-slate-400">
-                        · {formatDate(p.appointment.startTime)}
+                        · {formatDate(p.appointment.startTime, { month: "short" })}
                       </span>
                     </span>
                   ) : p.service ? (

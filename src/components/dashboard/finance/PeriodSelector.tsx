@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/Select";
 import { Input } from "@/components/ui/Input";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { formatDate } from "@/lib/date-utils";
 
 export type PeriodMode = "month" | "week" | "custom";
 
@@ -77,9 +78,9 @@ export function PeriodSelector({
             <ChevronRight className="size-4" />
           </Button>
           <span className="min-w-[200px] text-center font-bold text-sm whitespace-nowrap">
-            {new Date(weekStart).toLocaleDateString("ar-IQ", { day: "numeric", month: "short" })}
+            {new Date(weekStart).toLocaleDateString("ar-SA", { day: "numeric", month: "short" })}
             {" - "}
-            {new Date(weekEnd).toLocaleDateString("ar-IQ", { day: "numeric", month: "short", year: "numeric" })}
+            {formatDate(weekEnd, { month: "short" })}
           </span>
           <Button variant="outline" size="icon-sm" onClick={() => onMonthChange(1)}>
             <ChevronLeft className="size-4" />

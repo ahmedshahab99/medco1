@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { getPatientAppointmentAction } from "../actions";
 import { AppointmentDetailActions } from "./appointment-actions";
+import { formatCurrency, formatDate, formatDateTime } from "@/lib/date-utils";
 
 interface AppointmentDetailPageProps {
   params: Promise<{ id: string; appointmentId: string }>;
@@ -28,28 +29,6 @@ const STATUS_VARIANT: Record<string, string> = {
   CANCELLED: "red",
   NO_SHOW: "slate",
 };
-
-function formatCurrency(amount: number) {
-  return new Intl.NumberFormat("ar-IQ", { maximumFractionDigits: 0 }).format(amount) + " د.ع";
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("ar-IQ", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
-
-function formatDateTime(iso: string) {
-  return new Date(iso).toLocaleDateString("ar-IQ", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 export default async function AppointmentDetailPage({ params }: AppointmentDetailPageProps) {
   const { id: patientId, appointmentId } = await params;

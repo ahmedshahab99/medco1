@@ -41,6 +41,7 @@ import {
   ALLOWED_MIME_TYPES,
   MAX_FILE_SIZE_BYTES,
 } from "@/app/dashboard/patients/[id]/files/constants";
+import { formatDate } from "@/lib/date-utils";
 
 const DEFAULT_MEDICATION = {
   tempId: "1",
@@ -118,14 +119,6 @@ interface VisitNoteFormDialogProps {
   editingData: EditingVisitNoteData | null;
   prefillAppointmentId?: string | null;
   onSaved: () => void;
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("ar-IQ", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
 }
 
 function formatSize(bytes: number): string {
@@ -495,7 +488,7 @@ export function VisitNoteFormDialog({
                 <SelectItem value="none">بدون ربط بموعد</SelectItem>
                 {appointments.map((a) => (
                   <SelectItem key={a.id} value={a.id}>
-                    {a.serviceName ?? "موعد"} · {formatDate(a.startTime)}
+                    {a.serviceName ?? "موعد"} · {formatDate(a.startTime, { month: "short" })}
                   </SelectItem>
                 ))}
               </SelectContent>

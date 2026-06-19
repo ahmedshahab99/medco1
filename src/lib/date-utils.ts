@@ -12,6 +12,29 @@ export function uid() {
   return Math.random().toString(36).slice(2, 9);
 }
 
+export function formatDate(iso: string, options?: { month?: "short" | "long" }) {
+  const month = options?.month ?? "long";
+  return new Date(iso).toLocaleDateString("ar-SA", {
+    day: "numeric",
+    month,
+    year: "numeric",
+  });
+}
+
+export function formatDateTime(iso: string) {
+  return new Date(iso).toLocaleDateString("ar-SA", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+export function formatCurrency(amount: number) {
+  return new Intl.NumberFormat("ar-IQ", { maximumFractionDigits: 0 }).format(amount) + " د.ع";
+}
+
 export function formatArabicDate(dateStr: string) {
   if (!dateStr) return "";
   const d = new Date(dateStr);
