@@ -85,7 +85,7 @@ const showTodaySchedule = role && role !== "RECEPTIONIST";
             <TodaySchedule appointments={todayApps} isLoading={appsLoading} error={appsError} onRefetch={refetchApps} />
           )}
 
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden shrink-0">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden shrink-0 p-6">
           <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center gap-3">
             <div className="relative flex-1 w-full">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />

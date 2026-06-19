@@ -28,6 +28,14 @@ export type TransactionFormData = {
   date: string;
 };
 
+export type RecurringExpenseRef = {
+  id: string;
+  category: string;
+  amount: number;
+  description: string | null;
+  isActive: boolean;
+};
+
 type AddTransactionDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -36,6 +44,7 @@ type AddTransactionDialogProps = {
   onSubmit: () => void;
   submitting: boolean;
   editMode: boolean;
+  recurringExpenses?: RecurringExpenseRef[];
 };
 
 const categoryLabels: Record<string, string> = {
@@ -72,9 +81,12 @@ export function AddTransactionDialog({
   onSubmit,
   submitting,
   editMode,
+  recurringExpenses,
 }: AddTransactionDialogProps) {
   const categories =
     form.type === "INCOME" ? incomeCategories : expenseCategories;
+
+  const activeExpenses = (recurringExpenses || []).filter((r) => r.isActive);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -88,7 +100,9 @@ export function AddTransactionDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4 font-sans">
+          
+
           <div className="space-y-2">
             <Label>النوع</Label>
             <div className="flex gap-2">
@@ -124,6 +138,36 @@ export function AddTransactionDialog({
               </Button>
             </div>
           </div>
+          {!editMode && activeExpenses.length > 0 && form.type === "EXPENSE" &&  (
+            <div className="space-y-2">
+              <Label>اختيار من المصروفات الثابتة</Label>
+              <Select
+                value=""
+                onValueChange={(v) => {
+                  const selected = activeExpenses.find((r) => r.id === v);
+                  if (!selected) return;
+                  onFormChange({
+                    type: "EXPENSE",
+                    category: selected.category,
+                    amount: String(selected.amount),
+                    description: selected.description || "",
+                    date: form.date,
+                  });
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="اختر مصروفاً ثابتاً كقالب..." ></SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {activeExpenses.map((r) => (
+                    <SelectItem key={r.id} value={r.id}>
+                      {categoryLabels[r.category] || r.category} — {r.amount.toLocaleString("ar-IQ")} د.ع
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label>التصنيف</Label>

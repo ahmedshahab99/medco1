@@ -62,7 +62,7 @@ export function AddRecurringDialog({
 }: AddRecurringDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md font-sans">
         <DialogHeader>
           <DialogTitle>
             {editMode ? "تعديل مصروف ثابت" : "إضافة مصروف ثابت"}

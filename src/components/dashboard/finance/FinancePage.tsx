@@ -20,6 +20,7 @@ import { AddTransactionDialog, type TransactionFormData } from "./AddTransaction
 import { AddRecurringDialog } from "./AddRecurringDialog";
 import { RecurringExpensesSection } from "./RecurringExpenseRow";
 import { MonthComparison } from "./MonthComparison";
+import { ConfirmDialog, useConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 type Transaction = {
   id: string;
@@ -175,6 +176,9 @@ export function FinancePage({
   const [editRecId, setEditRecId] = useState<string | null>(null);
   const [submittingRec, setSubmittingRec] = useState(false);
 
+  // Confirm dialog
+  const { confirmState, confirm, closeConfirm } = useConfirmDialog();
+
   const loadData = useCallback(
     async (startDate: string, endDate: string) => {
       setLoading(true);
@@ -319,15 +323,21 @@ export function FinancePage({
     setTxDialogOpen(true);
   };
 
-  const handleDeleteTx = async (id: string) => {
-    if (!confirm("هل أنت متأكد من حذف هذه المعاملة؟")) return;
-    const res = await fetch(`/api/transactions/${id}`, { method: "DELETE" });
-    if (!res.ok) {
-      toast.error("فشل في الحذف");
-      return;
-    }
-    toast.success("تم الحذف بنجاح");
-    refetchCurrentPeriod();
+  const handleDeleteTx = (id: string) => {
+    confirm({
+      title: "حذف المعاملة",
+      message: "هل أنت متأكد من حذف هذه المعاملة؟ لا يمكن التراجع عن هذا الإجراء.",
+      onConfirm: async () => {
+        closeConfirm();
+        const res = await fetch(`/api/transactions/${id}`, { method: "DELETE" });
+        if (!res.ok) {
+          toast.error("فشل في الحذف");
+          return;
+        }
+        toast.success("تم الحذف بنجاح");
+        refetchCurrentPeriod();
+      },
+    });
   };
 
   // ─── Recurring CRUD ───
@@ -376,17 +386,23 @@ export function FinancePage({
     setRecDialogOpen(true);
   };
 
-  const handleDeleteRec = async (id: string) => {
-    if (!confirm("هل أنت متأكد من حذف هذا المصروف الثابت؟")) return;
-    const res = await fetch(`/api/transactions/recurring/${id}`, {
-      method: "DELETE",
+  const handleDeleteRec = (id: string) => {
+    confirm({
+      title: "حذف المصروف الثابت",
+      message: "هل أنت متأكد من حذف هذا المصروف الثابت؟ لا يمكن التراجع عن هذا الإجراء.",
+      onConfirm: async () => {
+        closeConfirm();
+        const res = await fetch(`/api/transactions/recurring/${id}`, {
+          method: "DELETE",
+        });
+        if (!res.ok) {
+          toast.error("فشل في الحذف");
+          return;
+        }
+        toast.success("تم الحذف بنجاح");
+        fetchRecurring();
+      },
     });
-    if (!res.ok) {
-      toast.error("فشل في الحذف");
-      return;
-    }
-    toast.success("تم الحذف بنجاح");
-    fetchRecurring();
   };
 
   // ─── Daily aggregation for area chart ───
@@ -692,6 +708,7 @@ export function FinancePage({
         onSubmit={handleTxSubmit}
         submitting={submittingTx}
         editMode={!!editTxId}
+        recurringExpenses={recurringExpenses}
       />
 
       {/* Add Recurring Dialog */}
@@ -709,6 +726,18 @@ export function FinancePage({
         onSubmit={handleRecSubmit}
         submitting={submittingRec}
         editMode={!!editRecId}
+      />
+
+      {/* Confirm Delete Dialog */}
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        title={confirmState.title}
+        message={confirmState.message}
+        onConfirm={() => confirmState.onConfirm?.()}
+        onCancel={closeConfirm}
+        type="danger"
+        confirmLabel="حذف"
+        cancelLabel="إلغاء"
       />
     </div>
   );

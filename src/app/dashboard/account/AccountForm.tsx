@@ -61,7 +61,7 @@ export default function AccountForm({ initialData }: AccountFormProps) {
 
   return (
     <div className="space-y-6">
-      <Card className="max-w-2xl">
+      <Card className="max-w-2xl p-6">
         <CardTitle>المعلومات الشخصية</CardTitle>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 mt-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
