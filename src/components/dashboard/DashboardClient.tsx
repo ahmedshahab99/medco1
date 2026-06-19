@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { startOfDay, endOfDay } from "date-fns";
 import { useAppointments } from "@/hooks/use-appointments";
 import type { UserRole } from "@/lib/types/auth";
+import { formatNumber } from "@/lib/format-utils";
 import {
   Users, CalendarCheck, TrendingUp, Clock, ArrowLeft,
   Activity, Stethoscope, CalendarDays, ChevronLeft, Loader2, HeartPulse, UserPlus,
@@ -126,7 +127,7 @@ export default function DashboardClient({
               const colors = STAT_COLORS[i % STAT_COLORS.length];
               const Icon = STAT_ICONS[i % STAT_ICONS.length];
               const targetNum = parseInt(stat.value.replace(/[^0-9]/g, "")) || 0;
-              const displayVal = stat.value.includes("ر.س") ? stat.value : (countUp[i] || targetNum).toLocaleString("ar-SA");
+              const displayVal = stat.value.includes("ر.س") ? stat.value : formatNumber(countUp[i] || targetNum);
               return (
                 <div key={i}
                   className={`bg-white rounded-lg md:rounded-2xl border border-slate-100 p-2.5 md:p-5 transition-all duration-500 ${colors.shadow} ${visible ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0"}`}

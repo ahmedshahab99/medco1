@@ -11,6 +11,7 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { PieChartIcon } from "lucide-react";
+import { formatCurrency } from "@/lib/format-utils";
 
 type CategoryData = {
   category: string;
@@ -48,10 +49,6 @@ const pieColors = [
   "var(--chart-income)",
   "var(--chart-expense)",
 ];
-
-function formatCurrency(amount: number) {
-  return amount.toLocaleString("ar-IQ");
-}
 
 export function CategoryPieChart({ data, type }: CategoryPieChartProps) {
   const filtered = data

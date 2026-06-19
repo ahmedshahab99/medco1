@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/Select";
+import { formatCurrency } from "@/lib/format-utils";
 
 export type TransactionFormData = {
   type: "INCOME" | "EXPENSE";
@@ -161,7 +162,7 @@ export function AddTransactionDialog({
                 <SelectContent>
                   {activeExpenses.map((r) => (
                     <SelectItem key={r.id} value={r.id}>
-                      {categoryLabels[r.category] || r.category} — {r.amount.toLocaleString("ar-IQ")} د.ع
+                      {categoryLabels[r.category] || r.category} — {formatCurrency(r.amount)}
                     </SelectItem>
                   ))}
                 </SelectContent>

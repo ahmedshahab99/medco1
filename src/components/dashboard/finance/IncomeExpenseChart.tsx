@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { TrendingUp } from "lucide-react";
+import { formatCurrency } from "@/lib/format-utils";
 
 type DataPoint = {
   label: string;
@@ -22,10 +23,6 @@ type DataPoint = {
 type IncomeExpenseChartProps = {
   data: DataPoint[];
 };
-
-function formatCurrency(amount: number) {
-  return amount.toLocaleString("ar-IQ");
-}
 
 export function IncomeExpenseChart({ data }: IncomeExpenseChartProps) {
   if (data.length === 0) {

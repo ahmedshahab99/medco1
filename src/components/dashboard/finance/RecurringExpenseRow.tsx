@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Pencil, Trash2, Repeat } from "lucide-react";
+import { formatCurrency } from "@/lib/format-utils";
 
 type RecurringExpense = {
   id: string;
@@ -34,10 +35,6 @@ const categoryLabels: Record<string, string> = {
   MAINTENANCE: "الصيانة",
   OTHER: "أخرى",
 };
-
-function formatCurrency(amount: number) {
-  return amount.toLocaleString("ar-IQ") + " د.ع";
-}
 
 export function RecurringExpenseRow({
   expense,
