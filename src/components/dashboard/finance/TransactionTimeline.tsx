@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/Table";
 import { Badge } from "@/components/ui/Badge";
+import { formatCurrency, formatDate } from "@/lib/date-utils";
 
 type Transaction = {
   id: string;
@@ -51,18 +52,6 @@ const categoryLabels: Record<string, string> = {
   MAINTENANCE: "الصيانة",
   OTHER: "أخرى",
 };
-
-function formatCurrency(amount: number) {
-  return amount.toLocaleString("ar-IQ") + " د.ع";
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("ar-IQ", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
 
 export function TransactionTimeline({
   transactions,

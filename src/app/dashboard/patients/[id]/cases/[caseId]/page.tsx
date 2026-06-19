@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { getPatientCaseAction } from "../actions";
 import { CaseDetailActions } from "./case-actions";
+import { formatDate, formatDateTime } from "@/lib/date-utils";
 
 interface CaseDetailPageProps {
   params: Promise<{ id: string; caseId: string }>;
@@ -16,24 +17,6 @@ const STATUS_VARIANT: Record<string, string> = {
   ACTIVE: "emerald",
   INACTIVE: "slate",
 };
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("ar-IQ", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
-
-function formatDateTime(iso: string) {
-  return new Date(iso).toLocaleDateString("ar-IQ", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
   const { id: patientId, caseId } = await params;

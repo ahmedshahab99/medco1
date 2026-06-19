@@ -53,6 +53,7 @@ import {
   TableRow,
 } from "@/components/ui/Table";
 import { useAuthStore } from "@/lib/stores/auth-store";
+import { formatDate } from "@/lib/date-utils";
 import {
   APPOINTMENT_STATUSES,
   type AppointmentStatus,
@@ -86,14 +87,6 @@ const STATUS_META: Record<string, { label: string; badge: string }> = {
   CANCELLED: { label: "ملغي", badge: "bg-red-50 text-red-700 border-red-200" },
   NO_SHOW: { label: "لم يحضر", badge: "bg-slate-50 text-slate-500 border-slate-200" },
 };
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("ar-IQ", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString("ar-IQ", {
@@ -315,7 +308,7 @@ function AppointmentsTable({
                 <TableCell className="text-slate-600 text-sm whitespace-nowrap">
                   <span className="inline-flex items-center gap-1.5">
                     <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                    {formatDate(a.startTime)}
+                    {formatDate(a.startTime, { month: "short" })}
                   </span>
                   <br />
                   <span className="inline-flex items-center gap-1.5 text-xs text-slate-400">

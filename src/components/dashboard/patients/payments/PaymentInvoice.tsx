@@ -2,6 +2,7 @@
 
 import { Printer } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { formatCurrency, formatDate, formatDateTime } from "@/lib/date-utils";
 
 interface PaymentInvoiceProps {
   patientName: string;
@@ -34,34 +35,12 @@ function escapeHtml(text: string) {
     .replace(/"/g, "&quot;");
 }
 
-function formatCurrency(amount: number) {
-  return new Intl.NumberFormat("ar-IQ", { maximumFractionDigits: 0 }).format(amount) + " د.ع";
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("ar-IQ", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
-
-function formatDateTime(iso: string) {
-  return new Date(iso).toLocaleString("ar-IQ", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
 export function PaymentInvoice({ patientName, tenantName, payment, iconOnly }: PaymentInvoiceProps) {
   const invoiceRef = payment.id.slice(0, 8).toUpperCase();
   const year = new Date(payment.date).getFullYear();
   const invoiceNumber = `INV-${year}-${invoiceRef}`;
   const esc = escapeHtml;
-  const today = new Date().toLocaleDateString("ar-IQ", {
+  const today = new Date().toLocaleDateString("ar-SA", {
     day: "numeric",
     month: "long",
     year: "numeric",

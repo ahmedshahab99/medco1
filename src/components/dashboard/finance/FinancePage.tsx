@@ -18,6 +18,7 @@ import { CategoryPieChart } from "./CategoryPieChart";
 import { TransactionTimeline } from "./TransactionTimeline";
 import { AddTransactionDialog, type TransactionFormData } from "./AddTransactionDialog";
 import { AddRecurringDialog } from "./AddRecurringDialog";
+import { formatCurrency } from "@/lib/date-utils";
 import { RecurringExpensesSection } from "./RecurringExpenseRow";
 import { MonthComparison } from "./MonthComparison";
 import { ConfirmDialog, useConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -115,10 +116,6 @@ function getMonthRange(year: number, month: number): { start: Date; end: Date } 
     start: new Date(year, month - 1, 1),
     end: new Date(year, month, 0, 23, 59, 59, 999),
   };
-}
-
-function formatCurrency(amount: number) {
-  return amount.toLocaleString("ar-IQ") + " د.ع";
 }
 
 type FinancePageProps = {
@@ -414,7 +411,7 @@ export function FinancePage({
       for (let i = 0; i < 7; i++) {
         const d = new Date(range.start);
         d.setDate(d.getDate() + i);
-        const label = d.toLocaleDateString("ar-IQ", { weekday: "short", day: "numeric" });
+        const label = d.toLocaleDateString("ar-SA", { weekday: "short", day: "numeric" });
         days.push({ label, income: 0, expense: 0 });
       }
 
@@ -434,7 +431,7 @@ export function FinancePage({
     if (periodMode === "custom") {
       const map = new Map<string, { income: number; expense: number }>();
       for (const t of transactions) {
-        const key = new Date(t.date).toLocaleDateString("ar-IQ", {
+        const key = new Date(t.date).toLocaleDateString("ar-SA", {
           day: "numeric",
           month: "short",
         });
@@ -474,7 +471,7 @@ export function FinancePage({
 
     const headers = ["التاريخ", "النوع", "التصنيف", "الوصف", "المبلغ"];
     const rows = transactions.map((t) => [
-      new Date(t.date).toLocaleDateString("ar-IQ"),
+      new Date(t.date).toLocaleDateString("ar-SA"),
       t.type === "INCOME" ? "دخل" : "مصروف",
       categoryLabels[t.category] || t.category,
       t.description || "",

@@ -2,21 +2,10 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { getPatientPaymentAction } from "../actions";
 import { PaymentDetailActions } from "./payment-actions";
+import { formatCurrency, formatDate } from "@/lib/date-utils";
 
 interface PaymentDetailPageProps {
   params: Promise<{ id: string; paymentId: string }>;
-}
-
-function formatCurrency(amount: number) {
-  return new Intl.NumberFormat("ar-IQ", { maximumFractionDigits: 0 }).format(amount) + " د.ع";
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("ar-IQ", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
 }
 
 const CATEGORY_LABELS: Record<string, string> = {

@@ -38,6 +38,7 @@ import {
   getClinicServicesAction,
   getPatientAppointmentsAction,
 } from "@/app/dashboard/patients/[id]/payments/actions";
+import { formatDate } from "@/lib/date-utils";
 
 const paymentFormSchema = z.object({
   amount: z.number().positive("المبلغ يجب أن يكون أكبر من صفر"),
@@ -304,7 +305,7 @@ export function PaymentFormDialog({
                 <SelectItem value="none">بدون ربط بموعد</SelectItem>
                 {appointments.map((a) => (
                   <SelectItem key={a.id} value={a.id}>
-                    {a.serviceName ?? "موعد"} · {formatDate(a.startTime)}
+                    {a.serviceName ?? "موعد"} · {formatDate(a.startTime, { month: "short" })}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -354,10 +355,4 @@ export function PaymentFormDialog({
   );
 }
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("ar-IQ", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
+

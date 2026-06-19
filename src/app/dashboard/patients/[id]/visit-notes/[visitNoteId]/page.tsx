@@ -4,17 +4,10 @@ import { getVisitNoteAction } from "../actions";
 import { listPatientFilesAction } from "../../files/actions";
 import { VisitNoteDetailActions } from "./note-actions";
 import { VisitNoteFilesSection } from "@/components/dashboard/patients/visit-notes/VisitNoteFilesSection";
+import { formatDate } from "@/lib/date-utils";
 
 interface VisitNoteDetailPageProps {
   params: Promise<{ id: string; visitNoteId: string }>;
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("ar-IQ", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
 }
 
 export default async function VisitNoteDetailPage({ params }: VisitNoteDetailPageProps) {
