@@ -14,6 +14,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Users } from "lucide-react";
+import { formatCurrency } from "@/lib/format-utils";
 
 type DoctorIncome = {
   doctorId: string;
@@ -25,10 +26,6 @@ type DoctorIncome = {
 type IncomeByDoctorChartProps = {
   data: DoctorIncome[];
 };
-
-function formatCurrency(amount: number) {
-  return amount.toLocaleString("ar-IQ");
-}
 
 function truncateName(name: string, maxLen: number = 18) {
   return name.length > maxLen ? name.slice(0, maxLen - 1) + "…" : name;

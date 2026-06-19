@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
 import { getTenantId } from "@/lib/tenant";
+import { formatNumber } from "@/lib/format-utils";
 
 interface AppointmentFilter {
   doctorId?: string;
@@ -30,7 +31,7 @@ export const DashboardService = {
     ]);
 
     return [
-      { title: "إجمالي المرضى", value: totalPatients.toLocaleString(), trend: 0 },
+      { title: "إجمالي المرضى", value: formatNumber(totalPatients), trend: 0 },
       { title: "مواعيد اليوم", value: todayAppointments.toString(), trend: 0 },
       { title: "المرضى الجدد", value: newPatients.toString(), trend: 0 },
     ];

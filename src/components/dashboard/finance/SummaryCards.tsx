@@ -3,10 +3,7 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { TrendingUp, TrendingDown, Wallet } from "lucide-react";
-
-function formatCurrency(amount: number) {
-  return amount.toLocaleString("ar-IQ") + " د.ع";
-}
+import { formatCurrency } from "@/lib/format-utils";
 
 type SummaryCardsProps = {
   totalIncome: number;

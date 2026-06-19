@@ -38,7 +38,7 @@ import {
   getClinicServicesAction,
   getPatientAppointmentsAction,
 } from "@/app/dashboard/patients/[id]/payments/actions";
-import { formatDate } from "@/lib/date-utils";
+import { formatDate, formatCurrency } from "@/lib/date-utils";
 
 const paymentFormSchema = z.object({
   amount: z.number().positive("المبلغ يجب أن يكون أكبر من صفر"),
@@ -60,10 +60,6 @@ const CATEGORY_META: Record<
   SERVICES: { label: "خدمات" },
   OTHER: { label: "أخرى" },
 };
-
-function formatCurrency(amount: number) {
-  return new Intl.NumberFormat("ar-IQ", { maximumFractionDigits: 0 }).format(amount) + " د.ع";
-}
 
 function todayIso() {
   return new Date().toISOString().split("T")[0];

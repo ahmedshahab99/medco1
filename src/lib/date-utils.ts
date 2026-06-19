@@ -31,9 +31,7 @@ export function formatDateTime(iso: string) {
   });
 }
 
-export function formatCurrency(amount: number) {
-  return new Intl.NumberFormat("ar-IQ", { maximumFractionDigits: 0 }).format(amount) + " د.ع";
-}
+export { formatCurrency, formatNumber } from "./format-utils";
 
 export function formatArabicDate(dateStr: string) {
   if (!dateStr) return "";
