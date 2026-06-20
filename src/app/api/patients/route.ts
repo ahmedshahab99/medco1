@@ -18,7 +18,7 @@ function mapPatient(p: {
   cases: { id: string; title: string; createdAt: Date }[];
   createdAt: Date;
   updatedAt: Date;
-}, nextAppt?: { startTime: Date } | null) {
+}) {
   return {
     id: p.id,
     name: formatName(p.firstName, p.lastName),
@@ -33,23 +33,9 @@ function mapPatient(p: {
       title: c.title,
       createdAt: c.createdAt.toISOString(),
     })),
-    nextAppointment: nextAppt?.startTime?.toISOString() ?? null,
     createdAt: p.createdAt.toISOString(),
     updatedAt: p.updatedAt.toISOString(),
   };
-}
-
-async function getNextAppointment(patientId: string, tenantId: string) {
-  return prisma.appointment.findFirst({
-    where: {
-      patientId,
-      tenantId,
-      startTime: { gte: new Date() },
-      status: { in: ["SCHEDULED", "CONFIRMED"] },
-    },
-    orderBy: { startTime: "asc" },
-    select: { startTime: true },
-  });
 }
 
 export async function GET(request: Request) {
@@ -123,10 +109,7 @@ export async function GET(request: Request) {
       prisma.patient.count({ where }),
     ]);
 
-    const mapped = await Promise.all(patients.map(async (p) => {
-      const nextAppt = await getNextAppointment(p.id, actor!.tenantId!);
-      return mapPatient(p, nextAppt);
-    }));
+    const mapped = patients.map((p) => mapPatient(p));
 
     return NextResponse.json({
       data: mapped,
@@ -146,10 +129,7 @@ export async function GET(request: Request) {
     take: search ? 20 : 100,
   });
 
-  const mapped = await Promise.all(patients.map(async (p) => {
-    const nextAppt = await getNextAppointment(p.id, actor!.tenantId!);
-    return mapPatient(p, nextAppt);
-  }));
+  const mapped = patients.map((p) => mapPatient(p));
 
   return NextResponse.json(mapped);
 }
@@ -188,6 +168,7 @@ export async function POST(request: Request) {
   }
 
   const { firstName, lastName, phone, dateOfBirth, gender, address } = parsed.data;
+try {
 
   const created = await prisma.patient.create({
     data: {
@@ -205,4 +186,14 @@ export async function POST(request: Request) {
   });
 
   return NextResponse.json(mapPatient(created), { status: 201 });
+}catch (error) {
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    if (error.code === "P2002") {
+      return NextResponse.json(
+        { error: "رقم الهاتف مستخدم بالفعل لمريض آخر" },
+        { status: 400 }
+      );
+    }
+  }
+}
 }

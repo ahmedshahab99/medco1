@@ -152,3 +152,21 @@ body {
 .leaflet-marker-pane,
 .leaflet-tooltip-pane,
 .leaflet-popup-pane,.leaflet-control-zoom-in,.leaflet-control-zoom-out { z-index: 0 !important; }
+
+.pulse-line {
+  fill: none;
+  stroke: var(--chart-1); /* swap for your color */
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: drawPulse 2.4s ease-in-out infinite;
+  
+}
+
+@keyframes drawPulse {
+  0%   { stroke-dashoffset: -100; }  /* hidden */
+  50%  { stroke-dashoffset: 0; }    /* fully drawn */
+  100% { stroke-dashoffset: 100; } /* wipes away, loops cleanly */
+}

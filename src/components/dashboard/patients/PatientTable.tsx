@@ -2,42 +2,25 @@
 
 import React from "react";
 import { Patient } from "../../../hooks/use-patients";
+import { ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import {
-  Phone,
-  Mail,
-  Calendar,
-  ArrowLeft,
-  MapPin,
-  Clock,
-} from "lucide-react";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/Table";
 
 interface PatientTableProps {
   patients: Patient[];
   onSelectPatient: (patient: Patient) => void;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+  onSortChange?: (field: string) => void;
 }
 
-const PATIENT_EMOJIS = ["🩺", "💊", "❤️", "🏥", "🫀", "🧬", "🩻", "🦷", "👁️", "🧠", "🫁", "💉"];
-
-function getPatientEmoji(id: string) {
-  const idx = id.charCodeAt(id.length - 1) % PATIENT_EMOJIS.length;
-  return PATIENT_EMOJIS[idx];
-}
-
-const AVATAR_COLORS = [
-  "from-blue-400 to-blue-600",
-  "from-violet-400 to-violet-600",
-  "from-emerald-400 to-emerald-600",
-  "from-rose-400 to-rose-600",
-  "from-amber-400 to-amber-600",
-  "from-cyan-400 to-cyan-600",
-  "from-indigo-400 to-indigo-600",
-  "from-teal-400 to-teal-600",
-];
-
-function getAvatarGradient(id: string) {
-  const idx = id.charCodeAt(id.length - 1) % AVATAR_COLORS.length;
-  return AVATAR_COLORS[idx];
-}
+type SortField = "name" | "createdAt";
 
 function calcAge(dob?: string | null) {
   if (!dob) return null;
@@ -54,7 +37,20 @@ function formatDate(iso?: string | null) {
   });
 }
 
-export function PatientTable({ patients, onSelectPatient }: PatientTableProps) {
+function getInitials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "؟";
+  if (parts.length === 1) return parts[0].slice(0, 1);
+  return (parts[0][0] ?? "") + (parts[1][0] ?? "");
+}
+
+export function PatientTable({
+  patients,
+  onSelectPatient,
+  sortBy,
+  sortOrder,
+  onSortChange,
+}: PatientTableProps) {
   if (patients.length === 0) {
     return (
       <div className="text-center py-20 text-slate-400">
@@ -64,146 +60,140 @@ export function PatientTable({ patients, onSelectPatient }: PatientTableProps) {
     );
   }
 
+  const renderSortIcon = (field: SortField) => {
+    const isActive = sortBy === field;
+    if (!isActive) {
+      return <ArrowUpDown className="w-3.5 h-3.5 text-slate-300" />;
+    }
+    return sortOrder === "asc" ? (
+      <ArrowUp className="w-3.5 h-3.5 text-blue-600" />
+    ) : (
+      <ArrowDown className="w-3.5 h-3.5 text-blue-600" />
+    );
+  };
+
+  const renderSortableHead = (field: SortField, label: string) => {
+    const isActive = sortBy === field;
+    const Icon = renderSortIcon(field);
+    if (!onSortChange) {
+      return (
+        <TableHead className="text-start font-semibold text-slate-600">
+          <span className="inline-flex items-center gap-1.5">
+            {label}
+            {Icon}
+          </span>
+        </TableHead>
+      );
+    }
+    return (
+      <TableHead className="text-start">
+        <button
+          type="button"
+          onClick={() => onSortChange(field)}
+          className="inline-flex items-center gap-1.5 text-start font-semibold text-slate-600 hover:text-blue-600 transition-colors"
+        >
+          {label}
+          {Icon}
+          {isActive && (
+            <span className="sr-only">
+              {sortOrder === "asc" ? "مرتب تصاعدياً" : "مرتب تنازلياً"}
+            </span>
+          )}
+        </button>
+      </TableHead>
+    );
+  };
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {patients.map((patient) => {
-        const age = calcAge(patient.dateOfBirth);
-
-        return (
-          <div
-            key={patient.id}
-            onClick={() => onSelectPatient(patient)}
-            className="bg-white rounded-2xl border border-slate-200 hover:border-blue-300 hover:shadow-lg transition-all duration-200 cursor-pointer p-4 group"
-          >
-            {/* Header with Avatar and Status */}
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-start gap-3 flex-1 min-w-0">
-                <div
-                  className={`w-12 h-12 rounded-xl bg-gradient-to-br ${getAvatarGradient(
-                    patient.id
-                  )} flex items-center justify-center font-bold text-white text-sm shrink-0 shadow-md group-hover:shadow-lg transition-shadow`}
-                >
-                  <span className="text-lg">{getPatientEmoji(patient.id)}</span>
+    <Table>
+      <TableHeader>
+        <TableRow className="bg-slate-50/60 hover:bg-slate-50/60">
+          {renderSortableHead("name", "الاسم")}
+          <TableHead className="text-start">الهاتف</TableHead>
+          <TableHead className="text-start">العمر / الجنس</TableHead>
+          <TableHead className="text-start">الحالة</TableHead>
+          {renderSortableHead("createdAt", "تاريخ التسجيل")}
+          <TableHead className="text-start w-10" />
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {patients.map((patient) => {
+          const age = calcAge(patient.dateOfBirth);
+          return (
+            <TableRow
+              key={patient.id}
+              onClick={() => onSelectPatient(patient)}
+              className="cursor-pointer"
+            >
+              <TableCell>
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-sm shrink-0">
+                    {getInitials(patient.name)}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-bold text-slate-900 truncate">
+                      {patient.name}
+                    </div>
+                    <div className="text-xs text-slate-400 mt-0.5">
+                      #{patient.id.slice(0, 8)}
+                    </div>
+                  </div>
                 </div>
+              </TableCell>
 
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-slate-900 truncate">
-                    {patient.name}
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    #{patient.id.slice(0, 8)}
-                  </p>
-                </div>
-              </div>
+              <TableCell className="text-slate-700" dir="rtl">
+                {patient.phone ? (
+                  <span className="font-medium">{patient.phone}</span>
+                ) : (
+                  <span className="text-slate-300">—</span>
+                )}
+              </TableCell>
 
-              <div className="flex items-center gap-2 text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                <ArrowLeft className="w-4 h-4" />
-              </div>
-            </div>
-
-            {/* Info Grid */}
-            <div className="space-y-3 mb-4">
-              {/* Age and Gender */}
-              {age && (
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
-                  <span className="text-sm text-slate-600">
-                    {age} سنة
+              <TableCell className="text-slate-700">
+                {age ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <span>{age} سنة</span>
                     {patient.gender && (
                       <>
-                        {" "}
-                        ·{" "}
-                        {patient.gender === "MALE"
-                          ? "ذكر"
-                          : "أنثى"}
+                        <span className="text-slate-300">·</span>
+                        <span>
+                          {patient.gender === "MALE" ? "ذكر" : "أنثى"}
+                        </span>
                       </>
                     )}
                   </span>
-                </div>
-              )}
+                ) : (
+                  <span className="text-slate-300">—</span>
+                )}
+              </TableCell>
 
-              {/* Phone */}
-              {patient.phone && (
-                <a
-                  href={`tel:${patient.phone}`}
-                  onClick={(e) => e.stopPropagation()}
-                  className="flex items-center gap-2 hover:text-blue-600 transition-colors"
-                  dir="ltr"
-                >
-                  <Phone className="w-4 h-4 text-slate-400 shrink-0" />
-                  <span className="text-sm text-slate-600 hover:text-blue-600">
-                    {patient.phone}
-                  </span>
-                </a>
-              )}
-
-              {/* Email */}
-              {patient.email && (
-                <a
-                  href={`mailto:${patient.email}`}
-                  onClick={(e) => e.stopPropagation()}
-                  className="flex items-center gap-2 hover:text-blue-600 transition-colors truncate"
-                >
-                  <Mail className="w-4 h-4 text-slate-400 shrink-0" />
-                  <span className="text-sm text-slate-600 hover:text-blue-600 truncate">
-                    {patient.email}
-                  </span>
-                </a>
-              )}
-
-              {/* Address */}
-              {patient.address && (
-                <div className="flex items-start gap-2">
-                  <MapPin className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
-                  <span className="text-sm text-slate-600 line-clamp-2">
-                    {patient.address}
-                  </span>
-                </div>
-              )}
-
-              {/* Next Appointment */}
-              {patient.nextAppointment && (
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-indigo-400 shrink-0" />
-                  <span className="text-sm font-bold text-indigo-600">
-                    {new Date(patient.nextAppointment).toLocaleDateString("ar-SA", {
-                      weekday: "short",
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric",
-                    })}
-                    {" · "}
-                    {new Date(patient.nextAppointment).toLocaleTimeString("ar-SA", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* Footer with Status and Date */}
-            <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs">
-              <div className="flex items-center gap-2">
+              <TableCell>
                 {patient.status === "active" ? (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full font-medium">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full font-medium text-xs">
                     <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
                     نشط
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 text-slate-600 rounded-full font-medium">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 text-slate-600 rounded-full font-medium text-xs">
                     <span className="w-1.5 h-1.5 bg-slate-400 rounded-full" />
                     غير نشط
                   </span>
                 )}
-              </div>
-              <span className="text-slate-400">
-                {formatDate(patient.createdAt)}
-              </span>
-            </div>
-          </div>
-        );
-      })}
-    </div>
+              </TableCell>
+
+              <TableCell className="text-slate-500 text-xs whitespace-nowrap">
+                {formatDate(patient.createdAt) ?? "—"}
+              </TableCell>
+
+              <TableCell className="text-slate-300">
+                <span aria-hidden className="block text-end">
+                  ←
+                </span>
+              </TableCell>
+            </TableRow>
+          );
+        })}
+      </TableBody>
+    </Table>
   );
 }

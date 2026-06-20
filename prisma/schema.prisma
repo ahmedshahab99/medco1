@@ -89,7 +89,7 @@ model Patient {
   firstName       String
   lastName        String
   email           String?
-  phone           String?
+  phone           String?  @unique
   dateOfBirth     DateTime?
   gender          Gender?
   status          String    @default("active")
