@@ -39,8 +39,27 @@ export default function PatientsPage() {
 
 const router = useRouter();
 const [page, setPage] = useState(1);
+const [sortBy, setSortBy] = useState("createdAt");
+const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-const { data: result, isLoading, error, refetch } = usePatients({ search, page, pageSize: PAGE_SIZE, status: filters.status === "all" ? undefined : filters.status });
+const { data: result, isLoading, error, refetch } = usePatients({
+  search,
+  page,
+  pageSize: PAGE_SIZE,
+  status: filters.status === "all" ? undefined : filters.status,
+  sortBy,
+  sortOrder,
+});
+
+const handleSortChange = (field: string) => {
+  if (field === sortBy) {
+    setSortOrder((order) => (order === "asc" ? "desc" : "asc"));
+  } else {
+    setSortBy(field);
+    setSortOrder("asc");
+  }
+  setPage(1);
+};
 
 const { user, role } = useAuth();
 
@@ -57,7 +76,30 @@ const showTodaySchedule = role && role !== "RECEPTIONIST";
   const total = (result as PaginatedPatients)?.total ?? 0;
   const totalPages = (result as PaginatedPatients)?.totalPages ?? 1;
 
-  useEffect(() => { setPage(1); }, [search, filters]);
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchRaw(e.target.value);
+    setPage(1);
+  };
+
+  const handleClearSearch = () => {
+    setSearchRaw("");
+    setPage(1);
+  };
+
+  const handleFiltersChange = (next: FilterState) => {
+    setFilters(next);
+    setPage(1);
+  };
+
+  const handleClearStatusFilter = () => {
+    setFilters((f) => ({ ...f, status: "all" }));
+    setPage(1);
+  };
+
+  const handleResetFilters = () => {
+    setFilters(DEFAULT_FILTERS);
+    setPage(1);
+  };
 
   const activeFilterCount = filters.status !== "all" ? 1 : 0;
 
@@ -93,11 +135,11 @@ const showTodaySchedule = role && role !== "RECEPTIONIST";
                 className="pr-10 w-full"
                 placeholder="ابحث باسم المريض، رقم الهاتف، المعرّف..."
                 value={searchRaw}
-                onChange={(e) => setSearchRaw(e.target.value)}
+                onChange={handleSearchChange}
               />
               {searchRaw && (
                 <button
-                  onClick={() => setSearchRaw("")}
+                  onClick={handleClearSearch}
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
                 >
                   <X className="w-4 h-4" />
@@ -137,11 +179,11 @@ const showTodaySchedule = role && role !== "RECEPTIONIST";
               {filters.status !== "all" && (
                 <span className="text-xs font-bold bg-blue-100 text-blue-600 px-2.5 py-1 rounded-full flex items-center gap-1">
                   {filters.status === "active" ? "نشط" : "غير نشط"}
-                  <button onClick={() => setFilters((f) => ({ ...f, status: "all" }))}><X className="w-3 h-3" /></button>
+                  <button onClick={handleClearStatusFilter}><X className="w-3 h-3" /></button>
                 </span>
               )}
               <button
-                onClick={() => setFilters(DEFAULT_FILTERS)}
+                onClick={handleResetFilters}
                 className="text-xs text-slate-400 hover:text-red-500 transition-colors mr-auto"
               >
                 مسح الكل
@@ -176,6 +218,9 @@ const showTodaySchedule = role && role !== "RECEPTIONIST";
               <PatientTable
                 patients={patients}
                 onSelectPatient={handleSelectPatient}
+                sortBy={sortBy}
+                sortOrder={sortOrder}
+                onSortChange={handleSortChange}
               />
             )}
           </div>
@@ -229,8 +274,8 @@ const showTodaySchedule = role && role !== "RECEPTIONIST";
         isOpen={isFiltersOpen}
         onClose={() => setIsFiltersOpen(false)}
         filters={filters}
-        onChange={setFilters}
-        onReset={() => setFilters(DEFAULT_FILTERS)}
+        onChange={handleFiltersChange}
+        onReset={handleResetFilters}
       />
 
       <NewPatientModal

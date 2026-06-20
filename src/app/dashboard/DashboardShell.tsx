@@ -8,6 +8,7 @@ import { useSessionWatch } from "@/hooks/use-session-watch";
 import { Toast } from "@/components/ui/Toast";
 import { Toaster } from "sonner";
 import { MutationIndicator } from "@/components/ui/MutationIndicator";
+import { ActivityIcon } from "lucide-react";
 
 interface DashboardShellProps {
   children: React.ReactNode;
@@ -33,7 +34,7 @@ export default function DashboardShell({ children }: DashboardShellProps) {
   if (isLoading) {
     return (
       <div dir="rtl" className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="animate-pulse text-slate-400">جاري التحميل...</div>
+       <ActivityIcon width="150" height="150" className="pulse-line " />
       </div>
     );
   }
