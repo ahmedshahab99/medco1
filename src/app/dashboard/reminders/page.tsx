@@ -1,36 +1,25 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import {
   Bell,
-  Plus,
-  Edit2,
-  Trash2,
   Send,
   Zap,
-  Play,
-  Pause,
   Search,
   Filter,
   CheckCircle2,
   XCircle,
   Clock,
-  AlertCircle,
   MessageSquare,
-  Mail,
-  Smartphone,
-  X,
   ChevronDown,
   Eye,
   BarChart3,
   TrendingUp,
-  CalendarClock,
+  CheckCheck,
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
-import { Input } from "@/components/ui/Input";
-import { Textarea } from "@/components/ui/Textarea";
 import { Badge } from "@/components/ui/Badge";
 import {
   Table,
@@ -40,247 +29,96 @@ import {
   TableHead,
   TableCell,
 } from "@/components/ui/Table";
+import {
+  REMINDER_TEMPLATES,
+  REMINDER_TYPE_CONFIG,
+  type ReminderType,
+} from "@/lib/reminders/templates";
+import {
+  getTenantReminders,
+  toggleReminder,
+  updateReminderTiming,
+  getMessageLogs,
+} from "./actions";
+import type { MessageStatus } from "@prisma/client";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Serialized types ───────────────────────────────────────────────────────
 
-type TriggerType = "before" | "after";
-type TriggerUnit = "hours" | "days";
-type Channel = "sms" | "whatsapp" | "email";
-type LogStatus = "sent" | "delivered" | "failed" | "pending";
-
-interface ReminderWorkflow {
+interface ReminderRow {
   id: string;
+  tenantId: string;
+  type: ReminderType;
   name: string;
-  triggerType: TriggerType;
-  triggerValue: number;
-  triggerUnit: TriggerUnit;
-  channel: Channel;
-  messageTemplate: string;
   isActive: boolean;
+  triggerBeforeMinutes: number | null;
   createdAt: string;
+  updatedAt: string;
 }
 
-interface ReminderLog {
+interface MessageLogRow {
   id: string;
-  workflowId: string;
-  workflowName: string;
-  patientName: string;
-  patientPhone: string;
-  channel: Channel;
-  message: string;
-  sentAt: string;
-  status: LogStatus;
+  tenantId: string;
+  reminderId: string | null;
+  type: ReminderType;
+  appointmentId: string | null;
+  patientId: string | null;
+  toPhone: string;
+  messageContent: string;
+  status: MessageStatus;
+  externalId: string | null;
+  sentAt: string | null;
+  deliveredAt: string | null;
+  readAt: string | null;
+  errorMessage: string | null;
+  createdAt: string;
+  patient: { id: string; firstName: string; lastName: string } | null;
 }
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-const TRIGGER_TYPE_LABELS: Record<TriggerType, string> = {
-  before: "قبل الموعد",
-  after: "بعد الموعد",
-};
-
-const TRIGGER_UNIT_LABELS: Record<TriggerUnit, string> = {
-  hours: "ساعة",
-  days: "يوم",
-};
-
-const CHANNEL_CONFIG: Record<
-  Channel,
-  { label: string; icon: React.ReactNode; color: string; bgColor: string }
-> = {
-  sms: {
-    label: "رسالة نصية",
-    icon: <Smartphone className="w-4 h-4" />,
-    color: "text-blue-600",
-    bgColor: "bg-blue-50 border-blue-100",
-  },
-  whatsapp: {
-    label: "واتساب",
-    icon: <MessageSquare className="w-4 h-4" />,
-    color: "text-emerald-600",
-    bgColor: "bg-emerald-50 border-emerald-100",
-  },
-  email: {
-    label: "بريد إلكتروني",
-    icon: <Mail className="w-4 h-4" />,
-    color: "text-violet-600",
-    bgColor: "bg-violet-50 border-violet-100",
-  },
-};
+// ─── Constants ──────────────────────────────────────────────────────────────
 
 const STATUS_CONFIG: Record<
-  LogStatus,
-  { label: string; variant: "success" | "warning" | "danger" | "default"; icon: React.ReactNode }
+  MessageStatus,
+  {
+    label: string;
+    variant: "success" | "warning" | "danger" | "default";
+    icon: React.ReactNode;
+  }
 > = {
-  sent: {
-    label: "تم الإرسال",
-    variant: "default",
-    icon: <Send className="w-3 h-3" />,
-  },
-  delivered: {
-    label: "تم التوصيل",
-    variant: "success",
-    icon: <CheckCircle2 className="w-3 h-3" />,
-  },
-  failed: {
-    label: "فشل الإرسال",
-    variant: "danger",
-    icon: <XCircle className="w-3 h-3" />,
-  },
-  pending: {
+  PENDING: {
     label: "قيد الانتظار",
     variant: "warning",
-    icon: <Clock className="w-3 h-3" />,
+    icon: <Clock className="size-3" />,
+  },
+  QUEUED: {
+    label: "في الطابور",
+    variant: "default",
+    icon: <Clock className="size-3" />,
+  },
+  SENT: {
+    label: "تم الإرسال",
+    variant: "default",
+    icon: <Send className="size-3" />,
+  },
+  DELIVERED: {
+    label: "تم التوصيل",
+    variant: "success",
+    icon: <CheckCircle2 className="size-3" />,
+  },
+  READ: {
+    label: "تمت القراءة",
+    variant: "success",
+    icon: <CheckCheck className="size-3" />,
+  },
+  FAILED: {
+    label: "فشل الإرسال",
+    variant: "danger",
+    icon: <XCircle className="size-3" />,
   },
 };
 
-const MESSAGE_VARIABLES = [
-  { key: "{patient_name}", label: "اسم المريض" },
-  { key: "{appointment_date}", label: "تاريخ الموعد" },
-  { key: "{appointment_time}", label: "وقت الموعد" },
-  { key: "{doctor_name}", label: "اسم الطبيب" },
-  { key: "{clinic_name}", label: "اسم العيادة" },
-];
+// ─── Helpers ────────────────────────────────────────────────────────────────
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
-
-const INITIAL_WORKFLOWS: ReminderWorkflow[] = [
-  {
-    id: "w1",
-    name: "تذكير قبل الموعد",
-    triggerType: "before",
-    triggerValue: 24,
-    triggerUnit: "hours",
-    channel: "whatsapp",
-    messageTemplate:
-      "مرحباً {patient_name}، نود تذكيرك بموعدك يوم {appointment_date} الساعة {appointment_time} مع {doctor_name} في {clinic_name}. نتطلع لرؤيتك!",
-    isActive: true,
-    createdAt: "2026-03-15",
-  },
-  {
-    id: "w2",
-    name: "تأكيد بعد الحجز",
-    triggerType: "after",
-    triggerValue: 0,
-    triggerUnit: "hours",
-    channel: "sms",
-    messageTemplate:
-      "تم تأكيد حجزك بنجاح يا {patient_name}! موعدك يوم {appointment_date} الساعة {appointment_time}. شكراً لاختيارك {clinic_name}.",
-    isActive: true,
-    createdAt: "2026-03-10",
-  },
-  {
-    id: "w3",
-    name: "تذكير مراجعة دورية",
-    triggerType: "after",
-    triggerValue: 30,
-    triggerUnit: "days",
-    channel: "email",
-    messageTemplate:
-      "عزيزنا {patient_name}، مرّ شهر على آخر زيارة لك. ننصحك بحجز موعد للمراجعة مع {doctor_name}. صحتك تهمنا في {clinic_name}.",
-    isActive: false,
-    createdAt: "2026-03-05",
-  },
-];
-
-const INITIAL_LOGS: ReminderLog[] = [
-  {
-    id: "l1",
-    workflowId: "w1",
-    workflowName: "تذكير قبل الموعد",
-    patientName: "أحمد محمد السيد",
-    patientPhone: "0501234567",
-    channel: "whatsapp",
-    message: "مرحباً أحمد محمد السيد، نود تذكيرك بموعدك يوم...",
-    sentAt: "2026-03-31T10:30:00",
-    status: "delivered",
-  },
-  {
-    id: "l2",
-    workflowId: "w2",
-    workflowName: "تأكيد بعد الحجز",
-    patientName: "فاطمة علي حسن",
-    patientPhone: "0559876543",
-    channel: "sms",
-    message: "تم تأكيد حجزك بنجاح يا فاطمة علي حسن!...",
-    sentAt: "2026-03-31T09:15:00",
-    status: "sent",
-  },
-  {
-    id: "l3",
-    workflowId: "w1",
-    workflowName: "تذكير قبل الموعد",
-    patientName: "خالد إبراهيم",
-    patientPhone: "0541112233",
-    channel: "whatsapp",
-    message: "مرحباً خالد إبراهيم، نود تذكيرك بموعدك...",
-    sentAt: "2026-03-31T08:00:00",
-    status: "failed",
-  },
-  {
-    id: "l4",
-    workflowId: "w1",
-    workflowName: "تذكير قبل الموعد",
-    patientName: "سارة عبدالرحمن",
-    patientPhone: "0567778899",
-    channel: "whatsapp",
-    message: "مرحباً سارة عبدالرحمن، نود تذكيرك...",
-    sentAt: "2026-03-30T14:45:00",
-    status: "delivered",
-  },
-  {
-    id: "l5",
-    workflowId: "w3",
-    workflowName: "تذكير مراجعة دورية",
-    patientName: "محمد عبدالله",
-    patientPhone: "0533445566",
-    channel: "email",
-    message: "عزيزنا محمد عبدالله، مرّ شهر على...",
-    sentAt: "2026-03-30T12:00:00",
-    status: "delivered",
-  },
-  {
-    id: "l6",
-    workflowId: "w2",
-    workflowName: "تأكيد بعد الحجز",
-    patientName: "نورة سعد",
-    patientPhone: "0588990011",
-    channel: "sms",
-    message: "تم تأكيد حجزك بنجاح يا نورة سعد!...",
-    sentAt: "2026-03-30T11:30:00",
-    status: "sent",
-  },
-  {
-    id: "l7",
-    workflowId: "w1",
-    workflowName: "تذكير قبل الموعد",
-    patientName: "عبدالعزيز الشمري",
-    patientPhone: "0512345678",
-    channel: "whatsapp",
-    message: "مرحباً عبدالعزيز الشمري، نود تذكيرك...",
-    sentAt: "2026-03-29T16:20:00",
-    status: "pending",
-  },
-  {
-    id: "l8",
-    workflowId: "w2",
-    workflowName: "تأكيد بعد الحجز",
-    patientName: "ريم الخالدي",
-    patientPhone: "0576543210",
-    channel: "sms",
-    message: "تم تأكيد حجزك بنجاح يا ريم الخالدي!...",
-    sentAt: "2026-03-29T10:00:00",
-    status: "delivered",
-  },
-];
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function uid() {
-  return Math.random().toString(36).slice(2, 9);
-}
-
-function formatArabicDateTime(dateStr: string) {
+function formatArabicDateTime(dateStr: string | null) {
   if (!dateStr) return "";
   const d = new Date(dateStr);
   const date = d.toLocaleDateString("ar-SA", {
@@ -296,7 +134,7 @@ function formatArabicDateTime(dateStr: string) {
   return `${date} · ${time}`;
 }
 
-function formatArabicDate(dateStr: string) {
+function formatArabicDate(dateStr: string | null) {
   if (!dateStr) return "";
   const d = new Date(dateStr);
   return d.toLocaleDateString("ar-SA", {
@@ -306,14 +144,18 @@ function formatArabicDate(dateStr: string) {
   });
 }
 
-function buildTriggerDescription(w: ReminderWorkflow) {
-  if (w.triggerValue === 0 && w.triggerType === "after") {
-    return "فوراً بعد الحجز";
-  }
-  return `${TRIGGER_TYPE_LABELS[w.triggerType]} بـ ${w.triggerValue} ${TRIGGER_UNIT_LABELS[w.triggerUnit]}`;
+function minutesToDisplay(minutes: number | null) {
+  if (!minutes) return { value: 24, unit: "hours" as const };
+  if (minutes % 1440 === 0) return { value: minutes / 1440, unit: "days" as const };
+  if (minutes % 60 === 0) return { value: minutes / 60, unit: "hours" as const };
+  return { value: minutes, unit: "hours" as const };
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+function displayToMinutes(value: number, unit: "hours" | "days") {
+  return unit === "days" ? value * 1440 : value * 60;
+}
+
+// ─── Sub-components ─────────────────────────────────────────────────────────
 
 function Toggle({
   enabled,
@@ -330,7 +172,7 @@ function Toggle({
       }`}
     >
       <span
-        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ${
+        className={`inline-block size-4 transform rounded-full bg-white shadow transition-transform duration-200 ${
           enabled ? "-translate-x-6" : "-translate-x-1"
         }`}
       />
@@ -338,273 +180,333 @@ function Toggle({
   );
 }
 
-// ─── Workflow Card ─────────────────────────────────────────────────────────────
-
-function WorkflowCard({
-  workflow,
-  onToggle,
-  onEdit,
-  onDelete,
+function TimingEditor({
+  minutes,
+  onSave,
+  saving,
 }: {
-  workflow: ReminderWorkflow;
-  onToggle: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
+  minutes: number | null;
+  onSave: (min: number) => void;
+  saving: boolean;
 }) {
-  const ch = CHANNEL_CONFIG[workflow.channel];
+  const display = minutesToDisplay(minutes);
+  const [value, setValue] = useState(display.value);
+  const [unit, setUnit] = useState<"hours" | "days">(display.unit);
+  const [dirty, setDirty] = useState(false);
+
+  const handleSave = () => {
+    onSave(displayToMinutes(value, unit));
+    setDirty(false);
+  };
+
+  return (
+    <div className="flex items-center gap-2 pt-3 border-t border-slate-100">
+      <Clock className="size-4 text-slate-400 shrink-0" />
+      <span className="text-sm text-slate-600">قبل الموعد بـ</span>
+      <input
+        type="number"
+        min={1}
+        max={365}
+        value={value}
+        onChange={(e) => {
+          setValue(Math.max(1, parseInt(e.target.value) || 1));
+          setDirty(true);
+        }}
+        className="w-16 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm text-center outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+      />
+      <select
+        value={unit}
+        onChange={(e) => {
+          setUnit(e.target.value as "hours" | "days");
+          setDirty(true);
+        }}
+        className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer"
+      >
+        <option value="hours">ساعة</option>
+        <option value="days">يوم</option>
+      </select>
+      {dirty && (
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors"
+        >
+          {saving ? "..." : "حفظ"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ─── ReminderCard ───────────────────────────────────────────────────────────
+
+function ReminderCard({
+  reminder,
+  onToggle,
+  onSaveTiming,
+  saving,
+}: {
+  reminder: ReminderRow;
+  onToggle: () => void;
+  onSaveTiming: (min: number) => void;
+  saving: boolean;
+}) {
+  const config = REMINDER_TYPE_CONFIG[reminder.type];
+  const Icon = config.icon;
+  const template = REMINDER_TEMPLATES[reminder.type];
+
   return (
     <Card
       className={`p-0 overflow-hidden transition-all duration-200 hover:shadow-md ${
-        !workflow.isActive ? "opacity-70" : ""
+        !reminder.isActive ? "opacity-70" : ""
       }`}
     >
-      {/* Top accent bar */}
       <div
         className={`h-1 ${
-          workflow.isActive
-            ? workflow.channel === "whatsapp"
-              ? "bg-gradient-to-l from-emerald-400 to-emerald-500"
-              : workflow.channel === "sms"
-              ? "bg-gradient-to-l from-blue-400 to-blue-500"
-              : "bg-gradient-to-l from-violet-400 to-violet-500"
+          reminder.isActive
+            ? reminder.type === "CONFIRM"
+              ? "bg-emerald-500"
+              : reminder.type === "REMINDER"
+                ? "bg-blue-500"
+                : reminder.type === "RESCHEDULE"
+                  ? "bg-amber-500"
+                  : "bg-red-500"
             : "bg-slate-200"
         }`}
       />
 
       <div className="p-5">
-        {/* Header row */}
         <div className="flex items-start justify-between gap-3 mb-4">
           <div className="flex items-center gap-3 min-w-0">
             <div
-              className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                workflow.isActive
-                  ? `${ch.bgColor} ${ch.color}`
-                  : "bg-slate-100 text-slate-400"
-              } border`}
+              className={`size-10 rounded-xl flex items-center justify-center shrink-0 ${
+                reminder.isActive
+                  ? `${config.bgColor} ${config.color} border`
+                  : "bg-slate-100 text-slate-400 border border-slate-200"
+              }`}
             >
-              {ch.icon}
+              <Icon className="size-5" />
             </div>
             <div className="min-w-0">
               <h3 className="font-bold text-slate-800 text-sm truncate">
-                {workflow.name}
+                {config.label}
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                أُنشئ في {formatArabicDate(workflow.createdAt)}
+                {config.description}
               </p>
             </div>
           </div>
-          <Toggle enabled={workflow.isActive} onChange={onToggle} />
+          <Toggle enabled={reminder.isActive} onChange={onToggle} />
         </div>
 
-        {/* Trigger & Channel badges */}
-        <div className="flex flex-wrap gap-2 mb-4">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-600">
-            <Clock className="w-3.5 h-3.5" />
-            {buildTriggerDescription(workflow)}
-          </span>
-          <span
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold ${ch.bgColor} ${ch.color}`}
-          >
-            {ch.icon}
-            {ch.label}
-          </span>
-        </div>
-
-        {/* Message preview */}
         <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 mb-4">
           <p className="text-xs text-slate-500 font-semibold mb-1 flex items-center gap-1.5">
-            <MessageSquare className="w-3 h-3" />
+            <MessageSquare className="size-3" />
             قالب الرسالة
           </p>
           <p className="text-sm text-slate-600 leading-relaxed line-clamp-2">
-            {workflow.messageTemplate}
+            {template}
           </p>
         </div>
 
-        {/* Actions */}
+        {reminder.type === "REMINDER" && (
+          <TimingEditor
+            minutes={reminder.triggerBeforeMinutes}
+            onSave={onSaveTiming}
+            saving={saving}
+          />
+        )}
+
         <div className="flex items-center justify-between pt-3 border-t border-slate-100">
           <span
             className={`text-xs font-semibold flex items-center gap-1.5 ${
-              workflow.isActive ? "text-emerald-600" : "text-slate-400"
+              reminder.isActive ? "text-emerald-600" : "text-slate-400"
             }`}
           >
-            {workflow.isActive ? (
+            {reminder.isActive ? (
               <>
-                <Play className="w-3 h-3" />
+                <div className="size-1.5 rounded-full bg-emerald-500" />
                 نشط
               </>
             ) : (
               <>
-                <Pause className="w-3 h-3" />
+                <div className="size-1.5 rounded-full bg-slate-300" />
                 متوقف
               </>
             )}
           </span>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={onEdit}
-              className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-              title="تعديل"
-            >
-              <Edit2 className="w-4 h-4" />
-            </button>
-            <button
-              onClick={onDelete}
-              className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-              title="حذف"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          </div>
+          {reminder.type === "REMINDER" && (
+            <span className="text-xs text-slate-400">
+              أُنشئ في {formatArabicDate(reminder.createdAt)}
+            </span>
+          )}
         </div>
       </div>
     </Card>
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// ─── Main Page ──────────────────────────────────────────────────────────────
 
 export default function RemindersPage() {
-  const [workflows, setWorkflows] =
-    useState<ReminderWorkflow[]>(INITIAL_WORKFLOWS);
-  const [logs] = useState<ReminderLog[]>(INITIAL_LOGS);
-  const [activeTab, setActiveTab] = useState<"workflows" | "logs">("workflows");
+  const [reminders, setReminders] = useState<ReminderRow[]>([]);
+  const [logs, setLogs] = useState<MessageLogRow[]>([]);
+  const [totalLogs, setTotalLogs] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<"reminders" | "logs">("reminders");
 
-  // Modal state
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editingWorkflow, setEditingWorkflow] =
-    useState<ReminderWorkflow | null>(null);
-  const [form, setForm] = useState<Partial<ReminderWorkflow>>({});
-
-  // Delete confirm
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-
-  // Log filters
   const [logSearch, setLogSearch] = useState("");
-  const [logStatusFilter, setLogStatusFilter] = useState<LogStatus | "all">(
+  const [logStatusFilter, setLogStatusFilter] = useState<MessageStatus | "all">(
     "all"
   );
+  const [logTypeFilter, setLogTypeFilter] = useState<ReminderType | "all">(
+    "all"
+  );
+  const [previewLog, setPreviewLog] = useState<MessageLogRow | null>(null);
 
-  // Preview modal
-  const [previewLog, setPreviewLog] = useState<ReminderLog | null>(null);
+  // ── Load data ────────────────────────────────────────────────────────────
 
-  // ── Workflow helpers ──────────────────────────────────────────────────────
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      const [remindersData, logsData] = await Promise.all([
+        getTenantReminders(),
+        getMessageLogs(),
+      ]);
+      if (Array.isArray(remindersData)) setReminders(remindersData);
+      if (logsData) {
+        setLogs(logsData.logs);
+        setTotalLogs(logsData.total);
+      }
+      setLoading(false);
+    })();
+  }, []);
 
-  const openCreateModal = () => {
-    setEditingWorkflow(null);
-    setForm({
-      name: "",
-      triggerType: "before",
-      triggerValue: 24,
-      triggerUnit: "hours",
-      channel: "whatsapp",
-      messageTemplate: "",
-      isActive: true,
-    });
-    setModalOpen(true);
-  };
+  // ── Handlers ─────────────────────────────────────────────────────────────
 
-  const openEditModal = (w: ReminderWorkflow) => {
-    setEditingWorkflow(w);
-    setForm({ ...w });
-    setModalOpen(true);
-  };
+  const handleToggle = useCallback(async (id: string) => {
+    setReminders((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, isActive: !r.isActive } : r))
+    );
+    await toggleReminder(id);
+  }, []);
 
-  const closeModal = () => {
-    setModalOpen(false);
-    setEditingWorkflow(null);
-    setForm({});
-  };
-
-  const saveWorkflow = () => {
-    if (!form.name || !form.messageTemplate) return;
-    if (editingWorkflow) {
-      setWorkflows((prev) =>
-        prev.map((w) =>
-          w.id === editingWorkflow.id
-            ? ({ ...w, ...form } as ReminderWorkflow)
-            : w
+  const handleSaveTiming = useCallback(
+    async (id: string, minutes: number) => {
+      setSaving(true);
+      setReminders((prev) =>
+        prev.map((r) =>
+          r.id === id ? { ...r, triggerBeforeMinutes: minutes } : r
         )
       );
-    } else {
-      const newWorkflow: ReminderWorkflow = {
-        id: uid(),
-        name: form.name!,
-        triggerType: form.triggerType || "before",
-        triggerValue: form.triggerValue ?? 24,
-        triggerUnit: form.triggerUnit || "hours",
-        channel: form.channel || "whatsapp",
-        messageTemplate: form.messageTemplate!,
-        isActive: form.isActive ?? true,
-        createdAt: new Date().toISOString().split("T")[0],
-      };
-      setWorkflows((prev) => [...prev, newWorkflow]);
+      await updateReminderTiming(id, minutes);
+      setSaving(false);
+    },
+    []
+  );
+
+  const handleRefreshLogs = useCallback(async () => {
+    const result = await getMessageLogs({
+      status: logStatusFilter === "all" ? undefined : logStatusFilter,
+      type: logTypeFilter === "all" ? undefined : logTypeFilter,
+    });
+    if (result) {
+      const filtered = logSearch.trim()
+        ? result.logs.filter((l) => {
+            const name =
+              l.patient?.firstName && l.patient?.lastName
+                ? `${l.patient.firstName} ${l.patient.lastName}`.toLowerCase()
+                : "";
+            const q = logSearch.trim().toLowerCase();
+            return name.includes(q) || l.toPhone.includes(q);
+          })
+        : result.logs;
+      setLogs(filtered);
+      setTotalLogs(result.total);
     }
-    closeModal();
-  };
+  }, [logStatusFilter, logTypeFilter, logSearch]);
 
-  const toggleWorkflow = (id: string) => {
-    setWorkflows((prev) =>
-      prev.map((w) => (w.id === id ? { ...w, isActive: !w.isActive } : w))
-    );
-  };
-
-  const deleteWorkflow = (id: string) => {
-    setWorkflows((prev) => prev.filter((w) => w.id !== id));
-    setDeleteConfirm(null);
-  };
-
-  // ── Log helpers ───────────────────────────────────────────────────────────
-
-  const filteredLogs = useMemo(() => {
-    let result = [...logs];
-    if (logStatusFilter !== "all") {
-      result = result.filter((l) => l.status === logStatusFilter);
-    }
-    if (logSearch.trim()) {
-      const q = logSearch.trim().toLowerCase();
-      result = result.filter(
-        (l) =>
-          l.patientName.toLowerCase().includes(q) ||
-          l.workflowName.toLowerCase().includes(q)
-      );
-    }
-    return result.sort(
-      (a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime()
-    );
-  }, [logs, logStatusFilter, logSearch]);
-
-  // ── Stats ─────────────────────────────────────────────────────────────────
+  // ── Stats ────────────────────────────────────────────────────────────────
 
   const stats = useMemo(() => {
-    const activeCount = workflows.filter((w) => w.isActive).length;
-    const today = new Date().toISOString().split("T")[0];
-    const todayLogs = logs.filter((l) => l.sentAt.startsWith(today));
-    const deliveredCount = logs.filter((l) => l.status === "delivered").length;
+    const activeCount = reminders.filter((r) => r.isActive).length;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayLogs = logs.filter((l) => {
+      if (!l.sentAt) return false;
+      return new Date(l.sentAt) >= today;
+    });
+    const deliveredCount = logs.filter(
+      (l) => l.status === "DELIVERED" || l.status === "READ"
+    ).length;
     const successRate =
       logs.length > 0 ? Math.round((deliveredCount / logs.length) * 100) : 0;
     return {
-      activeWorkflows: activeCount,
+      activeReminders: activeCount,
       sentToday: todayLogs.length,
       successRate,
-      totalLogs: logs.length,
+      totalLogs,
     };
-  }, [workflows, logs]);
+  }, [reminders, logs, totalLogs]);
 
-  // ── Tabs ──────────────────────────────────────────────────────────────────
+  // ── Type distribution ────────────────────────────────────────────────────
+
+  const typeDistribution = useMemo(() => {
+    const types: ReminderType[] = ["CONFIRM", "REMINDER", "RESCHEDULE", "CANCEL"];
+    return types.map((type) => {
+      const count = logs.filter((l) => l.type === type).length;
+      const pct = logs.length > 0 ? Math.round((count / logs.length) * 100) : 0;
+      return { type, count, pct };
+    });
+  }, [logs]);
+
+  // ── Tabs ─────────────────────────────────────────────────────────────────
 
   const tabs = [
     {
-      id: "workflows" as const,
-      label: "سير العمل",
-      icon: <Zap className="w-4 h-4" />,
+      id: "reminders" as const,
+      label: "إعدادات التذكير",
+      icon: <Zap className="size-4" />,
     },
     {
       id: "logs" as const,
       label: "سجل الإرسال",
-      icon: <Send className="w-4 h-4" />,
+      icon: <Send className="size-4" />,
     },
   ];
+
+  if (loading) {
+    return (
+      <div className="space-y-6 max-w-7xl">
+        <div className="flex items-center gap-3">
+          <div className="size-10 rounded-xl bg-slate-100 animate-pulse" />
+          <div>
+            <div className="h-6 w-48 bg-slate-100 rounded animate-pulse" />
+            <div className="h-4 w-64 bg-slate-100 rounded mt-2 animate-pulse" />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i} className="p-0 overflow-hidden">
+              <div className="h-1 bg-slate-100" />
+              <div className="p-5 space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="size-10 rounded-xl bg-slate-100 animate-pulse" />
+                  <div className="space-y-1.5 flex-1">
+                    <div className="h-4 w-24 bg-slate-100 rounded animate-pulse" />
+                    <div className="h-3 w-32 bg-slate-100 rounded animate-pulse" />
+                  </div>
+                  <div className="h-6 w-11 rounded-full bg-slate-100 animate-pulse" />
+                </div>
+                <div className="h-16 bg-slate-100 rounded-xl animate-pulse" />
+              </div>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-7xl animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -612,21 +514,15 @@ export default function RemindersPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
-              <Bell className="w-5 h-5" />
+            <div className="size-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+              <Bell className="size-5" />
             </div>
-            التذكيرات التلقائية
+            التذكيرات
           </h1>
           <p className="text-slate-500 mt-1">
-            أنشئ تذكيرات تلقائية للمرضى وتتبع حالة الإرسال.
+            إدارة إعدادات التذكير للمرضى وتتبع حالة الإرسال عبر واتساب.
           </p>
         </div>
-        {activeTab === "workflows" && (
-          <Button onClick={openCreateModal} className="gap-2 shrink-0">
-            <Plus className="w-5 h-5" />
-            إنشاء سير عمل جديد
-          </Button>
-        )}
       </div>
 
       <div className="flex flex-col xl:flex-row gap-6">
@@ -650,74 +546,18 @@ export default function RemindersPage() {
             ))}
           </div>
 
-          {/* ── Tab: Workflows ── */}
-          {activeTab === "workflows" && (
-            <div className="space-y-4">
-              {workflows.length === 0 ? (
-                <Card className="flex flex-col items-center py-16 text-center">
-                  <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center mb-4 text-slate-300">
-                    <Zap className="w-8 h-8" />
-                  </div>
-                  <p className="text-slate-600 font-bold text-lg">
-                    لا توجد تذكيرات حتى الآن
-                  </p>
-                  <p className="text-slate-400 text-sm mt-1 max-w-xs">
-                    أنشئ سير عمل جديد لإرسال تذكيرات تلقائية للمرضى قبل أو بعد
-                    مواعيدهم.
-                  </p>
-                  <Button
-                    onClick={openCreateModal}
-                    className="mt-6 gap-2"
-                    size="sm"
-                  >
-                    <Plus className="w-4 h-4" />
-                    إنشاء أول سير عمل
-                  </Button>
-                </Card>
-              ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {workflows.map((w) => (
-                    <div key={w.id} className="relative">
-                      <WorkflowCard
-                        workflow={w}
-                        onToggle={() => toggleWorkflow(w.id)}
-                        onEdit={() => openEditModal(w)}
-                        onDelete={() => setDeleteConfirm(w.id)}
-                      />
-                      {/* Delete confirmation overlay */}
-                      {deleteConfirm === w.id && (
-                        <div className="absolute inset-0 bg-white/95 backdrop-blur-sm rounded-2xl border border-red-200 flex flex-col items-center justify-center gap-3 z-10 p-6 animate-in fade-in zoom-in-95 duration-200">
-                          <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center text-red-500">
-                            <Trash2 className="w-6 h-6" />
-                          </div>
-                          <p className="font-bold text-slate-800 text-center">
-                            حذف &quot;{w.name}&quot;؟
-                          </p>
-                          <p className="text-sm text-slate-500 text-center">
-                            سيتم حذف سير العمل نهائياً ولا يمكن التراجع.
-                          </p>
-                          <div className="flex gap-2 mt-1">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setDeleteConfirm(null)}
-                            >
-                              إلغاء
-                            </Button>
-                            <Button
-                              size="sm"
-                              className="bg-red-600 hover:bg-red-700 text-white"
-                              onClick={() => deleteWorkflow(w.id)}
-                            >
-                              حذف
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
+          {/* ── Tab: Reminders ── */}
+          {activeTab === "reminders" && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {reminders.map((r) => (
+                <ReminderCard
+                  key={r.id}
+                  reminder={r}
+                  onToggle={() => handleToggle(r.id)}
+                  onSaveTiming={(min) => handleSaveTiming(r.id, min)}
+                  saving={saving}
+                />
+              ))}
             </div>
           )}
 
@@ -727,59 +567,90 @@ export default function RemindersPage() {
               {/* Filter bar */}
               <Card className="p-4">
                 <div className="flex flex-col sm:flex-row gap-3">
-                  {/* Search */}
                   <div className="relative flex-1">
-                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
                     <input
                       type="text"
-                      placeholder="بحث باسم المريض أو سير العمل..."
+                      placeholder="بحث باسم المريض أو رقم الهاتف..."
                       value={logSearch}
                       onChange={(e) => setLogSearch(e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 bg-white pr-10 pl-4 py-2.5 text-sm outline-none transition-all placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                      className="w-full rounded-xl border border-slate-200 bg-white pe-10 ps-4 py-2.5 text-sm outline-none transition-all placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                     />
                   </div>
-                  {/* Status filter */}
+
                   <div className="relative">
-                    <Filter className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                    <Filter className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-slate-400 pointer-events-none" />
+                    <select
+                      value={logTypeFilter}
+                      onChange={(e) =>
+                        setLogTypeFilter(e.target.value as ReminderType | "all")
+                      }
+                      className="appearance-none rounded-xl border border-slate-200 bg-white pe-10 ps-9 py-2.5 text-sm outline-none transition-all focus:border-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                    >
+                      <option value="all">جميع الأنواع</option>
+                      <option value="CONFIRM">تأكيد الحجز</option>
+                      <option value="REMINDER">تذكير</option>
+                      <option value="RESCHEDULE">إعادة جدولة</option>
+                      <option value="CANCEL">إلغاء</option>
+                    </select>
+                    <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400 pointer-events-none" />
+                  </div>
+
+                  <div className="relative">
+                    <Filter className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-slate-400 pointer-events-none" />
                     <select
                       value={logStatusFilter}
                       onChange={(e) =>
-                        setLogStatusFilter(e.target.value as LogStatus | "all")
+                        setLogStatusFilter(
+                          e.target.value as MessageStatus | "all"
+                        )
                       }
-                      className="appearance-none rounded-xl border border-slate-200 bg-white pr-10 pl-9 py-2.5 text-sm outline-none transition-all focus:border-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer min-w-[160px]"
+                      className="appearance-none rounded-xl border border-slate-200 bg-white pe-10 ps-9 py-2.5 text-sm outline-none transition-all focus:border-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer min-w-[160px]"
                     >
                       <option value="all">جميع الحالات</option>
-                      <option value="delivered">تم التوصيل</option>
-                      <option value="sent">تم الإرسال</option>
-                      <option value="pending">قيد الانتظار</option>
-                      <option value="failed">فشل</option>
+                      <option value="DELIVERED">تم التوصيل</option>
+                      <option value="READ">تمت القراءة</option>
+                      <option value="SENT">تم الإرسال</option>
+                      <option value="QUEUED">في الطابور</option>
+                      <option value="PENDING">قيد الانتظار</option>
+                      <option value="FAILED">فشل</option>
                     </select>
-                    <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                    <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400 pointer-events-none" />
                   </div>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRefreshLogs}
+                    className="gap-2"
+                  >
+                    <Search className="size-4" />
+                    بحث
+                  </Button>
                 </div>
               </Card>
 
               {/* Logs table */}
               <Card className="p-0 overflow-hidden">
                 <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
-                    <Send className="w-4 h-4" />
+                  <div className="size-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+                    <Send className="size-4" />
                   </div>
                   <div>
                     <h2 className="font-bold text-slate-800">سجل الإرسال</h2>
                     <p className="text-xs text-slate-500">
-                      {filteredLogs.length} رسالة{" "}
-                      {logStatusFilter !== "all"
-                        ? `(${STATUS_CONFIG[logStatusFilter].label})`
+                      {logs.length} رسالة
+                      {logStatusFilter !== "all" || logTypeFilter !== "all"
+                        ? " (مفلترة)"
                         : ""}
                     </p>
                   </div>
                 </div>
 
-                {filteredLogs.length === 0 ? (
+                {logs.length === 0 ? (
                   <div className="flex flex-col items-center py-14 text-center">
-                    <div className="w-14 h-14 rounded-full bg-slate-50 flex items-center justify-center mb-3 text-slate-300">
-                      <Send className="w-7 h-7" />
+                    <div className="size-14 rounded-full bg-slate-50 flex items-center justify-center mb-3 text-slate-300">
+                      <Send className="size-7" />
                     </div>
                     <p className="text-slate-500 font-medium">
                       لا توجد رسائل مطابقة
@@ -794,40 +665,42 @@ export default function RemindersPage() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>المريض</TableHead>
-                          <TableHead>سير العمل</TableHead>
-                          <TableHead>القناة</TableHead>
+                          <TableHead>نوع التذكير</TableHead>
                           <TableHead>تاريخ الإرسال</TableHead>
                           <TableHead>الحالة</TableHead>
                           <TableHead className="w-12"></TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredLogs.map((log) => {
-                          const ch = CHANNEL_CONFIG[log.channel];
+                        {logs.map((log) => {
                           const st = STATUS_CONFIG[log.status];
+                          const typeConfig = REMINDER_TYPE_CONFIG[log.type];
+                          const TypeIcon = typeConfig.icon;
+                          const patientName =
+                            log.patient?.firstName && log.patient?.lastName
+                              ? `${log.patient.firstName} ${log.patient.lastName}`
+                              : "—";
                           return (
                             <TableRow key={log.id}>
                               <TableCell>
                                 <div>
                                   <p className="font-semibold text-slate-800 text-sm">
-                                    {log.patientName}
+                                    {patientName}
                                   </p>
-                                  <p className="text-xs text-slate-400 mt-0.5 font-mono" dir="ltr">
-                                    {log.patientPhone}
+                                  <p
+                                    className="text-xs text-slate-400 mt-0.5 font-mono"
+                                    dir="ltr"
+                                  >
+                                    {log.toPhone}
                                   </p>
                                 </div>
                               </TableCell>
                               <TableCell>
-                                <span className="text-sm text-slate-600">
-                                  {log.workflowName}
-                                </span>
-                              </TableCell>
-                              <TableCell>
                                 <span
-                                  className={`inline-flex items-center gap-1.5 text-xs font-semibold ${ch.color}`}
+                                  className={`inline-flex items-center gap-1.5 text-xs font-semibold ${typeConfig.color}`}
                                 >
-                                  {ch.icon}
-                                  {ch.label}
+                                  <TypeIcon className="size-3.5" />
+                                  {typeConfig.label}
                                 </span>
                               </TableCell>
                               <TableCell>
@@ -849,7 +722,7 @@ export default function RemindersPage() {
                                   className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                   title="عرض الرسالة"
                                 >
-                                  <Eye className="w-4 h-4" />
+                                  <Eye className="size-4" />
                                 </button>
                               </TableCell>
                             </TableRow>
@@ -870,23 +743,25 @@ export default function RemindersPage() {
             نظرة عامة
           </h2>
 
-          {/* Stats cards */}
           <div className="grid grid-cols-2 xl:grid-cols-1 gap-3">
             <Card className="p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
-                <Zap className="w-5 h-5" />
+              <div className="size-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
+                <Zap className="size-5" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-slate-800">
-                  {stats.activeWorkflows}
+                  {stats.activeReminders}
+                  <span className="text-sm font-normal text-slate-400">
+                    /4
+                  </span>
                 </p>
-                <p className="text-xs text-slate-500">تذكيرات نشطة</p>
+                <p className="text-xs text-slate-500">أنواع مفعّلة</p>
               </div>
             </Card>
 
             <Card className="p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
-                <Send className="w-5 h-5" />
+              <div className="size-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
+                <Send className="size-5" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-slate-800">
@@ -897,8 +772,8 @@ export default function RemindersPage() {
             </Card>
 
             <Card className="p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-violet-50 flex items-center justify-center text-violet-600 shrink-0">
-                <TrendingUp className="w-5 h-5" />
+              <div className="size-10 rounded-xl bg-violet-50 flex items-center justify-center text-violet-600 shrink-0">
+                <TrendingUp className="size-5" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-slate-800">
@@ -909,8 +784,8 @@ export default function RemindersPage() {
             </Card>
 
             <Card className="p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 shrink-0">
-                <BarChart3 className="w-5 h-5" />
+              <div className="size-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 shrink-0">
+                <BarChart3 className="size-5" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-slate-800">
@@ -921,27 +796,23 @@ export default function RemindersPage() {
             </Card>
           </div>
 
-          {/* Channel breakdown */}
+          {/* Type distribution */}
           <Card className="p-4 space-y-3">
             <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
               <div className="w-1.5 h-4 rounded-full bg-blue-500" />
-              التوزيع حسب القناة
+              التوزيع حسب النوع
             </h3>
-            {(["whatsapp", "sms", "email"] as Channel[]).map((channel) => {
-              const ch = CHANNEL_CONFIG[channel];
-              const count = logs.filter((l) => l.channel === channel).length;
-              const pct =
-                logs.length > 0
-                  ? Math.round((count / logs.length) * 100)
-                  : 0;
+            {typeDistribution.map(({ type, count, pct }) => {
+              const config = REMINDER_TYPE_CONFIG[type];
+              const Icon = config.icon;
               return (
-                <div key={channel} className="space-y-1.5">
+                <div key={type} className="space-y-1.5">
                   <div className="flex items-center justify-between text-sm">
                     <span
-                      className={`flex items-center gap-1.5 font-medium ${ch.color}`}
+                      className={`flex items-center gap-1.5 font-medium ${config.color}`}
                     >
-                      {ch.icon}
-                      {ch.label}
+                      <Icon className="size-3.5" />
+                      {config.label}
                     </span>
                     <span className="text-xs text-slate-500">
                       {count} ({pct}%)
@@ -950,11 +821,13 @@ export default function RemindersPage() {
                   <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all duration-500 ${
-                        channel === "whatsapp"
+                        type === "CONFIRM"
                           ? "bg-emerald-500"
-                          : channel === "sms"
-                          ? "bg-blue-500"
-                          : "bg-violet-500"
+                          : type === "REMINDER"
+                            ? "bg-blue-500"
+                            : type === "RESCHEDULE"
+                              ? "bg-amber-500"
+                              : "bg-red-500"
                       }`}
                       style={{ width: `${pct}%` }}
                     />
@@ -973,205 +846,48 @@ export default function RemindersPage() {
             <div className="space-y-3">
               {logs.slice(0, 4).map((log) => {
                 const st = STATUS_CONFIG[log.status];
+                const patientName =
+                  log.patient?.firstName && log.patient?.lastName
+                    ? `${log.patient.firstName} ${log.patient.lastName}`
+                    : log.toPhone;
                 return (
                   <div
                     key={log.id}
                     className="flex items-start gap-3 text-sm"
                   >
                     <div
-                      className={`w-6 h-6 rounded-full flex items-center justify-center mt-0.5 shrink-0 ${
-                        log.status === "delivered"
+                      className={`size-6 rounded-full flex items-center justify-center mt-0.5 shrink-0 ${
+                        log.status === "DELIVERED" || log.status === "READ"
                           ? "bg-emerald-50 text-emerald-500"
-                          : log.status === "failed"
-                          ? "bg-red-50 text-red-500"
-                          : log.status === "pending"
-                          ? "bg-amber-50 text-amber-500"
-                          : "bg-blue-50 text-blue-500"
+                          : log.status === "FAILED"
+                            ? "bg-red-50 text-red-500"
+                            : log.status === "PENDING"
+                              ? "bg-amber-50 text-amber-500"
+                              : "bg-blue-50 text-blue-500"
                       }`}
                     >
                       {st.icon}
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-slate-700 font-medium truncate">
-                        {log.patientName}
+                        {patientName}
                       </p>
                       <p className="text-xs text-slate-400 mt-0.5">
-                        {log.workflowName}
+                        {REMINDER_TYPE_CONFIG[log.type].label}
                       </p>
                     </div>
                   </div>
                 );
               })}
+              {logs.length === 0 && (
+                <p className="text-xs text-slate-400 text-center py-2">
+                  لا توجد رسائل بعد
+                </p>
+              )}
             </div>
           </Card>
         </div>
       </div>
-
-      {/* ── Create / Edit Workflow Modal ── */}
-      <Modal
-        isOpen={modalOpen}
-        onClose={closeModal}
-        title={
-          editingWorkflow ? "تعديل سير العمل" : "إنشاء سير عمل جديد"
-        }
-      >
-        <div className="space-y-5">
-          {/* Name */}
-          <div className="space-y-2">
-            <label className="text-sm font-semibold text-slate-700">
-              اسم التذكير <span className="text-red-500">*</span>
-            </label>
-            <Input
-              placeholder="مثال: تذكير قبل الموعد بيوم"
-              value={form.name || ""}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-            />
-          </div>
-
-          {/* Trigger */}
-          <div className="space-y-2">
-            <label className="text-sm font-semibold text-slate-700">
-              توقيت الإرسال
-            </label>
-            <div className="flex items-center gap-2 flex-wrap">
-              {/* Type selector */}
-              <div className="flex bg-slate-100 rounded-xl p-1 gap-1">
-                {(["before", "after"] as TriggerType[]).map((type) => (
-                  <button
-                    key={type}
-                    onClick={() => setForm({ ...form, triggerType: type })}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                      form.triggerType === type
-                        ? "bg-white text-blue-600 shadow-sm"
-                        : "text-slate-500 hover:text-slate-700"
-                    }`}
-                  >
-                    {TRIGGER_TYPE_LABELS[type]}
-                  </button>
-                ))}
-              </div>
-
-              {/* Value */}
-              <span className="text-sm text-slate-500">بـ</span>
-              <input
-                type="number"
-                min={0}
-                max={365}
-                value={form.triggerValue ?? 24}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    triggerValue: parseInt(e.target.value) || 0,
-                  })
-                }
-                className="w-20 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-center outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              />
-
-              {/* Unit selector */}
-              <div className="flex bg-slate-100 rounded-xl p-1 gap-1">
-                {(["hours", "days"] as TriggerUnit[]).map((unit) => (
-                  <button
-                    key={unit}
-                    onClick={() => setForm({ ...form, triggerUnit: unit })}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                      form.triggerUnit === unit
-                        ? "bg-white text-blue-600 shadow-sm"
-                        : "text-slate-500 hover:text-slate-700"
-                    }`}
-                  >
-                    {TRIGGER_UNIT_LABELS[unit]}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Channel */}
-          <div className="space-y-2">
-            <label className="text-sm font-semibold text-slate-700">
-              قناة الإرسال
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              {(["whatsapp", "sms", "email"] as Channel[]).map((channel) => {
-                const ch = CHANNEL_CONFIG[channel];
-                const isSelected = form.channel === channel;
-                return (
-                  <button
-                    key={channel}
-                    onClick={() => setForm({ ...form, channel })}
-                    className={`flex flex-col items-center gap-2 py-3 px-2 rounded-xl border-2 text-xs font-semibold transition-all ${
-                      isSelected
-                        ? channel === "whatsapp"
-                          ? "border-emerald-500 bg-emerald-50 text-emerald-600"
-                          : channel === "sms"
-                          ? "border-blue-500 bg-blue-50 text-blue-600"
-                          : "border-violet-500 bg-violet-50 text-violet-600"
-                        : "border-slate-200 text-slate-500 hover:border-slate-300"
-                    }`}
-                  >
-                    {ch.icon}
-                    {ch.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Message template */}
-          <div className="space-y-2">
-            <label className="text-sm font-semibold text-slate-700">
-              قالب الرسالة <span className="text-red-500">*</span>
-            </label>
-            <Textarea
-              placeholder="اكتب رسالة التذكير هنا... يمكنك استخدام المتغيرات أدناه."
-              value={form.messageTemplate || ""}
-              onChange={(e) =>
-                setForm({ ...form, messageTemplate: e.target.value })
-              }
-              className="min-h-[100px]"
-            />
-            {/* Variable pills */}
-            <div className="flex flex-wrap gap-1.5">
-              {MESSAGE_VARIABLES.map((v) => (
-                <button
-                  key={v.key}
-                  onClick={() =>
-                    setForm({
-                      ...form,
-                      messageTemplate:
-                        (form.messageTemplate || "") + " " + v.key,
-                    })
-                  }
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-600 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600 transition-colors font-mono"
-                  title={`إضافة ${v.label}`}
-                >
-                  <Plus className="w-3 h-3" />
-                  {v.key}
-                </button>
-              ))}
-            </div>
-            <p className="text-xs text-slate-400">
-              انقر على المتغير لإضافته إلى الرسالة. سيتم استبداله ببيانات
-              المريض الفعلية عند الإرسال.
-            </p>
-          </div>
-
-          {/* Footer */}
-          <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
-            <Button variant="outline" onClick={closeModal}>
-              إلغاء
-            </Button>
-            <Button
-              onClick={saveWorkflow}
-              disabled={!form.name || !form.messageTemplate}
-              className="gap-2"
-            >
-              <CheckCircle2 className="w-4 h-4" />
-              {editingWorkflow ? "حفظ التعديلات" : "إنشاء سير العمل"}
-            </Button>
-          </div>
-        </div>
-      </Modal>
 
       {/* ── Message Preview Modal ── */}
       <Modal
@@ -1185,41 +901,32 @@ export default function RemindersPage() {
               <div className="space-y-1">
                 <p className="text-xs text-slate-500 font-semibold">المريض</p>
                 <p className="text-sm text-slate-800 font-medium">
-                  {previewLog.patientName}
+                  {previewLog.patient?.firstName && previewLog.patient?.lastName
+                    ? `${previewLog.patient.firstName} ${previewLog.patient.lastName}`
+                    : "—"}
                 </p>
               </div>
               <div className="space-y-1">
                 <p className="text-xs text-slate-500 font-semibold">الهاتف</p>
                 <p className="text-sm text-slate-800 font-mono" dir="ltr">
-                  {previewLog.patientPhone}
+                  {previewLog.toPhone}
                 </p>
               </div>
               <div className="space-y-1">
                 <p className="text-xs text-slate-500 font-semibold">
-                  سير العمل
+                  نوع التذكير
                 </p>
-                <p className="text-sm text-slate-800">
-                  {previewLog.workflowName}
-                </p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-slate-500 font-semibold">القناة</p>
                 <span
                   className={`inline-flex items-center gap-1.5 text-xs font-semibold ${
-                    CHANNEL_CONFIG[previewLog.channel].color
+                    REMINDER_TYPE_CONFIG[previewLog.type].color
                   }`}
                 >
-                  {CHANNEL_CONFIG[previewLog.channel].icon}
-                  {CHANNEL_CONFIG[previewLog.channel].label}
+                  {(() => {
+                    const Icon = REMINDER_TYPE_CONFIG[previewLog.type].icon;
+                    return <Icon className="size-3.5" />;
+                  })()}
+                  {REMINDER_TYPE_CONFIG[previewLog.type].label}
                 </span>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-slate-500 font-semibold">
-                  تاريخ الإرسال
-                </p>
-                <p className="text-sm text-slate-800">
-                  {formatArabicDateTime(previewLog.sentAt)}
-                </p>
               </div>
               <div className="space-y-1">
                 <p className="text-xs text-slate-500 font-semibold">الحالة</p>
@@ -1230,6 +937,44 @@ export default function RemindersPage() {
                   </span>
                 </Badge>
               </div>
+              <div className="space-y-1">
+                <p className="text-xs text-slate-500 font-semibold">
+                  تاريخ الإرسال
+                </p>
+                <p className="text-sm text-slate-800">
+                  {formatArabicDateTime(previewLog.sentAt)}
+                </p>
+              </div>
+              {previewLog.deliveredAt && (
+                <div className="space-y-1">
+                  <p className="text-xs text-slate-500 font-semibold">
+                    تاريخ التوصيل
+                  </p>
+                  <p className="text-sm text-slate-800">
+                    {formatArabicDateTime(previewLog.deliveredAt)}
+                  </p>
+                </div>
+              )}
+              {previewLog.externalId && (
+                <div className="col-span-2 space-y-1">
+                  <p className="text-xs text-slate-500 font-semibold">
+                    معرف الرسالة
+                  </p>
+                  <p className="text-xs text-slate-500 font-mono truncate" dir="ltr">
+                    {previewLog.externalId}
+                  </p>
+                </div>
+              )}
+              {previewLog.errorMessage && (
+                <div className="col-span-2 space-y-1">
+                  <p className="text-xs text-red-500 font-semibold">
+                    خطأ في الإرسال
+                  </p>
+                  <p className="text-sm text-red-600">
+                    {previewLog.errorMessage}
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2 pt-3 border-t border-slate-100">
@@ -1238,7 +983,7 @@ export default function RemindersPage() {
               </p>
               <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
                 <p className="text-sm text-slate-700 leading-relaxed">
-                  {previewLog.message}
+                  {previewLog.messageContent}
                 </p>
               </div>
             </div>
