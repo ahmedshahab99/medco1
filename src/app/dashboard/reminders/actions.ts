@@ -49,7 +49,7 @@ export async function getTenantReminders() {
             tenantId: actor.tenantId!,
             type,
             name: names[type],
-            isActive: true,
+            isActive: false,
             triggerBeforeMinutes: type === "REMINDER" ? 1440 : null,
           },
         });
