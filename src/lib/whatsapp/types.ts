@@ -8,11 +8,15 @@ export interface AppointmentData {
   tenant: { name: string };
 }
 
+export interface TemplateOverrides {
+  otpCode?: string;
+}
+
 export interface WhatsAppTemplateConfig {
   name: string;
   language: string;
   paramOrder: string[];
-  resolve: (data: AppointmentData) => Record<string, string>;
+  resolve: (data: AppointmentData, overrides?: TemplateOverrides) => Record<string, string>;
 }
 
 export interface SendTemplateParams {

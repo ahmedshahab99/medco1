@@ -13,7 +13,10 @@ import CalendarView from "./CalendarView";
 import DoctorSelect from "./DoctorSelect";
 import TimeSlots from "./TimeSlots";
 import BookingForm from "./BookingForm";
+import BookingOtpForm from "./BookingOtpForm";
 import BookingSuccess from "./BookingSuccess";
+import type { BookingResult } from "@/actions/public-booking";
+import { OTP_RESEND_COOLDOWN_SEC as DEFAULT_RESEND_COOLDOWN_SEC } from "@/lib/otp-constants";
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -34,6 +37,8 @@ export default function BookingModal({
   const [clinicData, setClinicData] = useState<PublicClinicData | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
   const [dataError, setDataError] = useState<string | null>(null);
+  const [pendingPhone, setPendingPhone] = useState<string>("");
+  const [maskedPhone, setMaskedPhone] = useState<string>("");
 
   useEffect(() => {
     if (isOpen && slug) {
@@ -60,6 +65,8 @@ export default function BookingModal({
       setSelectedDoctorId(null);
       setSelectedDoctorName("");
       setSelectedTime(null);
+      setPendingPhone("");
+      setMaskedPhone("");
     }, 300);
   };
 
@@ -95,10 +102,12 @@ export default function BookingModal({
     2: "اختر الطبيب",
     3: "اختر الوقت",
     4: "بياناتك",
-    5: "",
+    5: "تأكيد الحجز",
+    6: "",
   };
 
-  const totalSteps = doctorCount > 1 ? 4 : 3;
+  const requiresOtp = clinicData?.requiresOtp ?? false;
+  const totalSteps = (doctorCount > 1 ? 4 : 3) + (requiresOtp ? 1 : 0);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && resetAndClose()}>
@@ -107,7 +116,7 @@ export default function BookingModal({
         showCloseButton
       >
         <DialogHeader className="px-6 pt-4 pb-2 border-b sticky top-0 bg-popover z-10 rounded-t-xl">
-          {step < 5 && (
+          {step <= totalSteps && (
             <span className="text-xs font-bold tracking-wider text-muted-foreground uppercase mb-1">
               الخطوة {step} من {totalSteps}
             </span>
@@ -162,14 +171,33 @@ export default function BookingModal({
                   slug={slug}
                   doctorId={selectedDoctorId!}
                   doctorName={selectedDoctorName}
+                  requiresOtp={requiresOtp}
                   onBack={() => setStep(3)}
+                  onOtpInitiated={(result, phone) => {
+                    setPendingPhone(phone);
+                    setMaskedPhone(result.maskedPhone ?? "");
+                    setStep(5);
+                  }}
                   onSuccess={(result) => {
                     setSelectedDoctorName(result.doctorName || selectedDoctorName);
-                    setStep(5);
+                    setStep(requiresOtp ? 6 : 5);
                   }}
                 />
               )}
-              {step === 5 && (
+              {step === 5 && requiresOtp && (
+                <BookingOtpForm
+                  slug={slug}
+                  phone={pendingPhone}
+                  maskedPhone={maskedPhone}
+                  initialCooldown={DEFAULT_RESEND_COOLDOWN_SEC}
+                  onBack={() => setStep(4)}
+                  onVerified={(result: BookingResult) => {
+                    setSelectedDoctorName(result.doctorName || selectedDoctorName);
+                    setStep(6);
+                  }}
+                />
+              )}
+              {((step === 5 && !requiresOtp) || (step === 6 && requiresOtp)) && (
                 <BookingSuccess
                   onClose={resetAndClose}
                   date={selectedDate}

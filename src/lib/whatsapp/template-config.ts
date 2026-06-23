@@ -29,11 +29,11 @@ export const WHATSAPP_TEMPLATES: Record<ReminderType, WhatsAppTemplateConfig> = 
       "service_name",
       "appointment_ref",
     ],
-    resolve: (d) => ({
+    resolve: (d, overrides) => ({
       patient_name: fullName(d.patient.firstName, d.patient.lastName),
       appointment_datetime: `${dateFormatter.format(d.startTime)} في الساعة ${timeFormatter.format(d.startTime)}`,
       service_name: d.service.name,
-      appointment_ref: generateOtp(),
+      appointment_ref: overrides?.otpCode ?? generateOtp(),
     }),
   },
   REMINDER: {
