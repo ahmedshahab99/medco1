@@ -13,8 +13,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/Select";
-import { createPublicAppointment } from "@/actions/public-booking";
-import type { BookingResult } from "@/actions/public-booking";
+import {
+  createPublicAppointment,
+  initiateBookingOtp,
+} from "@/actions/public-booking";
+import type { BookingResult, OtpInitiateResult } from "@/actions/public-booking";
 import { formatTime12 } from "@/lib/date-utils";
 
 interface BookingFormProps {
@@ -23,7 +26,9 @@ interface BookingFormProps {
   slug: string;
   doctorId: string;
   doctorName: string;
+  requiresOtp: boolean;
   onBack: () => void;
+  onOtpInitiated: (result: OtpInitiateResult, phone: string) => void;
   onSuccess: (result: BookingResult) => void;
 }
 
@@ -33,7 +38,9 @@ export default function BookingForm({
   slug,
   doctorId,
   doctorName,
+  requiresOtp,
   onBack,
+  onOtpInitiated,
   onSuccess,
 }: BookingFormProps) {
   const [fullName, setFullName] = useState("");
@@ -72,7 +79,7 @@ export default function BookingForm({
     const startTime = `${dateStr}T${time}:00`;
 
     setLoading(true);
-    const result = await createPublicAppointment(slug, {
+    const payload = {
       fullName,
       phone,
       dateOfBirth,
@@ -80,14 +87,31 @@ export default function BookingForm({
       notes,
       doctorId,
       startTime,
-      paymentMethod: "IN_PERSON",
-    });
+      paymentMethod: "IN_PERSON" as const,
+    };
 
-    if (result.success) {
-      onSuccess(result);
+    if (requiresOtp) {
+      const result = await initiateBookingOtp(slug, payload);
+      if (result.success) {
+        onOtpInitiated(result, phone);
+      } else {
+        if (result.fieldErrors) setErrors(result.fieldErrors);
+        if (result.error === "OTP_UNAVAILABLE") {
+          setServerError("تعذّر إرسال رمز التحقق، يرجى الاتصال بالعيادة للحجز");
+        } else if (result.error === "RATE_LIMITED") {
+          setServerError("تم تجاوز عدد المحاولات، يرجى المحاولة لاحقاً");
+        } else if (result.error) {
+          setServerError(result.error);
+        }
+      }
     } else {
-      if (result.fieldErrors) setErrors(result.fieldErrors);
-      if (result.error) setServerError(result.error);
+      const result = await createPublicAppointment(slug, payload);
+      if (result.success) {
+        onSuccess(result);
+      } else {
+        if (result.fieldErrors) setErrors(result.fieldErrors);
+        if (result.error) setServerError(result.error);
+      }
     }
     setLoading(false);
   };
