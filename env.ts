@@ -11,6 +11,10 @@ const envSchema = z.object({
   RESEND_FROM_EMAIL: z.string().email().optional(),
   UPSTASH_REDIS_REST_URL: z.string().url().optional(),
   UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
+  WHATSAPP_VERIFY_TOKEN: z.string().optional(),
+  USER_ACCESS_TOKEN_WHATSAPP: z.string().optional(),
+  PHONE_NUMBER_ID: z.string().optional(),
+  WABA_ID: z.string().optional(),
 });
 
 export function validateEnv() {
