@@ -64,7 +64,7 @@ const T = {
       plans: [
         { name: "المبتدئة", tagline: "للاستكشاف والتجربة", monthlyPrice: "0", yearlyPrice: "0", doctors: "طبيب واحد", highlight: false, features: ["50 مريض", "50 موعد/شهر", "سجلات أساسية", "لوحة الانتظار", "دعم بريد إلكتروني"], cta: "ابدأ مجاناً" },
         { name: "الاحترافية", tagline: "الخيار الأفضل", monthlyPrice: "75,000", yearlyPrice: "750,000", doctors: "حتى 3 أطباء", highlight: true, features: ["غير محدود: مرضى ومواعيد", "سجلات طبية كاملة (حالات، ملفات)", "تذكيرات واتساب (500/شهر)", "تقارير مالية", "دعم أولوية"], cta: "ابدأ الآن" },
-        { name: "الأعمال", tagline: "للعيادات المتقدمة", monthlyPrice: "200,000", yearlyPrice: "2,000,000", doctors: "حتى 10 أطباء", highlight: false, features: ["كل مميزات الاحترافية", "فروع متعددة", "تحليلات متقدمة", "مدير حساب مخصص", "دعم هاتف / واتساب"], cta: "ابدأ الآن" },
+        { name: "الأعمال", tagline: "للعيادات المتقدمة", monthlyPrice: "200,000", yearlyPrice: "2,000,000", doctors: "حتى 10 أطباء", highlight: false, features: ["كل مميزات الاحترافية", "تذكيرات واتساب (3,000/شهر)", "تحليلات متقدمة", "مدير حساب مخصص", "دعم هاتف / واتساب"], cta: "ابدأ الآن" },
       ],
       enterpriseNote: "لأكثر من 10 أطباء؟",
       enterpriseCta: "تواصل معنا لسعر مخصص",
@@ -200,7 +200,7 @@ const T = {
       plans: [
         { name: "Starter", tagline: "Explore & try", monthlyPrice: "0", yearlyPrice: "0", doctors: "1 Doctor", highlight: false, features: ["50 patients", "50 appointments/mo", "Basic records", "Waitlist board", "Email support"], cta: "Start Free" },
         { name: "Professional", tagline: "Best value", monthlyPrice: "75,000", yearlyPrice: "750,000", doctors: "Up to 3 Doctors", highlight: true, features: ["Unlimited patients & appointments", "Complete records (cases, files)", "WhatsApp reminders (500/mo)", "Financial reports", "Priority support"], cta: "Get Started" },
-        { name: "Business", tagline: "For advanced clinics", monthlyPrice: "200,000", yearlyPrice: "2,000,000", doctors: "Up to 10 Doctors", highlight: false, features: ["All Professional features", "Multi-branch", "Advanced analytics", "Dedicated account manager", "Phone / WhatsApp support"], cta: "Get Started" },
+        { name: "Business", tagline: "For advanced clinics", monthlyPrice: "200,000", yearlyPrice: "2,000,000", doctors: "Up to 10 Doctors", highlight: false, features: ["All Professional features", "Multi-branch", "WhatsApp reminders (3,000/mo)", "Advanced analytics", "Dedicated account manager", "Phone / WhatsApp support"], cta: "Get Started" },
       ],
       enterpriseNote: "More than 10 doctors?",
       enterpriseCta: "Contact us for custom pricing",

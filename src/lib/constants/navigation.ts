@@ -30,8 +30,8 @@ export const navigationGroups: NavGroup[] = [
     label: "الحضور العام",
     items: [
       { title: "الصفحة الشخصية", href: "/dashboard/profile", icon: Globe },
-      { title: "الخدمات", href: "/dashboard/services", icon: Star },
-      { title: "التقييمات", href: "/dashboard/reviews", icon: MessageSquare, disabled: true },
+      { title: "الخدمات", href: "/dashboard/services", icon: Star }
+      
     ],
   },
   {
@@ -59,8 +59,8 @@ export const navigationGroups: NavGroup[] = [
   {
     label: "المالية",
     items: [
-      { title: "الفواتير والمدفوعات", href: "/dashboard/invoices", icon: CreditCard },
-      { title: "التقارير", href: "/dashboard/reports", icon: FileText, disabled: true },
+      { title: "الفواتير والمدفوعات", href: "/dashboard/invoices", icon: CreditCard }
+     
     ],
   },
   {
@@ -79,7 +79,6 @@ export const navigationGroups: NavGroup[] = [
     label: "الإعدادات",
     items: [
       { title: "حسابي", href: "/dashboard/account", icon: User },
-      { title: "الملف الشخصي والهوية", href: "/dashboard/settings/branding", icon: Palette, disabled: true },
       { title: "المستخدمين والصلاحيات", href: "/dashboard/settings/users", icon: ShieldCheck },
     ],
   },
