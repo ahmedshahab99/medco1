@@ -71,6 +71,7 @@ export default async function AppointmentDetailPage({ params }: AppointmentDetai
         <AppointmentDetailActions
           appointmentId={a.id}
           patientId={patientId}
+          patientName={a.patientName}
           appointmentData={{
             status: a.status,
             notes: a.notes,
