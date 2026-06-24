@@ -8,15 +8,14 @@ import {
   Zap,
   Search,
   Filter,
-  CheckCircle2,
   XCircle,
   Clock,
   MessageSquare,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Eye,
   BarChart3,
-  TrendingUp,
-  CheckCheck,
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -77,38 +76,15 @@ interface MessageLogRow {
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
-const STATUS_CONFIG: Record<
-  MessageStatus,
-  {
-    label: string;
-    variant: "success" | "warning" | "danger" | "default";
-    icon: React.ReactNode;
-  }
-> = {
-  PENDING: {
-    label: "قيد الانتظار",
-    variant: "warning",
-    icon: <Clock className="size-3" />,
-  },
-  QUEUED: {
-    label: "في الطابور",
-    variant: "default",
-    icon: <Clock className="size-3" />,
-  },
+const STATUS_CONFIG: Record<string, {
+  label: string;
+  variant: "success" | "warning" | "danger" | "default";
+  icon: React.ReactNode;
+}> = {
   SENT: {
     label: "تم الإرسال",
     variant: "default",
     icon: <Send className="size-3" />,
-  },
-  DELIVERED: {
-    label: "تم التوصيل",
-    variant: "success",
-    icon: <CheckCircle2 className="size-3" />,
-  },
-  READ: {
-    label: "تمت القراءة",
-    variant: "success",
-    icon: <CheckCheck className="size-3" />,
   },
   FAILED: {
     label: "فشل الإرسال",
@@ -147,6 +123,23 @@ function formatArabicDate(dateStr: string | null) {
 
 function minutesToHours(minutes: number | null) {
   return minutes ? Math.round(minutes / 60) : 24;
+}
+
+function parseMessageContent(raw: string, type: ReminderType): string {
+  if (!raw) return "";
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed?.template && parsed?.variables) {
+      const template = REMINDER_TEMPLATES[type] ?? "";
+      return template.replace(/\{(\w+)\}/g, (_, key: string) => {
+        if (parsed.variables[key] !== undefined) return parsed.variables[key];
+        return `{${key}}`;
+      });
+    }
+    return raw;
+  } catch {
+    return raw;
+  }
 }
 
 // ─── Sub-components ─────────────────────────────────────────────────────────
@@ -366,7 +359,16 @@ export default function RemindersPage() {
     "all"
   );
   const [previewLog, setPreviewLog] = useState<MessageLogRow | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [logStats, setLogStats] = useState({
+    sentToday: 0,
+    deliveredCount: 0,
+    totalMessages: 0,
+    typeDistribution: [] as { type: ReminderType; count: number; pct: number }[],
+  });
   const queryClient = useQueryClient();
+
+  const PAGE_SIZE = 15;
 
   // ── Load data ────────────────────────────────────────────────────────────
 
@@ -375,12 +377,13 @@ export default function RemindersPage() {
       setLoading(true);
       const [remindersData, logsData] = await Promise.all([
         getTenantReminders(),
-        getMessageLogs(),
+        getMessageLogs({ page: 1, pageSize: PAGE_SIZE }),
       ]);
       if (Array.isArray(remindersData)) setReminders(remindersData);
       if (logsData) {
         setLogs(logsData.logs);
         setTotalLogs(logsData.total);
+        setLogStats(logsData.stats);
       }
       setLoading(false);
     })();
@@ -423,60 +426,77 @@ export default function RemindersPage() {
     [queryClient, reminders]
   );
 
-  const handleRefreshLogs = useCallback(async () => {
-    const result = await getMessageLogs({
-      status: logStatusFilter === "all" ? undefined : logStatusFilter,
-      type: logTypeFilter === "all" ? undefined : logTypeFilter,
-    });
-    if (result) {
-      const filtered = logSearch.trim()
-        ? result.logs.filter((l) => {
-            const name =
-              l.patient?.firstName && l.patient?.lastName
-                ? `${l.patient.firstName} ${l.patient.lastName}`.toLowerCase()
-                : "";
-            const q = logSearch.trim().toLowerCase();
-            return name.includes(q) || l.toPhone.includes(q);
-          })
-        : result.logs;
-      setLogs(filtered);
-      setTotalLogs(result.total);
-    }
-  }, [logStatusFilter, logTypeFilter, logSearch]);
+  const fetchLogs = useCallback(
+    async (params: {
+      page: number;
+      status: MessageStatus | "all";
+      type: ReminderType | "all";
+      search: string;
+    }) => {
+      const result = await getMessageLogs({
+        page: params.page,
+        pageSize: PAGE_SIZE,
+        status: params.status === "all" ? undefined : params.status,
+        type: params.type === "all" ? undefined : params.type,
+        search: params.search.trim() || undefined,
+      });
+      if (result) {
+        setLogs(result.logs);
+        setTotalLogs(result.total);
+        setLogStats(result.stats);
+      }
+    },
+    [PAGE_SIZE]
+  );
+
+  const handlePageChange = useCallback(
+    (page: number) => {
+      setCurrentPage(page);
+      fetchLogs({ page, status: logStatusFilter, type: logTypeFilter, search: logSearch });
+    },
+    [fetchLogs, logStatusFilter, logTypeFilter, logSearch]
+  );
+
+  const handleStatusFilterChange = useCallback(
+    (value: MessageStatus | "all") => {
+      setLogStatusFilter(value);
+      setCurrentPage(1);
+      fetchLogs({ page: 1, status: value, type: logTypeFilter, search: logSearch });
+    },
+    [fetchLogs, logTypeFilter, logSearch]
+  );
+
+  const handleTypeFilterChange = useCallback(
+    (value: ReminderType | "all") => {
+      setLogTypeFilter(value);
+      setCurrentPage(1);
+      fetchLogs({ page: 1, status: logStatusFilter, type: value, search: logSearch });
+    },
+    [fetchLogs, logStatusFilter, logSearch]
+  );
+
+  const handleSearchClick = useCallback(() => {
+    setCurrentPage(1);
+    fetchLogs({ page: 1, status: logStatusFilter, type: logTypeFilter, search: logSearch });
+  }, [fetchLogs, logStatusFilter, logTypeFilter, logSearch]);
 
   // ── Stats ────────────────────────────────────────────────────────────────
 
   const stats = useMemo(() => {
     const activeCount = reminders.filter((r) => r.isActive).length;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayLogs = logs.filter((l) => {
-      if (!l.sentAt) return false;
-      return new Date(l.sentAt) >= today;
-    });
-    const deliveredCount = logs.filter(
-      (l) => l.status === "DELIVERED" || l.status === "READ"
-    ).length;
-    const successRate =
-      logs.length > 0 ? Math.round((deliveredCount / logs.length) * 100) : 0;
+    
     return {
       activeReminders: activeCount,
-      sentToday: todayLogs.length,
-      successRate,
+      sentToday: logStats.sentToday,
       totalLogs,
     };
-  }, [reminders, logs, totalLogs]);
+  }, [reminders, logStats, totalLogs]);
 
   // ── Type distribution ────────────────────────────────────────────────────
 
   const typeDistribution = useMemo(() => {
-    const types: ReminderType[] = ["CONFIRM", "REMINDER", "RESCHEDULE", "CANCEL"];
-    return types.map((type) => {
-      const count = logs.filter((l) => l.type === type).length;
-      const pct = logs.length > 0 ? Math.round((count / logs.length) * 100) : 0;
-      return { type, count, pct };
-    });
-  }, [logs]);
+    return logStats.typeDistribution;
+  }, [logStats.typeDistribution]);
 
   // ── Tabs ─────────────────────────────────────────────────────────────────
 
@@ -601,7 +621,7 @@ export default function RemindersPage() {
                     <select
                       value={logTypeFilter}
                       onChange={(e) =>
-                        setLogTypeFilter(e.target.value as ReminderType | "all")
+                        handleTypeFilterChange(e.target.value as ReminderType | "all")
                       }
                       className="appearance-none rounded-xl border border-slate-200 bg-white pe-10 ps-9 py-2.5 text-sm outline-none transition-all focus:border-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer"
                     >
@@ -619,18 +639,14 @@ export default function RemindersPage() {
                     <select
                       value={logStatusFilter}
                       onChange={(e) =>
-                        setLogStatusFilter(
+                        handleStatusFilterChange(
                           e.target.value as MessageStatus | "all"
                         )
                       }
                       className="appearance-none rounded-xl border border-slate-200 bg-white pe-10 ps-9 py-2.5 text-sm outline-none transition-all focus:border-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer min-w-[160px]"
                     >
                       <option value="all">جميع الحالات</option>
-                      <option value="DELIVERED">تم التوصيل</option>
-                      <option value="READ">تمت القراءة</option>
                       <option value="SENT">تم الإرسال</option>
-                      <option value="QUEUED">في الطابور</option>
-                      <option value="PENDING">قيد الانتظار</option>
                       <option value="FAILED">فشل</option>
                     </select>
                     <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400 pointer-events-none" />
@@ -639,7 +655,7 @@ export default function RemindersPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={handleRefreshLogs}
+                    onClick={handleSearchClick}
                     className="gap-2"
                   >
                     <Search className="size-4" />
@@ -657,10 +673,9 @@ export default function RemindersPage() {
                   <div>
                     <h2 className="font-bold text-slate-800">سجل الإرسال</h2>
                     <p className="text-xs text-slate-500">
-                      {logs.length} رسالة
-                      {logStatusFilter !== "all" || logTypeFilter !== "all"
-                        ? " (مفلترة)"
-                        : ""}
+                      {totalLogs > 0
+                        ? `عرض ${(currentPage - 1) * PAGE_SIZE + 1}–${Math.min(currentPage * PAGE_SIZE, totalLogs)} من ${totalLogs}`
+                        : "لا توجد رسائل"}
                     </p>
                   </div>
                 </div>
@@ -686,6 +701,7 @@ export default function RemindersPage() {
                           <TableHead>نوع التذكير</TableHead>
                           <TableHead>تاريخ الإرسال</TableHead>
                           <TableHead>الحالة</TableHead>
+                          
                           <TableHead className="w-12"></TableHead>
                         </TableRow>
                       </TableHeader>
@@ -734,6 +750,7 @@ export default function RemindersPage() {
                                   </span>
                                 </Badge>
                               </TableCell>
+                              
                               <TableCell>
                                 <button
                                   onClick={() => setPreviewLog(log)}
@@ -751,6 +768,66 @@ export default function RemindersPage() {
                   </div>
                 )}
               </Card>
+
+              {totalLogs > PAGE_SIZE && (
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-slate-500">
+                    صفحة {currentPage} من {Math.ceil(totalLogs / PAGE_SIZE)}
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      disabled={currentPage <= 1}
+                      onClick={() => handlePageChange(currentPage - 1)}
+                    >
+                      <ChevronRight className="size-4" />
+                    </Button>
+                    {(() => {
+                      const totalPages = Math.ceil(totalLogs / PAGE_SIZE);
+                      const pages: (number | "...")[] = [];
+                      if (totalPages <= 7) {
+                        for (let i = 1; i <= totalPages; i++) pages.push(i);
+                      } else {
+                        pages.push(1);
+                        if (currentPage > 3) pages.push("...");
+                        const start = Math.max(2, currentPage - 1);
+                        const end = Math.min(totalPages - 1, currentPage + 1);
+                        for (let i = start; i <= end; i++) pages.push(i);
+                        if (currentPage < totalPages - 2) pages.push("...");
+                        pages.push(totalPages);
+                      }
+                      return pages.map((p, i) =>
+                        p === "..." ? (
+                          <span
+                            key={`ellipsis-${i}`}
+                            className="flex items-center justify-center size-8 text-slate-400"
+                          >
+                            ...
+                          </span>
+                        ) : (
+                          <Button
+                            key={p}
+                            variant={currentPage === p ? "outline" : "ghost"}
+                            size="icon"
+                            onClick={() => handlePageChange(p as number)}
+                          >
+                            {p}
+                          </Button>
+                        )
+                      );
+                    })()}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      disabled={currentPage >= Math.ceil(totalLogs / PAGE_SIZE)}
+                      onClick={() => handlePageChange(currentPage + 1)}
+                    >
+                      <ChevronLeft className="size-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -789,17 +866,7 @@ export default function RemindersPage() {
               </div>
             </Card>
 
-            <Card className="p-4 flex items-center gap-3">
-              <div className="size-10 rounded-xl bg-violet-50 flex items-center justify-center text-violet-600 shrink-0">
-                <TrendingUp className="size-5" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-800">
-                  {stats.successRate}%
-                </p>
-                <p className="text-xs text-slate-500">نسبة التوصيل</p>
-              </div>
-            </Card>
+            
 
             <Card className="p-4 flex items-center gap-3">
               <div className="size-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 shrink-0">
@@ -875,13 +942,9 @@ export default function RemindersPage() {
                   >
                     <div
                       className={`size-6 rounded-full flex items-center justify-center mt-0.5 shrink-0 ${
-                        log.status === "DELIVERED" || log.status === "READ"
-                          ? "bg-emerald-50 text-emerald-500"
-                          : log.status === "FAILED"
-                            ? "bg-red-50 text-red-500"
-                            : log.status === "PENDING"
-                              ? "bg-amber-50 text-amber-500"
-                              : "bg-blue-50 text-blue-500"
+                        log.status === "FAILED"
+                          ? "bg-red-50 text-red-500"
+                          : "bg-blue-50 text-blue-500"
                       }`}
                     >
                       {st.icon}
@@ -973,16 +1036,6 @@ export default function RemindersPage() {
                   </p>
                 </div>
               )}
-              {previewLog.externalId && (
-                <div className="col-span-2 space-y-1">
-                  <p className="text-xs text-slate-500 font-semibold">
-                    معرف الرسالة
-                  </p>
-                  <p className="text-xs text-slate-500 font-mono truncate" dir="ltr">
-                    {previewLog.externalId}
-                  </p>
-                </div>
-              )}
               {previewLog.errorMessage && (
                 <div className="col-span-2 space-y-1">
                   <p className="text-xs text-red-500 font-semibold">
@@ -1000,8 +1053,8 @@ export default function RemindersPage() {
                 محتوى الرسالة
               </p>
               <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                <p className="text-sm text-slate-700 leading-relaxed">
-                  {previewLog.messageContent}
+                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+                  {parseMessageContent(previewLog.messageContent, previewLog.type)}
                 </p>
               </div>
             </div>

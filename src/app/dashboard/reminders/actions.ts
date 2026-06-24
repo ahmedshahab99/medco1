@@ -126,7 +126,7 @@ export interface MessageLogFilters {
 
 export async function getMessageLogs(filters?: MessageLogFilters) {
   const auth = await getAuth();
-  if ("error" in auth) return { logs: [], total: 0 };
+  if ("error" in auth) return { logs: [], total: 0, stats: { sentToday: 0, deliveredCount: 0, totalMessages: 0, typeDistribution: [] } };
 
   const { actor } = auth;
 
@@ -138,11 +138,22 @@ export async function getMessageLogs(filters?: MessageLogFilters) {
   if (filters?.type) {
     where.type = filters.type;
   }
+  if (filters?.search?.trim()) {
+    const q = filters.search.trim();
+    where.OR = [
+      { toPhone: { contains: q } },
+      { patient: { firstName: { contains: q } } },
+      { patient: { lastName: { contains: q } } },
+    ];
+  }
 
-  const take = filters?.pageSize ?? 50;
+  const take = filters?.pageSize ?? 15;
   const skip = ((filters?.page ?? 1) - 1) * take;
 
-  const [logs, total] = await Promise.all([
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+
+  const [logs, total, sentToday, deliveredCount] = await Promise.all([
     prisma.messageLog.findMany({
       where,
       include: {
@@ -155,28 +166,45 @@ export async function getMessageLogs(filters?: MessageLogFilters) {
       take,
     }),
     prisma.messageLog.count({ where }),
+    prisma.messageLog.count({
+      where: { ...where, sentAt: { gte: startOfToday } },
+    }),
+    prisma.messageLog.count({
+      where: { ...where, status: { in: ["DELIVERED", "READ"] } },
+    }),
   ]);
 
-  let filteredLogs = logs;
-  if (filters?.search?.trim()) {
-    const q = filters.search.trim().toLowerCase();
-    filteredLogs = logs.filter((l) => {
-      const name =
-        l.patient?.firstName && l.patient?.lastName
-          ? `${l.patient.firstName} ${l.patient.lastName}`.toLowerCase()
-          : "";
-      return name.includes(q) || l.toPhone.includes(q);
-    });
-  }
+  const types: ReminderType[] = ["CONFIRM", "REMINDER", "RESCHEDULE", "CANCEL"];
+  const typeDistribution = await Promise.all(
+    types.map(async (type) => {
+      const count = await prisma.messageLog.count({
+        where: { ...where, type },
+      });
+      return { type, count };
+    })
+  );
+
+  const serializedLogs = logs.map((l) => ({
+    ...l,
+    createdAt: l.createdAt.toISOString(),
+    sentAt: l.sentAt?.toISOString() ?? null,
+    deliveredAt: l.deliveredAt?.toISOString() ?? null,
+    readAt: l.readAt?.toISOString() ?? null,
+  }));
+
+  const typeDist = typeDistribution.map((d) => ({
+    ...d,
+    pct: total > 0 ? Math.round((d.count / total) * 100) : 0,
+  }));
 
   return {
-    logs: filteredLogs.map((l) => ({
-      ...l,
-      createdAt: l.createdAt.toISOString(),
-      sentAt: l.sentAt?.toISOString() ?? null,
-      deliveredAt: l.deliveredAt?.toISOString() ?? null,
-      readAt: l.readAt?.toISOString() ?? null,
-    })),
+    logs: serializedLogs,
     total,
+    stats: {
+      sentToday,
+      deliveredCount,
+      totalMessages: total,
+      typeDistribution: typeDist,
+    },
   };
 }
