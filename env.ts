@@ -15,6 +15,7 @@ const envSchema = z.object({
   USER_ACCESS_TOKEN_WHATSAPP: z.string().optional(),
   PHONE_NUMBER_ID: z.string().optional(),
   WABA_ID: z.string().optional(),
+  CRON_SECRET: z.string().optional(),
 });
 
 export function validateEnv() {

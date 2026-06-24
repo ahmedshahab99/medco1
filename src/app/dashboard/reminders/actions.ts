@@ -101,6 +101,10 @@ export async function updateReminderTiming(id: string, minutes: number) {
     return { error: "لا يمكن ضبط التوقيت إلا لنوع التذكير" as const };
   }
 
+  if (minutes < 240 || minutes > 1440) {
+    return { error: "يجب أن يكون وقت التذكير بين 4 و 24 ساعة" as const };
+  }
+
   await prisma.reminder.update({
     where: { id },
     data: { triggerBeforeMinutes: minutes },
