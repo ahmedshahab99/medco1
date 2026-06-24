@@ -145,15 +145,8 @@ function formatArabicDate(dateStr: string | null) {
   });
 }
 
-function minutesToDisplay(minutes: number | null) {
-  if (!minutes) return { value: 24, unit: "hours" as const };
-  if (minutes % 1440 === 0) return { value: minutes / 1440, unit: "days" as const };
-  if (minutes % 60 === 0) return { value: minutes / 60, unit: "hours" as const };
-  return { value: minutes, unit: "hours" as const };
-}
-
-function displayToMinutes(value: number, unit: "hours" | "days") {
-  return unit === "days" ? value * 1440 : value * 60;
+function minutesToHours(minutes: number | null) {
+  return minutes ? Math.round(minutes / 60) : 24;
 }
 
 // ─── Sub-components ─────────────────────────────────────────────────────────
@@ -185,55 +178,59 @@ function TimingEditor({
   minutes,
   onSave,
   saving,
+  error,
 }: {
   minutes: number | null;
   onSave: (min: number) => void;
   saving: boolean;
+  error?: string | null;
 }) {
-  const display = minutesToDisplay(minutes);
-  const [value, setValue] = useState(display.value);
-  const [unit, setUnit] = useState<"hours" | "days">(display.unit);
+  const [hours, setHours] = useState(minutesToHours(minutes));
   const [dirty, setDirty] = useState(false);
 
+  const isValid = hours >= 4 && hours <= 24;
+  const displayError =
+    !isValid && dirty ? "يجب أن يكون بين 4 و 24 ساعة" : error;
+
   const handleSave = () => {
-    onSave(displayToMinutes(value, unit));
+    if (!isValid) return;
+    onSave(hours * 60);
     setDirty(false);
   };
 
   return (
-    <div className="flex items-center gap-2 pt-3 border-t border-slate-100">
-      <Clock className="size-4 text-slate-400 shrink-0" />
-      <span className="text-sm text-slate-600">قبل الموعد بـ</span>
-      <input
-        type="number"
-        min={1}
-        max={365}
-        value={value}
-        onChange={(e) => {
-          setValue(Math.max(1, parseInt(e.target.value) || 1));
-          setDirty(true);
-        }}
-        className="w-16 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm text-center outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-      />
-      <select
-        value={unit}
-        onChange={(e) => {
-          setUnit(e.target.value as "hours" | "days");
-          setDirty(true);
-        }}
-        className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer"
-      >
-        <option value="hours">ساعة</option>
-        <option value="days">يوم</option>
-      </select>
-      {dirty && (
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors"
-        >
-          {saving ? "..." : "حفظ"}
-        </button>
+    <div className="pt-3 border-t border-slate-100">
+      <div className="flex items-center gap-2">
+        <Clock className="size-4 text-slate-400 shrink-0" />
+        <span className="text-sm text-slate-600">قبل الموعد بـ</span>
+        <input
+          type="number"
+          min={4}
+          max={24}
+          value={hours}
+          onChange={(e) => {
+            setHours(Math.max(1, parseInt(e.target.value) || 1));
+            setDirty(true);
+          }}
+          className={`w-16 rounded-lg border bg-white px-2 py-1.5 text-sm text-center outline-none transition-all ${
+            displayError
+              ? "border-red-300 focus:border-red-500 focus:ring-1 focus:ring-red-500"
+              : "border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          }`}
+        />
+        <span className="text-sm text-slate-600">ساعة</span>
+        {dirty && (
+          <button
+            onClick={handleSave}
+            disabled={saving || !isValid}
+            className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors"
+          >
+            {saving ? "..." : "حفظ"}
+          </button>
+        )}
+      </div>
+      {displayError && (
+        <p className="text-xs text-red-500 mt-1.5 me-8">{displayError}</p>
       )}
     </div>
   );
@@ -246,11 +243,13 @@ function ReminderCard({
   onToggle,
   onSaveTiming,
   saving,
+  error,
 }: {
   reminder: ReminderRow;
   onToggle: () => void;
   onSaveTiming: (min: number) => void;
   saving: boolean;
+  error?: string | null;
 }) {
   const config = REMINDER_TYPE_CONFIG[reminder.type];
   const Icon = config.icon;
@@ -315,6 +314,7 @@ function ReminderCard({
             minutes={reminder.triggerBeforeMinutes}
             onSave={onSaveTiming}
             saving={saving}
+            error={error}
           />
         )}
 
@@ -355,6 +355,7 @@ export default function RemindersPage() {
   const [totalLogs, setTotalLogs] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState<"reminders" | "logs">("reminders");
 
   const [logSearch, setLogSearch] = useState("");
@@ -398,16 +399,28 @@ export default function RemindersPage() {
   const handleSaveTiming = useCallback(
     async (id: string, minutes: number) => {
       setSaving(true);
-      setReminders((prev) =>
-        prev.map((r) =>
+      setErrors((e) => ({ ...e, [id]: "" }));
+      const prevMinutes = reminders.find((r) => r.id === id)?.triggerBeforeMinutes ?? null;
+      setReminders((rows) =>
+        rows.map((r) =>
           r.id === id ? { ...r, triggerBeforeMinutes: minutes } : r
         )
       );
-      await updateReminderTiming(id, minutes);
+      const result = await updateReminderTiming(id, minutes);
+      if (result && "error" in result) {
+        setErrors((e) => ({ ...e, [id]: result.error }) as Record<string, string>);
+        setReminders((rows) =>
+          rows.map((r) =>
+            r.id === id ? { ...r, triggerBeforeMinutes: prevMinutes } : r
+          )
+        );
+      } else {
+        setErrors((e) => ({ ...e, [id]: "" }) as Record<string, string>);
+      }
       queryClient.invalidateQueries({ queryKey: ["reminder-settings"] });
       setSaving(false);
     },
-    [queryClient]
+    [queryClient, reminders]
   );
 
   const handleRefreshLogs = useCallback(async () => {
@@ -560,6 +573,7 @@ export default function RemindersPage() {
                   onToggle={() => handleToggle(r.id)}
                   onSaveTiming={(min) => handleSaveTiming(r.id, min)}
                   saving={saving}
+                  error={errors[r.id]}
                 />
               ))}
             </div>

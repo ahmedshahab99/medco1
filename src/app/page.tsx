@@ -94,12 +94,12 @@ const T = {
       toggle: ["شهري", "سنوي"],
       save: "وفر 17%",
       plans: [
-        { name: "التجريبية", tagline: "جرّب بدون التزام", monthlyPrice: "0", yearlyPrice: "0", doctors: "1 طبيب", highlight: false, features: ["50 مريض", "200 موعد/شهر", "وصفات طبية", "دعم بريد إلكتروني"], cta: "ابدأ مجاناً" },
-        { name: "الأساسية", tagline: "للممارسين المنفردين", monthlyPrice: "25,000", yearlyPrice: "250,000", doctors: "1-2 طبيب", highlight: false, features: ["سجلات غير محدودة", "مواعيد غير محدودة", "وصفات طبية", "تقارير مالية", "دعم هاتفي"], cta: "ابدأ الآن" },
-        { name: "الفضية", tagline: "للعيادات الصغيرة", monthlyPrice: "60,000", yearlyPrice: "600,000", doctors: "3-5 أطباء", highlight: false, features: ["كل مميزات الأساسية", "عيادات متعددة", "تذكيرات واتساب", "تقارير متقدمة", "دعم أولوية"], cta: "ابدأ الآن" },
-        { name: "الذهبية", tagline: "الأكثر شعبية", monthlyPrice: "120,000", yearlyPrice: "1,200,000", doctors: "6-15 طبيب", highlight: true, features: ["كل مميزات الفضية", "تكامل المختبر", "تطبيق موبايل", "مدير حساب مخصص", "دعم 24/7"], cta: "ابدأ الآن" },
-        { name: "البلاتينية", tagline: "لسلاسل العيادات", monthlyPrice: "300,000", yearlyPrice: "3,000,000", doctors: "غير محدود", highlight: false, features: ["كل مميزات الذهبية", "API مخصص", "تدريب في الموقع", "SLA مضمون 99.99%", "دعم VIP"], cta: "تواصل معنا" },
+        { name: "المبتدئة", tagline: "للاستكشاف والتجربة", monthlyPrice: "0", yearlyPrice: "0", doctors: "طبيب واحد", highlight: false, features: ["50 مريض", "50 موعد/شهر", "سجلات أساسية", "لوحة الانتظار", "دعم بريد إلكتروني"], cta: "ابدأ مجاناً" },
+        { name: "الاحترافية", tagline: "الخيار الأفضل", monthlyPrice: "75,000", yearlyPrice: "750,000", doctors: "حتى 3 أطباء", highlight: true, features: ["غير محدود: مرضى ومواعيد", "سجلات طبية كاملة (حالات، ملفات)", "تذكيرات واتساب (500/شهر)", "تقارير مالية", "دعم أولوية"], cta: "ابدأ الآن" },
+        { name: "الأعمال", tagline: "للعيادات المتقدمة", monthlyPrice: "200,000", yearlyPrice: "2,000,000", doctors: "حتى 10 أطباء", highlight: false, features: ["كل مميزات الاحترافية", "فروع متعددة", "تحليلات متقدمة", "مدير حساب مخصص", "دعم هاتف / واتساب"], cta: "ابدأ الآن" },
       ],
+      enterpriseNote: "لأكثر من 10 أطباء؟",
+      enterpriseCta: "تواصل معنا لسعر مخصص",
       currency: "د.ع",
       period: "/شهر",
       yearNote: "تُدفع سنوياً",
@@ -123,8 +123,8 @@ const T = {
       contact: "تواصل مع فريق الدعم",
       groups: [
         { title: "البدء", items: [
-          { q: "هل يمكنني ترقية أو تخفيض باقتي؟", a: "نعم! يمكنك الترقية أو التخفيض في أي وقت. عند الترقية، تحصل على وصول فوري. عند التخفيض، تسري التغييرات في نهاية فترة الفوترة." },
-          { q: "هل تتوفر فترة تجريبية مجانية؟", a: "نعم، نقدم فترة تجريبية مجانية مع وصول كامل للنظام بدون أي التزامات." },
+          { q: "هل يمكنني ترقية أو تخفيض باقتي؟", a: "نعم! يمكنك الترقية أو التخفيض في أي وقت. عند الترقية تحصل على وصول فوري للميزات الجديدة. عند التخفيض تسري التغييرات في نهاية فترة الفوترة." },
+          { q: "هل تتوفر فترة تجريبية مجانية؟", a: "نعم، نقدم باقة مبتدئة مجانية تتيح لك إدارة 50 مريض و50 موعد شهرياً مع الميزات الأساسية. عندما تحتاج المزيد، يمكنك الترقية للباقة الاحترافية." },
           { q: "هل يمكنني إلغاء اشتراكي؟", a: "نعم، يمكنك الإلغاء في أي وقت. ستظل بياناتك متاحة حتى نهاية فترة الفوترة مع خيارات تصدير." },
         ]},
         { title: "الأمان والمدفوعات", items: [
@@ -236,12 +236,12 @@ const T = {
       toggle: ["Monthly", "Yearly"],
       save: "Save 17%",
       plans: [
-        { name: "Trial", tagline: "Try without commitment", monthlyPrice: "0", yearlyPrice: "0", doctors: "1 Doctor", highlight: false, features: ["50 patients", "200 appointments/mo", "Prescriptions", "Email support"], cta: "Start Free" },
-        { name: "Basic", tagline: "For solo practitioners", monthlyPrice: "25,000", yearlyPrice: "250,000", doctors: "1–2 Doctors", highlight: false, features: ["Unlimited records", "Unlimited appointments", "Prescriptions", "Financial reports", "Phone support"], cta: "Get Started" },
-        { name: "Silver", tagline: "For small clinics", monthlyPrice: "60,000", yearlyPrice: "600,000", doctors: "3–5 Doctors", highlight: false, features: ["All Basic features", "Multi-clinic", "WhatsApp reminders", "Advanced reports", "Priority support"], cta: "Get Started" },
-        { name: "Gold", tagline: "Most Popular", monthlyPrice: "120,000", yearlyPrice: "1,200,000", doctors: "6–15 Doctors", highlight: true, features: ["All Silver features", "Lab integration", "Mobile app", "Dedicated manager", "24/7 support"], cta: "Get Started" },
-        { name: "Platinum", tagline: "For clinic chains", monthlyPrice: "300,000", yearlyPrice: "3,000,000", doctors: "Unlimited", highlight: false, features: ["All Gold features", "Custom API", "On-site training", "99.99% SLA", "VIP support"], cta: "Contact Us" },
+        { name: "Starter", tagline: "Explore & try", monthlyPrice: "0", yearlyPrice: "0", doctors: "1 Doctor", highlight: false, features: ["50 patients", "50 appointments/mo", "Basic records", "Waitlist board", "Email support"], cta: "Start Free" },
+        { name: "Professional", tagline: "Best value", monthlyPrice: "75,000", yearlyPrice: "750,000", doctors: "Up to 3 Doctors", highlight: true, features: ["Unlimited patients & appointments", "Complete records (cases, files)", "WhatsApp reminders (500/mo)", "Financial reports", "Priority support"], cta: "Get Started" },
+        { name: "Business", tagline: "For advanced clinics", monthlyPrice: "200,000", yearlyPrice: "2,000,000", doctors: "Up to 10 Doctors", highlight: false, features: ["All Professional features", "Multi-branch", "Advanced analytics", "Dedicated account manager", "Phone / WhatsApp support"], cta: "Get Started" },
       ],
+      enterpriseNote: "More than 10 doctors?",
+      enterpriseCta: "Contact us for custom pricing",
       currency: "IQD",
       period: "/mo",
       yearNote: "Billed annually",
@@ -265,8 +265,8 @@ const T = {
       contact: "Contact Support",
       groups: [
         { title: "Getting Started", items: [
-          { q: "Can I upgrade or downgrade my plan?", a: "Yes! You can change your plan at any time. Upgrades are instant, downgrades apply at the end of the billing period." },
-          { q: "Is there a free trial?", a: "Yes, we offer a free trial with full system access and no obligations." },
+          { q: "Can I upgrade or downgrade my plan?", a: "Yes! You can change your plan at any time. Upgrades give you immediate access to new features. Downgrades apply at the end of the billing period." },
+            { q: "Is there a free trial?", a: "Yes, our free Starter plan lets you manage 50 patients and 50 appointments per month with basic features. When you need more, upgrade to Professional." },
           { q: "Can I cancel my subscription?", a: "Yes, you can cancel anytime. Your data remains accessible until the end of the billing period with export options." },
         ]},
         { title: "Security & Payments", items: [
@@ -867,7 +867,7 @@ export default function LandingPage() {
                   ))}
                 </div>
                 <button onClick={() => nav("pricing")} className="text-sm text-slate-400 hover:text-teal-300 font-bold transition-colors">
-                  {isRtl ? "عرض جميع الباقات الخمس ←" : "View All 5 Plans →"}
+                  {isRtl ? "عرض جميع الباقات ←" : "View All Plans →"}
                 </button>
               </div>
             </div>
@@ -1024,13 +1024,13 @@ export default function LandingPage() {
 
           <section className="py-8 pb-20">
             <div className="max-w-7xl mx-auto px-4 sm:px-6">
-              <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+              <div className="grid lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
                 {t.pricing.plans.map((plan, i) => (
                   <div key={i} className={`card-hover relative p-6 rounded-2xl overflow-hidden border-2 ${plan.highlight ? "bg-gradient-to-br from-teal-500/10 to-cyan-500/5 border-teal-500/50 shadow-xl shadow-teal-500/10" : "bg-white/[0.02] border-white/5 hover:border-white/15"}`}>
                     {plan.highlight && <div className="absolute top-0 start-0 end-0 h-1 bg-gradient-to-r from-amber-400 to-orange-500" />}
                     {plan.highlight && (
                       <div className="absolute -top-0 start-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-400 to-orange-500 text-black px-3 py-0.5 rounded-b-lg text-[10px] font-black">
-                        {isRtl ? "الأكثر شعبية" : "Most Popular"}
+                        {isRtl ? "⭐ الأكثر شعبية" : "⭐ Most Popular"}
                       </div>
                     )}
                     <div className="text-lg font-black text-white mb-1">{plan.name}</div>
@@ -1060,9 +1060,15 @@ export default function LandingPage() {
                   </div>
                 ))}
               </div>
-              <p className="text-center text-sm text-slate-500 mt-8">
-                {isRtl ? "كل باقة تأتي مع وصول كامل لجميع الميزات. الفرق الوحيد هو عدد الأطباء المسموح به." : "Every plan includes full feature access. The only difference is the number of allowed doctors."}
-              </p>
+              {t.pricing.enterpriseNote && (
+                <div className="text-center mt-8 p-6 rounded-2xl bg-white/[0.02] border border-white/10 max-w-lg mx-auto">
+                  <p className="text-sm text-slate-400 mb-3">{t.pricing.enterpriseNote}</p>
+                  <button onClick={() => nav("contact")} className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold bg-white/5 border border-white/10 text-teal-400 hover:bg-teal-500/10 hover:border-teal-500/30 transition-all">
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    {t.pricing.enterpriseCta}
+                  </button>
+                </div>
+              )}
             </div>
           </section>
 
