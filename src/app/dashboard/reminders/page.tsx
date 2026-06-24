@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Bell,
   Send,
@@ -364,6 +365,7 @@ export default function RemindersPage() {
     "all"
   );
   const [previewLog, setPreviewLog] = useState<MessageLogRow | null>(null);
+  const queryClient = useQueryClient();
 
   // ── Load data ────────────────────────────────────────────────────────────
 
@@ -390,7 +392,8 @@ export default function RemindersPage() {
       prev.map((r) => (r.id === id ? { ...r, isActive: !r.isActive } : r))
     );
     await toggleReminder(id);
-  }, []);
+    queryClient.invalidateQueries({ queryKey: ["reminder-settings"] });
+  }, [queryClient]);
 
   const handleSaveTiming = useCallback(
     async (id: string, minutes: number) => {
@@ -401,9 +404,10 @@ export default function RemindersPage() {
         )
       );
       await updateReminderTiming(id, minutes);
+      queryClient.invalidateQueries({ queryKey: ["reminder-settings"] });
       setSaving(false);
     },
-    []
+    [queryClient]
   );
 
   const handleRefreshLogs = useCallback(async () => {

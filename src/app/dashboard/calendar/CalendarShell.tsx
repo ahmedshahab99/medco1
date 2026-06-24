@@ -17,6 +17,7 @@ import { useDoctors } from "@/hooks/use-doctors";
 import { useAvailability } from "@/hooks/use-availability";
 import { useUnavailableBlocks, useCreateUnavailableBlock, useDeleteUnavailableBlock } from "@/hooks/use-unavailable-blocks";
 import { useAuth } from "@/hooks/use-auth";
+import { useReminderSettings } from "@/hooks/use-reminder-settings";
 import type { CalendarAppointment } from "@/hooks/use-appointments";
 import type { AppointmentPatchInput } from "@/lib/schemas/appointment";
 import type { ViewMode, DoctorUnavailableBlock } from "./types";
@@ -27,6 +28,7 @@ import MonthView from "./MonthView";
 import AppointmentDetailModal from "./AppointmentDetailModal";
 import NewAppointmentModal from "./NewAppointmentModal";
 import UnavailableBlockModal from "./UnavailableBlockModal";
+import { SendReminderDialog } from "@/components/dashboard/appointments/SendReminderDialog";
 
 export default function CalendarShell() {
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
@@ -37,6 +39,12 @@ export default function CalendarShell() {
   const [newApptSlot, setNewApptSlot] = useState<{ start: Date; end: Date } | null>(null);
   const [rescheduleAppt, setRescheduleAppt] = useState<CalendarAppointment | null>(null);
   const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
+  const [reminderDialog, setReminderDialog] = useState<{
+    open: boolean;
+    appointmentId: string;
+    patientName: string;
+    type: "CANCEL" | "RESCHEDULE";
+  }>({ open: false, appointmentId: "", patientName: "", type: "CANCEL" });
 
   const { from, to } = useMemo(() => {
     if (viewMode === "week") {
@@ -112,6 +120,7 @@ export default function CalendarShell() {
   const { mutate: updateAppt, isPending: isUpdatingAppt } = useUpdateAppointment(from, to);
   const { mutate: deleteAppt, isPending: isDeletingAppt } = useDeleteAppointment(from, to);
   const { mutateAsync: rescheduleApptAsync } = useRescheduleAppointment(from, to);
+  const { data: reminderSettings } = useReminderSettings();
 
   const handlePrev = () => {
     if (viewMode === "week") setCurrentDate((prev) => subDays(prev, 7));
@@ -129,7 +138,23 @@ export default function CalendarShell() {
 
   const handleStatusChange = (id: string, status: AppointmentPatchInput["status"]) => {
     if (!status) return;
-    updateAppt({ id, data: { status } });
+
+    if (status === "CANCELLED" && reminderSettings?.cancelActive) {
+      const appt = appointments?.find((a) => a.id === id);
+      updateAppt({ id, data: { status } }, {
+        onSuccess: () => {
+          setReminderDialog({
+            open: true,
+            appointmentId: id,
+            patientName: appt?.patientName ?? "",
+            type: "CANCEL",
+          });
+        },
+      });
+    } else {
+      updateAppt({ id, data: { status } });
+    }
+
     setSelectedAppt((prev) => (prev && prev.id === id ? { ...prev, status } : prev));
   };
 
@@ -308,7 +333,18 @@ export default function CalendarShell() {
         initialEnd={newApptSlot?.end}
         editingAppointment={rescheduleAppt ?? undefined}
         onCreate={(args) => createAppt(args)}
-        onUpdate={async (args) => {await rescheduleApptAsync(args); }}
+        onUpdate={async (args) => {
+          const appt = rescheduleAppt;
+          await rescheduleApptAsync(args);
+          if (appt && reminderSettings?.rescheduleActive) {
+            setReminderDialog({
+              open: true,
+              appointmentId: appt.id,
+              patientName: appt.patientName,
+              type: "RESCHEDULE",
+            });
+          }
+        }}
       />
 
       <UnavailableBlockModal
@@ -320,6 +356,16 @@ export default function CalendarShell() {
         userRole={role ?? "DOCTOR"}
         onSubmit={handleBlockTime}
         isSubmitting={isCreatingBlock}
+      />
+
+      <SendReminderDialog
+        open={reminderDialog.open}
+        onOpenChange={(open) =>
+          setReminderDialog((prev) => ({ ...prev, open }))
+        }
+        appointmentId={reminderDialog.appointmentId}
+        patientName={reminderDialog.patientName}
+        type={reminderDialog.type}
       />
 
     </div>

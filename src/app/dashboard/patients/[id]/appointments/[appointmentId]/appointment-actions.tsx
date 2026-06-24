@@ -35,6 +35,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/AlertDialog";
+import { SendReminderDialog } from "@/components/dashboard/appointments/SendReminderDialog";
+import { useReminderSettings } from "@/hooks/use-reminder-settings";
 import { updatePatientAppointmentAction, deletePatientAppointmentAction } from "../actions";
 import {
   APPOINTMENT_STATUSES,
@@ -64,6 +66,7 @@ const STATUS_META: Record<string, { label: string }> = {
 interface AppointmentDetailActionsProps {
   appointmentId: string;
   patientId: string;
+  patientName: string;
   appointmentData: {
     status: string;
     notes: string | null;
@@ -73,12 +76,16 @@ interface AppointmentDetailActionsProps {
 export function AppointmentDetailActions({
   appointmentId,
   patientId,
+  patientName,
   appointmentData,
 }: AppointmentDetailActionsProps) {
   const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [isDeleting, startDelete] = useTransition();
+  const [reminderOpen, setReminderOpen] = useState(false);
+  const [reminderType, setReminderType] = useState<"CANCEL" | "RESCHEDULE">("CANCEL");
+  const { data: reminderSettings } = useReminderSettings();
 
   const form = useForm<AppointmentFormValues>({
     resolver: zodResolver(appointmentFormSchema),
@@ -107,6 +114,10 @@ export function AppointmentDetailActions({
       toast.success("تم تحديث الموعد");
       setEditOpen(false);
       router.refresh();
+      if (values.status === "CANCELLED" && reminderSettings?.cancelActive) {
+        setReminderType("CANCEL");
+        setReminderOpen(true);
+      }
     } else {
       toast.error(res.error);
     }
@@ -238,6 +249,14 @@ export function AppointmentDetailActions({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <SendReminderDialog
+        open={reminderOpen}
+        onOpenChange={setReminderOpen}
+        appointmentId={appointmentId}
+        patientName={patientName}
+        type={reminderType}
+      />
     </>
   );
 }
