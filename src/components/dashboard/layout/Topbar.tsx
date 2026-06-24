@@ -22,22 +22,12 @@ export function Topbar({ onOpenMobileSidebar }: TopbarProps) {
         </Button>
       </div>
 
-      <div className="hidden lg:flex items-center bg-slate-100/80 rounded-xl px-3.5 py-2 hover:bg-slate-200/80 focus-within:bg-white focus-within:ring-2 focus-within:ring-emerald-500/30 focus-within:border-emerald-500 transition-all w-[360px] border border-transparent">
-        <Search className="w-4 h-4 text-slate-400" />
-        <input
-          type="text"
-          placeholder="ابحث عن مريض، موعد..."
-          className="bg-transparent border-none outline-none text-sm px-2.5 w-full placeholder:text-slate-400 focus:ring-0 text-slate-700"
-        />
-      </div>
+     
 
       <div className="lg:hidden flex-1" />
 
-      <div className="flex items-center gap-1 sm:gap-2">
-        <button className="relative p-2.5 rounded-xl hover:bg-slate-100 transition-all group">
-          <Bell className="w-4.5 h-4.5 text-slate-500 group-hover:text-slate-700" />
-          <span className="absolute top-2 right-2.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white" />
-        </button>
+      <div className="flex items-center gap-1 sm:gap-2 mr-auto">
+        
 
         <button
           onClick={logout}
