@@ -12,6 +12,7 @@ import { PaymentsTab } from "./tabs/PaymentsTab";
 import { CasesTab } from "./tabs/CasesTab";
 import { AppointmentsTab } from "./tabs/AppointmentsTab";
 import { FilesTab } from "./tabs/FilesTab";
+import { PlanGate } from "@/components/ui/PlanGate";
 
 interface PatientDetailPanelProps {
   patient: Patient;
@@ -326,7 +327,9 @@ export function PatientDetailPanel({
         )}
 
         {activeTab === "files" && (
-          <FilesTab patientId={patient.id} />
+          <PlanGate featureKey="patientFiles">
+            <FilesTab patientId={patient.id} />
+          </PlanGate>
         )}
 
         {activeTab === "payments" && (

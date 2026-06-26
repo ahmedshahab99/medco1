@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { Download } from "lucide-react";
 import { toast } from "sonner";
+import { PlanGate } from "@/components/ui/PlanGate";
 
 import { AnalyticsSummaryCards } from "./AnalyticsSummaryCards";
 import {
@@ -235,6 +236,7 @@ export function AnalyticsPage({
   };
 
   return (
+    <PlanGate featureLevel={{ key: "analyticsDashboard", min: "basic" }}>
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -351,5 +353,6 @@ export function AnalyticsPage({
         <AnalyticsMonthComparison monthlyData={monthlyTrend} />
       )}
     </div>
+    </PlanGate>
   );
 }

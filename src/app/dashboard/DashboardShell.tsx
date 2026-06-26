@@ -9,12 +9,14 @@ import { Toast } from "@/components/ui/Toast";
 import { Toaster } from "sonner";
 import { MutationIndicator } from "@/components/ui/MutationIndicator";
 import { ActivityIcon } from "lucide-react";
+import { PlanProvider, type PlanInfo } from "@/lib/plans/plan-context";
 
 interface DashboardShellProps {
   children: React.ReactNode;
+  plan: PlanInfo;
 }
 
-export default function DashboardShell({ children }: DashboardShellProps) {
+export default function DashboardShell({ children, plan }: DashboardShellProps) {
   const {
     initialize,
     isLoading,
@@ -40,28 +42,30 @@ export default function DashboardShell({ children }: DashboardShellProps) {
   }
 
   return (
-    <div dir="rtl" className="min-h-screen bg-slate-50 flex text-slate-900 font-sans selection:bg-blue-100 selection:text-blue-900">
-      <Sidebar
-        isCollapsed={isSidebarCollapsed}
-        onToggleCollapse={() => setSidebarCollapsed(!isSidebarCollapsed)}
-        isMobileOpen={isMobileSidebarOpen}
-        onCloseMobile={() => setMobileSidebarOpen(false)}
-      />
-      <div className="flex-1 flex flex-col min-w-0 h-[100dvh] overflow-y-auto custom-scrollbar">
-        <Topbar onOpenMobileSidebar={() => setMobileSidebarOpen(true)} />
-        <main className="flex-1 p-3 md:p-4 lg:p-8 w-full max-w-7xl mx-auto">
-          {children}
-        </main>
-      </div>
+    <PlanProvider plan={plan}>
+      <div dir="rtl" className="min-h-screen bg-slate-50 flex text-slate-900 font-sans selection:bg-blue-100 selection:text-blue-900">
+        <Sidebar
+          isCollapsed={isSidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed(!isSidebarCollapsed)}
+          isMobileOpen={isMobileSidebarOpen}
+          onCloseMobile={() => setMobileSidebarOpen(false)}
+        />
+        <div className="flex-1 flex flex-col min-w-0 h-[100dvh] overflow-y-auto custom-scrollbar">
+          <Topbar onOpenMobileSidebar={() => setMobileSidebarOpen(true)} />
+          <main className="flex-1 p-3 md:p-4 lg:p-8 w-full max-w-7xl mx-auto">
+            {children}
+          </main>
+        </div>
 
-      <Toast
-        message={toast.message}
-        type={toast.type}
-        isVisible={toast.visible}
-        onClose={hideToast}
-      />
-      <Toaster position="top-center" />
-      <MutationIndicator />
-    </div>
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          isVisible={toast.visible}
+          onClose={hideToast}
+        />
+        <Toaster position="top-center" />
+        <MutationIndicator />
+      </div>
+    </PlanProvider>
   );
 }

@@ -1,7 +1,10 @@
 import prisma from "@/lib/prisma";
 import type { UserRole } from "@/lib/types/auth";
+import { enforceDoctorLimit } from "@/lib/plans/enforce";
 
 const INVITE_EXPIRY_DAYS = 7;
+
+const DOCTOR_LIKE_ROLES: UserRole[] = ["DOCTOR", "ADMIN"];
 
 export function getInviteExpiry(): Date {
   return new Date(Date.now() + INVITE_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
@@ -42,6 +45,15 @@ export async function acceptInvitation(
 
   if (existingProfile?.tenantId) {
     return { success: false, error: "أنت بالفعل عضو في عيادة." };
+  }
+
+  // Enforce per-tenant doctor-slot limit before mutating.
+  // Only DOCTOR/ADMIN roles count toward the slot; receptionists are free.
+  if (DOCTOR_LIKE_ROLES.includes(invitation.role as UserRole)) {
+    const guard = await enforceDoctorLimit(invitation.tenantId, 1);
+    if (!guard.allowed) {
+      return { success: false, error: guard.reason };
+    }
   }
 
   await prisma.$transaction(async (tx) => {

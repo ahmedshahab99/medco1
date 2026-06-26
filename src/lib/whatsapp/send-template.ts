@@ -2,6 +2,8 @@ import prisma from "@/lib/prisma";
 import { sendWhatsAppTemplateMessage } from "./service";
 import { WHATSAPP_TEMPLATES } from "./template-config";
 import type { DispatchParams, DispatchResult, AppointmentData } from "./types";
+import { enforceWhatsappQuota } from "@/lib/plans/enforce";
+import { incrementWhatsapp } from "@/lib/plans/usage";
 
 async function fetchAppointmentData(
   appointmentId: string,
@@ -66,6 +68,12 @@ export async function sendTemplateMessage(
     text: vars[key],
   }));
 
+  // Enforce monthly WhatsApp quota before attempting the send.
+  const guard = await enforceWhatsappQuota(params.tenantId);
+  if (!guard.allowed) {
+    return { success: false, error: guard.reason ?? "whatsapp quota reached" };
+  }
+
   const result = await sendWhatsAppTemplateMessage({
     toPhone: data.patient.phone,
     templateName: config.name,
@@ -90,6 +98,10 @@ export async function sendTemplateMessage(
       errorMessage: result.error ?? null,
     },
   });
+
+  if (result.success) {
+    await incrementWhatsapp(params.tenantId);
+  }
 
   return result;
 }

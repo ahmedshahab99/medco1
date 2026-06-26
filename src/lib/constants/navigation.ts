@@ -15,7 +15,8 @@ import {
   Palette,
   ShieldCheck,
   UserPlus,
-  User
+  User,
+  BarChart3
 } from "lucide-react";
 import { NavGroup } from "../types/dashboard";
 
@@ -80,6 +81,7 @@ export const navigationGroups: NavGroup[] = [
     items: [
       { title: "حسابي", href: "/dashboard/account", icon: User },
       { title: "المستخدمين والصلاحيات", href: "/dashboard/settings/users", icon: ShieldCheck },
+      { title: "الباقة والاستخدام", href: "/dashboard/settings/plans", icon: BarChart3 },
     ],
   },
 ];

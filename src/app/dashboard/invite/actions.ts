@@ -5,6 +5,7 @@ import { z } from "zod";
 import { getInviteExpiry } from "@/lib/invite";
 import { revalidatePath } from "next/cache";
 import type { UserRole } from "@/lib/types/auth";
+import { enforceDoctorLimit } from "@/lib/plans/enforce";
 
 const createInviteSchema = z.object({
   email: z.string().email({ message: "البريد الإلكتروني غير صالح" }),
@@ -56,6 +57,13 @@ export async function createInvitation(formData: FormData) {
 
   if (existingPending) {
     return { error: "توجد دعوة معلقة بالفعل لهذا البريد الإلكتروني." };
+  }
+
+  // DOCTOR invitations consume a doctor slot — enforce before sending the invite
+  // so the admin fails fast rather than at acceptance time.
+  if ((role as UserRole) === "DOCTOR") {
+    const guard = await enforceDoctorLimit(adminProfile.tenantId, 1);
+    if (!guard.allowed) return { error: guard.reason };
   }
 
   const expiresAt = getInviteExpiry();

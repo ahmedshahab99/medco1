@@ -4,6 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import prisma from "@/lib/prisma";
 import { formatName } from "@/lib/patient-utils";
 import { patientCreateSchema } from "@/lib/schemas/patient";
+import { enforcePatientLimit } from "@/lib/plans/enforce";
 
 function mapPatient(p: {
   id: string;
@@ -169,6 +170,11 @@ export async function POST(request: Request) {
 
   const { firstName, lastName, phone, dateOfBirth, gender, address } = parsed.data;
 try {
+
+  const guard = await enforcePatientLimit(actor.tenantId, 1);
+  if (!guard.allowed) {
+    return NextResponse.json({ error: guard.reason }, { status: 402 });
+  }
 
   const created = await prisma.patient.create({
     data: {

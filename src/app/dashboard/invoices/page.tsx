@@ -1,6 +1,16 @@
 import { createClient } from "@/utils/supabase/server";
 import prisma from "@/lib/prisma";
 import { FinancePage } from "@/components/dashboard/finance/FinancePage";
+import { getActivePlan } from "@/lib/plans/limits";
+import { Lock, ArrowUpRight } from "lucide-react";
+import Link from "next/link";
+
+const TIER_LABELS: Record<string, string> = {
+  STARTER: "ستارتر",
+  PROFESSIONAL: "بروفيشنال",
+  BUSINESS: "بيزنس",
+  ENTERPRISE: "إنتربرايز",
+};
 
 export default async function InvoicesPage() {
   const supabase = await createClient();
@@ -11,6 +21,32 @@ export default async function InvoicesPage() {
   if (!actor?.tenantId) return null;
 
   const tenantId = actor.tenantId;
+
+  const plan = await getActivePlan(tenantId);
+  if (plan.limits.features.financialReports === "none") {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 px-6">
+        <div className="flex items-center justify-center size-14 rounded-2xl bg-amber-100">
+          <Lock className="size-6 text-amber-600" />
+        </div>
+        <div className="text-center mt-4">
+          <p className="text-base font-bold text-amber-800">
+            هذه الميزة غير متوفرة في باقتك الحالية
+          </p>
+          <p className="mt-1 text-sm text-amber-600">
+            باقتك الحالية: {TIER_LABELS[plan.tier] ?? plan.tier}. قم بالترقية للوصول لهذه الميزة.
+          </p>
+        </div>
+        <Link
+          href="/dashboard/account?tab=billing"
+          className="inline-flex items-center gap-1.5 mt-5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700 transition-colors"
+        >
+          ترقية الباقة
+          <ArrowUpRight className="size-3.5" />
+        </Link>
+      </div>
+    );
+  }
   const now = new Date();
   const currentMonth = now.getMonth() + 1;
   const currentYear = now.getFullYear();

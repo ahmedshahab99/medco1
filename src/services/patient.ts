@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { getTenantId } from "@/lib/tenant";
 import { Patient, PatientStatus, PatientGender } from "@/lib/types/dashboard";
+import { enforcePatientLimit } from "@/lib/plans/enforce";
 
 /**
  * Service to handle patient data with strict tenant isolation.
@@ -134,7 +135,12 @@ export const PatientService = {
     dateOfBirth?: Date;
   }) {
     const tenantId = await getTenantId();
-    
+
+    const guard = await enforcePatientLimit(tenantId, 1);
+    if (!guard.allowed) {
+      throw new Error(guard.reason ?? "patient limit reached");
+    }
+
     return await prisma.patient.create({
       data: {
         ...data,
