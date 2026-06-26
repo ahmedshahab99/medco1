@@ -4,6 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { enforcePatientLimit } from "@/lib/plans/enforce";
 
 const createPatientSchema = z.object({
   name: z.string().min(2, { message: "الاسم يجب أن يكون حرفين على الأقل" }),
@@ -39,6 +40,11 @@ export async function createPatientAction(formData: {
     const names = parsed.data.name.split(" ");
     const firstName = names[0];
     const lastName = names.slice(1).join(" ") || " ";
+
+    const guard = await enforcePatientLimit(actor.tenantId, 1);
+    if (!guard.allowed) {
+      return { success: false, error: guard.reason };
+    }
 
     await prisma.patient.create({
       data: {

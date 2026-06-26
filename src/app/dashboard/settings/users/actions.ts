@@ -5,6 +5,9 @@ import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { createClient } from "@/utils/supabase/server";
 import { revokeUserSessions } from "@/lib/session-revocation";
+import { enforceDoctorLimit } from "@/lib/plans/enforce";
+
+const DOCTOR_LIKE_ROLES = new Set(["DOCTOR", "ADMIN"]);
 
 const updateRoleSchema = z.object({
   userId: z.string().uuid(),
@@ -84,6 +87,12 @@ export async function updateUserRole(formData: FormData) {
 
   if (!targetUser || targetUser.tenantId !== actor.tenantId) {
     return { error: "المستخدم غير موجود أو لا ينتمي إلى عيادتك." };
+  }
+
+  // Promoting into a doctor-like slot counts against the plan's doctor limit.
+  if (DOCTOR_LIKE_ROLES.has(role) && !DOCTOR_LIKE_ROLES.has(targetUser.role)) {
+    const guard = await enforceDoctorLimit(actor.tenantId!, 1);
+    if (!guard.allowed) return { error: guard.reason };
   }
 
   try {

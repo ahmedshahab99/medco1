@@ -41,6 +41,7 @@ import {
   getMessageLogs,
 } from "./actions";
 import type { MessageStatus } from "@prisma/client";
+import { PlanGate } from "@/components/ui/PlanGate";
 
 // ─── Serialized types ───────────────────────────────────────────────────────
 
@@ -541,11 +542,12 @@ export default function RemindersPage() {
             </Card>
           ))}
         </div>
-      </div>
+    </div>
     );
   }
 
   return (
+    <PlanGate condition={(plan) => (plan.limits.whatsappPerMonth ?? 0) > 0}>
     <div className="space-y-6 max-w-7xl animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -1068,5 +1070,6 @@ export default function RemindersPage() {
         )}
       </Modal>
     </div>
+    </PlanGate>
   );
 }

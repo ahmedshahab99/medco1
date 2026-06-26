@@ -237,6 +237,12 @@ export async function submitSetupWizard(formData: FormData) {
           where: { id: user.id },
           data: { tenantId: newTenant.id, role: "ADMIN" }
         });
+
+        // Provision the default STARTER TRIAL subscription for the new tenant.
+        // Tier can be changed later via manual superadmin assignment.
+        await tx.subscription.create({
+          data: { tenantId: newTenant.id, tier: "STARTER", status: "TRIAL" },
+        });
       }, {
         maxWait: 10000, // 10 seconds max wait for connection
         timeout: 20000, // 20 seconds max transaction duration

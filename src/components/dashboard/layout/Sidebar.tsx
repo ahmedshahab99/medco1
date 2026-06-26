@@ -5,10 +5,28 @@ import { navigationGroups } from "../../../lib/constants/navigation";
 import { SidebarItem } from "./SidebarItem";
 import { 
   Activity, ChevronLeft, ChevronRight, User, FileText, 
-  Files, Calendar, Briefcase, CreditCard, Bell, PanelLeftClose, PanelLeft, Pill, Stethoscope
+  Files, Calendar, Briefcase, CreditCard, Bell, PanelLeftClose, PanelLeft, Pill, Stethoscope,
+  Lock, ArrowUpRight,
 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { usePatient } from "@/hooks/use-patients";
+import { usePlan } from "@/lib/plans/plan-context";
+import Link from "next/link";
+
+const TIER_LABELS: Record<string, string> = {
+  STARTER: "ستارتر",
+  PROFESSIONAL: "بروفيشنال",
+  BUSINESS: "بيزنس",
+  ENTERPRISE: "إنتربرايز",
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  TRIAL: "تجريبي",
+  ACTIVE: "نشط",
+  PAST_DUE: "متأخر",
+  CANCELED: "ملغي",
+  EXPIRED: "منتهي",
+};
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -22,6 +40,7 @@ export function Sidebar({ isCollapsed, onToggleCollapse, isMobileOpen, onCloseMo
   const patientId = params.id as string;
   const { data: patient } = usePatient(patientId);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const plan = usePlan();
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: 0, behavior: "instant" });
@@ -30,7 +49,7 @@ export function Sidebar({ isCollapsed, onToggleCollapse, isMobileOpen, onCloseMo
   const patientLinks = useMemo(() => {
     if (!patientId) return [];
     const baseUrl = `/dashboard/patients/${patientId}`;
-    return [
+    const links = [
       { title: "تفاصيل المريض", href: `${baseUrl}?tab=overview`, icon: User },
       { title: "الوصفات", href: `${baseUrl}?tab=visits`, icon: Stethoscope },
       { title: "الملفات", href: `${baseUrl}?tab=files`, icon: Files },
@@ -39,7 +58,12 @@ export function Sidebar({ isCollapsed, onToggleCollapse, isMobileOpen, onCloseMo
       { title: "المدفوعات", href: `${baseUrl}?tab=payments`, icon: CreditCard },
       { title: "التذكيرات", href: `${baseUrl}?tab=reminders`, icon: Bell },
     ];
-  }, [patientId]);
+
+    if (plan && !plan.limits.features.patientFiles) {
+      return links.filter((l) => l.title !== "الملفات");
+    }
+    return links;
+  }, [patientId, plan]);
 
   return (
     <>
@@ -120,11 +144,69 @@ export function Sidebar({ isCollapsed, onToggleCollapse, isMobileOpen, onCloseMo
         </div>
 
         {/* Footer */}
-        {!isCollapsed && (
-          <div className="p-3 mx-3 mb-3 bg-white/5 rounded-xl border border-white/10 flex-shrink-0">
-            <p className="text-xs font-bold text-white/80">باقة العيادة الذكية</p>
-            <p className="text-[10px] text-white/40 mt-0.5">تجديد: ١٥ أكتوبر ٢٠٢٦</p>
-            <button className="w-full mt-2 py-2 text-xs font-bold bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all">الترقية</button>
+        {!isCollapsed && plan && (
+          <div className="p-3 mx-3 mb-3 bg-white/5 rounded-xl border border-white/10 flex-shrink-0 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-bold text-white/80">
+                {TIER_LABELS[plan.tier] ?? plan.tier}
+              </p>
+              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400">
+                {STATUS_LABELS[plan.status] ?? plan.status}
+              </span>
+            </div>
+
+            {plan.limits.appointmentsPerMonth !== null && (
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-[10px]">
+                  <span className="text-white/40">المواعيد</span>
+                  <span className="text-white/60 tabular-nums">
+                    {plan.usage.appointments}/{plan.limits.appointmentsPerMonth}
+                  </span>
+                </div>
+                <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-emerald-400 rounded-full transition-all"
+                    style={{
+                      width: `${Math.min((plan.usage.appointments / plan.limits.appointmentsPerMonth) * 100, 100)}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {plan.limits.whatsappPerMonth !== null && plan.limits.whatsappPerMonth > 0 && (
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-[10px]">
+                  <span className="text-white/40">واتساب</span>
+                  <span className="text-white/60 tabular-nums">
+                    {plan.usage.whatsapp}/{plan.limits.whatsappPerMonth}
+                  </span>
+                </div>
+                <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-blue-400 rounded-full transition-all"
+                    style={{
+                      width: `${Math.min((plan.usage.whatsapp / plan.limits.whatsappPerMonth) * 100, 100)}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {plan.limits.whatsappPerMonth === 0 && (
+              <div className="flex items-center gap-1.5 text-[10px] text-white/30">
+                <Lock className="size-3" />
+                واتساب غير متوفر
+              </div>
+            )}
+
+            <Link
+              href="/dashboard/account?tab=billing"
+              className="w-full mt-1 py-2 text-xs font-bold bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all flex items-center justify-center gap-1"
+            >
+              الترقية
+              <ArrowUpRight className="size-3" />
+            </Link>
           </div>
         )}
       </aside>

@@ -131,6 +131,39 @@ if (authProfile.role !== "ADMIN") { ... } // ❌ Stale / untrusted for writes
 await prisma.profile.update({ ... });
 ```
 
+## 📊 Subscription Plans & Rate Limiting
+> **Tiers**: Starter (Free) → Professional (75K IQD/mo) → Business (200K IQD/mo) → Enterprise (Custom)
+> **Module**: `src/lib/plans/` — constants, enforcement guards, usage tracking, and client context.
+
+### Architecture
+- **`limits-const.ts`**: Pure data — `PLAN_LIMITS` record and `PlanFeatureKey` type. No server imports. Safe for client components.
+- **`limits.ts`**: Server-only — `getActivePlan(tenantId)` re-queries `Subscription` from DB (never trusts JWT, per auth boundary). Exposes `ActivePlan` interface.
+- **`usage.ts`**: Server-only — `getCurrentUsage`, `incrementAppointments`, `incrementWhatsapp`. Uses Prisma `upsert` for atomic counters keyed by `YYYY-MM` period.
+- **`enforce.ts`**: Server-only guards — each re-queries Subscription, then checks limit or feature flag. Returns `{ allowed: boolean; reason?: string }` with Arabic error messages.
+- **`plan-context.tsx`**: Client-side React context — `PlanProvider` + `usePlan()` hook. Populated by dashboard layout via Server Component fetch. For read-only UI gating **only**.
+
+### Usage Pattern
+```ts
+// Server action / route handler — always re-queries Subscription from DB
+import { enforceDoctorLimit, enforcePatientLimit, enforceAppointmentQuota, enforceWhatsappQuota, assertFeature } from "@/lib/plans/enforce";
+import { incrementAppointments, incrementWhatsapp } from "@/lib/plans/usage";
+
+const guard = await enforceAppointmentQuota(tenantId);
+if (!guard.allowed) return { error: guard.reason };
+// ... create appointment ...
+await incrementAppointments(tenantId);
+
+// Client component — read-only UI gating
+import { usePlan } from "@/lib/plans/plan-context";
+const plan = usePlan();
+if (plan?.limits.features.patientFiles) { /* show feature */ }
+```
+
+### Tier Assignment
+- **Manual**: Subscription rows live in the `Subscription` table. Tiers assigned directly via DB (no Stripe yet). Every new tenant gets a `STARTER` / `TRIAL` row created in `setup/actions.ts`.
+- **Inactive fallback**: When `PlanStatus` is not `TRIAL` or `ACTIVE`, all limits degrade to STARTER with features disabled.
+- **Columns reserved for Stripe**: `stripeCustomerId`, `stripeSubscriptionId` — nullable, for future integration.
+
 ## 🤖 AI Agent Rules & Constraints
 1. **Ask before adding dependencies**. Prefer native APIs or existing project libs.
 2. **Keep it modular**: One file = one responsibility. Extract repeated UI to `components/ui/` or `components/features/`

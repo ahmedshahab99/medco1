@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { Plus, Download } from "lucide-react";
 import { toast } from "sonner";
+import { PlanGate } from "@/components/ui/PlanGate";
 
 import { SummaryCards } from "./SummaryCards";
 import {
@@ -491,6 +492,7 @@ export function FinancePage({
   };
 
   return (
+    <PlanGate featureLevel={{ key: "financialReports", min: "basic" }}>
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -737,5 +739,6 @@ export function FinancePage({
         cancelLabel="إلغاء"
       />
     </div>
+    </PlanGate>
   );
 }

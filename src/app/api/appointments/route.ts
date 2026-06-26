@@ -3,6 +3,8 @@ import { createClient } from "@/utils/supabase/server";
 import prisma from "@/lib/prisma";
 import { appointmentCreateSchema } from "@/lib/schemas/appointment";
 import { formatName } from "@/lib/patient-utils";
+import { enforcePatientLimit, enforceAppointmentQuota } from "@/lib/plans/enforce";
+import { incrementAppointments } from "@/lib/plans/usage";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -150,6 +152,10 @@ export async function POST(request: Request) {
     if (existingPatient) {
       patientId = existingPatient.id;
     } else {
+      const guard = await enforcePatientLimit(actor.tenantId, 1);
+      if (!guard.allowed) {
+        return NextResponse.json({ error: guard.reason }, { status: 402 });
+      }
       const newPatient = await prisma.patient.create({
         data: {
           tenantId: actor.tenantId,
@@ -202,6 +208,11 @@ export async function POST(request: Request) {
     );
   }
 
+  const apptGuard = await enforceAppointmentQuota(actor.tenantId);
+  if (!apptGuard.allowed) {
+    return NextResponse.json({ error: apptGuard.reason }, { status: 402 });
+  }
+
   const appointment = await prisma.appointment.create({
     data: {
       tenantId: actor.tenantId,
@@ -222,6 +233,8 @@ export async function POST(request: Request) {
       transactions: { select: { id: true }, take: 1, orderBy: { date: "desc" } },
     },
   });
+
+  await incrementAppointments(actor.tenantId);
 
   const mapped = {
     id: appointment.id,

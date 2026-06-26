@@ -1,5 +1,7 @@
 import prisma from "@/lib/prisma";
 import { getTenantId } from "@/lib/tenant";
+import { enforceAppointmentQuota } from "@/lib/plans/enforce";
+import { incrementAppointments } from "@/lib/plans/usage";
 
 export const AppointmentService = {
   async getAppointments(start: Date, end: Date) {
@@ -32,12 +34,20 @@ export const AppointmentService = {
     notes?: string;
   }) {
     const tenantId = await getTenantId();
-    
-    return await prisma.appointment.create({
+
+    const guard = await enforceAppointmentQuota(tenantId);
+    if (!guard.allowed) {
+      throw new Error(guard.reason ?? "appointment quota reached");
+    }
+
+    const appointment = await prisma.appointment.create({
       data: {
         ...data,
         tenantId,
       },
     });
+
+    await incrementAppointments(tenantId);
+    return appointment;
   }
 };

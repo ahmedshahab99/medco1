@@ -30,6 +30,8 @@ import { sendWhatsAppTemplateMessage } from "@/lib/whatsapp/service";
 import { WHATSAPP_TEMPLATES } from "@/lib/whatsapp/template-config";
 import type { AppointmentData } from "@/lib/whatsapp/types";
 import type { WeekSchedule, DaySchedule, AdvancedSettings } from "@/components/features/availability/types";
+import { enforcePatientLimit, enforceAppointmentQuota, enforceWhatsappQuota } from "@/lib/plans/enforce";
+import { incrementAppointments, incrementWhatsapp } from "@/lib/plans/usage";
 
 const phoneRegex = /^(\+964|0)?[1-9]\d{9}$/;
 
@@ -459,6 +461,11 @@ async function createPatientFromPayload(
       },
     });
   } else {
+    // New patient — enforce per-tenant patient limit before creating.
+    const guard = await enforcePatientLimit(tenantId, 1);
+    if (!guard.allowed) {
+      throw new Error(guard.reason ?? "patient limit reached");
+    }
     patient = await prisma.patient.create({
       data: {
         tenantId,
@@ -529,6 +536,12 @@ async function dispatchOtpTemplate(
   pending: PendingBooking,
   otpCode: string,
 ): Promise<{ success: boolean; error?: string }> {
+  // Enforce monthly WhatsApp quota before sending the OTP template.
+  const waGuard = await enforceWhatsappQuota(pending.tenantId);
+  if (!waGuard.allowed) {
+    return { success: false, error: waGuard.reason ?? "whatsapp quota reached" };
+  }
+
   const data: AppointmentData = {
     id: pending.tenantId,
     patient: {
@@ -569,6 +582,10 @@ async function dispatchOtpTemplate(
       errorMessage: result.error ?? null,
     },
   });
+
+  if (result.success) {
+    await incrementWhatsapp(pending.tenantId);
+  }
 
   return result;
 }
@@ -696,7 +713,20 @@ export async function verifyBookingOtp(
     return { success: false, error: recheckError };
   }
 
-  const patient = await createPatientFromPayload(tenant.id, payload);
+  // Enforce monthly appointment quota before persisting.
+  const apptGuard = await enforceAppointmentQuota(tenant.id);
+  if (!apptGuard.allowed) {
+    await deletePendingBooking(token);
+    return { success: false, error: apptGuard.reason };
+  }
+
+  let patient;
+  try {
+    patient = await createPatientFromPayload(tenant.id, payload);
+  } catch (e) {
+    await deletePendingBooking(token);
+    return { success: false, error: e instanceof Error ? e.message : "تعذر إنشاء المريض" };
+  }
 
   const appointment = await prisma.appointment.create({
     data: {
@@ -711,6 +741,7 @@ export async function verifyBookingOtp(
     },
   });
 
+  await incrementAppointments(tenant.id);
   await deletePendingBooking(token);
 
   const doctorName =
@@ -804,13 +835,24 @@ export async function createPublicAppointment(
 
   const { tenant, service, doctor, startDate, endDate, parsed } = prepared;
 
-  const patient = await createPatientFromPayload(tenant.id, {
-    patientFirstName: splitName(parsed.fullName).firstName,
-    patientLastName: splitName(parsed.fullName).lastName,
-    phone: parsed.phone,
-    dateOfBirth: parsed.dateOfBirth,
-    gender: parsed.gender,
-  });
+  // Enforce monthly appointment quota before persisting.
+  const apptGuard = await enforceAppointmentQuota(tenant.id);
+  if (!apptGuard.allowed) {
+    return { success: false, error: apptGuard.reason };
+  }
+
+  let patient;
+  try {
+    patient = await createPatientFromPayload(tenant.id, {
+      patientFirstName: splitName(parsed.fullName).firstName,
+      patientLastName: splitName(parsed.fullName).lastName,
+      phone: parsed.phone,
+      dateOfBirth: parsed.dateOfBirth,
+      gender: parsed.gender,
+    });
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : "تعذر إنشاء المريض" };
+  }
 
   const appointment = await prisma.appointment.create({
     data: {
@@ -824,6 +866,8 @@ export async function createPublicAppointment(
       status: "SCHEDULED",
     },
   });
+
+  await incrementAppointments(tenant.id);
 
   const doctorName =
     [doctor.firstName, doctor.lastName].filter(Boolean).join(" ") || "الطبيب";

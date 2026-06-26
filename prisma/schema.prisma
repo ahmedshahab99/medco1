@@ -36,6 +36,51 @@ model Tenant {
   doctorUnavailable  DoctorUnavailable[]
   reminders          Reminder[]
   messageLogs        MessageLog[]
+  subscription       Subscription?
+  usageCounters      UsageCounter[]
+}
+
+enum PlanTier {
+  STARTER
+  PROFESSIONAL
+  BUSINESS
+  ENTERPRISE
+}
+
+enum PlanStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  EXPIRED
+}
+
+model Subscription {
+  id                   String     @id @default(uuid())
+  tenantId             String     @unique
+  tenant               Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tier                 PlanTier   @default(STARTER)
+  status               PlanStatus @default(TRIAL)
+  currentPeriodEnd     DateTime?
+  // Reserved for future Stripe migration — left nullable intentionally.
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+}
+
+model UsageCounter {
+  id                String   @id @default(uuid())
+  tenantId          String
+  tenant            Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  periodMonth       String   // "YYYY-MM"
+  appointmentsCount Int      @default(0)
+  whatsappCount     Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([tenantId, periodMonth])
+  @@index([tenantId])
 }
 
 model SocialLink {
