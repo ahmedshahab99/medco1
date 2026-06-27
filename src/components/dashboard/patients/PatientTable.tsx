@@ -150,16 +150,16 @@ export function PatientTable({
               </TableCell>
 
               <TableCell className="text-slate-700">
-                {age ? (
+                {age !== null || patient.gender ? (
                   <span className="inline-flex items-center gap-1.5">
-                    <span>{age} سنة</span>
+                    {age !== null && <span>{age} سنة</span>}
+                    {age !== null && patient.gender && (
+                      <span className="text-slate-300">·</span>
+                    )}
                     {patient.gender && (
-                      <>
-                        <span className="text-slate-300">·</span>
-                        <span>
-                          {patient.gender === "MALE" ? "ذكر" : "أنثى"}
-                        </span>
-                      </>
+                      <span>
+                        {patient.gender === "MALE" ? "ذكر" : "أنثى"}
+                      </span>
                     )}
                   </span>
                 ) : (
