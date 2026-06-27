@@ -14,7 +14,7 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const actor = await prisma.profile.findUnique({ where: { id: user.id } });
+  const actor = await prisma.profile.findUnique({ where: { id: user.id, deletedAt: null } });
   if (!actor?.tenantId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (actor.role !== "ADMIN" && actor.role !== "DOCTOR") {
     return NextResponse.json({ error: "ليس لديك صلاحية" }, { status: 403 });

@@ -374,7 +374,7 @@ async function prepareBooking(
   const { doctorId, startTime } = parsed.data;
 
   const doctor = await prisma.profile.findFirst({
-    where: { id: doctorId, tenantId: tenant.id, role: { in: ["DOCTOR", "ADMIN"] } },
+    where: { id: doctorId, tenantId: tenant.id, role: { in: ["DOCTOR", "ADMIN"] }, deletedAt: null },
     select: { id: true, firstName: true, lastName: true },
   });
   if (!doctor) return { success: false, error: "الطبيب غير موجود في هذه العيادة" };

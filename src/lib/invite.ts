@@ -58,6 +58,7 @@ export async function acceptInvitation(
 
   await prisma.$transaction(async (tx) => {
     let profile = await tx.profile.findUnique({ where: { id: userId } });
+    
 
     if (!profile) {
       profile = await tx.profile.create({
@@ -74,6 +75,7 @@ export async function acceptInvitation(
         data: {
           role: invitation.role as UserRole,
           tenantId: invitation.tenantId,
+          deletedAt: null,
         },
       });
     }

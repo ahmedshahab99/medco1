@@ -25,7 +25,7 @@ export async function getReminderSettingsAction(): Promise<ReminderSettings> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { cancelActive: false, rescheduleActive: false };
 
-  const actor = await prisma.profile.findUnique({ where: { id: user.id } });
+  const actor = await prisma.profile.findUnique({ where: { id: user.id, deletedAt: null } });
   if (!actor || !actor.tenantId) return { cancelActive: false, rescheduleActive: false };
 
   const [cancelActive, rescheduleActive] = await Promise.all([

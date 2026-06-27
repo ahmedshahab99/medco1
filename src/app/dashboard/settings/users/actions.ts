@@ -28,7 +28,7 @@ async function getActor() {
   if (authError || !user) return null;
 
   const actor = await prisma.profile.findUnique({
-    where: { id: user.id },
+    where: { id: user.id, deletedAt: null },
   });
 
   if (!actor || actor.role !== "ADMIN" || !actor.tenantId) return null;
@@ -41,7 +41,7 @@ export async function getUsers() {
   if (!actor) return [];
 
   const profiles = await prisma.profile.findMany({
-    where: { tenantId: actor.tenantId },
+    where: { tenantId: actor.tenantId, deletedAt: null },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
@@ -82,7 +82,7 @@ export async function updateUserRole(formData: FormData) {
   }
 
   const targetUser = await prisma.profile.findUnique({
-    where: { id: userId },
+    where: { id: userId, deletedAt: null },
   });
 
   if (!targetUser || targetUser.tenantId !== actor.tenantId) {
@@ -133,7 +133,7 @@ export async function deleteUser(formData: FormData) {
   }
 
   const targetUser = await prisma.profile.findUnique({
-    where: { id: userId },
+    where: { id: userId, deletedAt: null },
   });
 
   if (!targetUser || targetUser.tenantId !== actor.tenantId) {
@@ -141,8 +141,9 @@ export async function deleteUser(formData: FormData) {
   }
 
   try {
-    await prisma.profile.delete({
+    await prisma.profile.update({
       where: { id: userId },
+      data: { deletedAt: new Date(), tenantId: null },
     });
 
     // Revoke all sessions and blacklist current JWT

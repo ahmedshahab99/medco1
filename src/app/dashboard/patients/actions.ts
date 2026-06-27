@@ -26,7 +26,7 @@ export async function createPatientAction(formData: {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "غير مصرح" };
 
-    const actor = await prisma.profile.findUnique({ where: { id: user.id } });
+    const actor = await prisma.profile.findUnique({ where: { id: user.id, deletedAt: null } });
     if (!actor || !actor.tenantId) return { success: false, error: "غير مصرح" };
     if (actor.role !== "ADMIN" && actor.role !== "DOCTOR" && actor.role !== "RECEPTIONIST") {
       return { success: false, error: "ليس لديك صلاحية لإنشاء مرضى" };

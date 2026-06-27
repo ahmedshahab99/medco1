@@ -9,7 +9,7 @@ import type { UserRole } from "@/lib/types/auth";
 export default async function DashboardPage() {
   const userId = await getUserId();
   let profile = await prisma.profile.findUnique({
-    where: { id: userId },
+    where: { id: userId, deletedAt: null },
     select: { id: true, email: true, firstName: true, lastName: true, role: true },
   });
 
@@ -18,7 +18,7 @@ export default async function DashboardPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (user?.email) {
       profile = await prisma.profile.findUnique({
-        where: { email: user.email },
+        where: { email: user.email, deletedAt: null },
         select: { id: true, email: true, firstName: true, lastName: true, role: true },
       });
       if (profile) {

@@ -86,7 +86,7 @@ export async function POST(
       );
     }
 
-    const profile = await prisma.profile.findUnique({ where: { id: userId } });
+    const profile = await prisma.profile.findUnique({ where: { id: userId, deletedAt: null } });
     if (!profile || (profile.role !== "ADMIN" && profile.role !== "DOCTOR")) {
       return NextResponse.json({ error: "ليس لديك صلاحية" }, { status: 403 });
     }

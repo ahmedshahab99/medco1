@@ -18,7 +18,7 @@ export async function updateProfile(formData: FormData) {
 
   // Re-query Profile from DB for authorization
   const actor = await prisma.profile.findUnique({
-    where: { id: user.id },
+    where: { id: user.id, deletedAt: null },
   });
 
   if (!actor) {

@@ -23,7 +23,7 @@ export default async function AnalyticsPageRoute() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const actor = await prisma.profile.findUnique({ where: { id: user.id } });
+  const actor = await prisma.profile.findUnique({ where: { id: user.id, deletedAt: null } });
   if (!actor?.tenantId) return null;
 
   const tenantId = actor.tenantId;

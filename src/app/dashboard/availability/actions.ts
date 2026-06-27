@@ -40,7 +40,7 @@ export async function getClinicAvailability() {
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) return null;
 
-  const profile = await prisma.profile.findUnique({ where: { id: user.id } });
+  const profile = await prisma.profile.findUnique({ where: { id: user.id, deletedAt: null } });
   if (!profile || !profile.tenantId) return null;
 
   const availability = await prisma.clinicAvailability.findUnique({
@@ -63,7 +63,7 @@ export async function saveClinicAvailability(data: {
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) return { error: "يرجى تسجيل الدخول أولاً." };
 
-  const actor = await prisma.profile.findUnique({ where: { id: user.id } });
+  const actor = await prisma.profile.findUnique({ where: { id: user.id, deletedAt: null } });
   if (!actor || actor.role !== "ADMIN" || !actor.tenantId) {
     return { error: "ليس لديك صلاحية تعديل أوقات العمل." };
   }

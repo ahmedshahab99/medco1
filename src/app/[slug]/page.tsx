@@ -61,7 +61,7 @@ export default async function ClinicProfilePage({ params }: PageProps) {
       longitude: true,
       socialLinks: true,
       profiles: {
-        where: { role: { in: ["DOCTOR", "ADMIN"] } },
+        where: { role: { in: ["DOCTOR", "ADMIN"] }, deletedAt: null },
         select: { id: true, firstName: true, lastName: true, role: true },
       },
     },

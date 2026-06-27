@@ -41,12 +41,12 @@ export async function getTenantId(): Promise<string> {
   // Fallback: look up tenant from database (for Google OAuth users)
   const { data: { user } } = await supabase.auth.getUser();
   if (user?.id) {
-    const profile = await prisma.profile.findUnique({ where: { id: user.id } });
+    const profile = await prisma.profile.findUnique({ where: { id: user.id, deletedAt: null } });
     if (profile?.tenantId) return profile.tenantId;
 
     // Also try by email
     if (user.email) {
-      const profileByEmail = await prisma.profile.findUnique({ where: { email: user.email } });
+      const profileByEmail = await prisma.profile.findUnique({ where: { email: user.email, deletedAt: null } });
       if (profileByEmail?.tenantId) {
         // Link the profile to the current auth user ID
         try {

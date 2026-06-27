@@ -17,7 +17,7 @@ async function getActor() {
   if (authError || !user) return null;
 
   const actor = await prisma.profile.findUnique({
-    where: { id: user.id },
+    where: { id: user.id, deletedAt: null },
   });
 
   return actor;

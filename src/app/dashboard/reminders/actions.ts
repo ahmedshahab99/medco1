@@ -14,7 +14,7 @@ async function getAuth() {
   } = await supabase.auth.getUser();
   if (!user) return { error: "Unauthorized" as const };
 
-  const actor = await prisma.profile.findUnique({ where: { id: user.id } });
+  const actor = await prisma.profile.findUnique({ where: { id: user.id, deletedAt: null } });
   if (!actor || !actor.tenantId) return { error: "Forbidden" as const };
 
   return { actor };

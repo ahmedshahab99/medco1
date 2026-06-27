@@ -37,12 +37,12 @@ export async function GET() {
   }
 
   let actor = await prisma.profile.findUnique({
-    where: { id: user.id },
+    where: { id: user.id, deletedAt: null },
   });
 
   if (!actor?.tenantId && user.email) {
     actor = await prisma.profile.findUnique({
-      where: { email: user.email },
+      where: { email: user.email, deletedAt: null },
     });
   }
 
@@ -75,7 +75,7 @@ export async function PATCH(request: Request) {
 
   // Re-query Profile from DB for authorization
   const actor = await prisma.profile.findUnique({
-    where: { id: user.id },
+    where: { id: user.id, deletedAt: null },
   });
 
   if (!actor?.tenantId) {

@@ -34,7 +34,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     // JWT doesn't have tenant_id — check database as fallback
     const { data: { user } } = await supabase.auth.getUser();
     if (user?.email) {
-      const profile = await prisma.profile.findUnique({ where: { email: user.email } });
+      const profile = await prisma.profile.findUnique({ where: { email: user.email, deletedAt: null } });
       if (profile?.tenantId) {
         // Update profile ID to match current auth user, then refresh session
         if (profile.id !== user.id) {
