@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import prisma from "@/lib/prisma";
 import { validateSlugFormat } from "@/lib/slug-utils";
 import { isReservedSlug } from "@/lib/reserved-slugs";
+import { enforceAppointmentQuota } from "@/lib/plans/enforce";
 import ClinicHeader from "@/components/profile/ClinicHeader";
 import ClinicBio from "@/components/profile/ClinicBio";
 import QuickActions from "@/components/profile/QuickActions";
@@ -48,7 +49,16 @@ export default async function ClinicProfilePage({ params }: PageProps) {
 
   const tenant = await prisma.tenant.findUnique({
     where: { slug },
-    include: {
+    select: {
+      id: true,
+      name: true,
+      logo: true,
+      specialty: true,
+      address: true,
+      bio: true,
+      phone: true,
+      latitude: true,
+      longitude: true,
       socialLinks: true,
       profiles: {
         where: { role: { in: ["DOCTOR", "ADMIN"] } },
@@ -60,6 +70,9 @@ export default async function ClinicProfilePage({ params }: PageProps) {
   if (!tenant) {
     notFound();
   }
+
+  const appointmentGuard = await enforceAppointmentQuota(tenant.id);
+  const isAppointmentsFull = !appointmentGuard.allowed;
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-primary/5 to-background font-sans">
@@ -79,6 +92,7 @@ export default async function ClinicProfilePage({ params }: PageProps) {
           slug={slug}
           phone={tenant.phone}
           doctorCount={tenant.profiles.length}
+          isAppointmentsFull={isAppointmentsFull}
           socialLinks={
             tenant.socialLinks.map((s) => ({
               id: s.id,

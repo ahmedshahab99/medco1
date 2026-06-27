@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import prisma from "@/lib/prisma";
 import { createClient } from "@/utils/supabase/server";
 import { serviceRoleClient } from "@/utils/supabase/service-role";
+import { assertFeature } from "@/lib/plans/enforce";
 import {
   PATIENT_FILE_BUCKET,
   PATIENT_FILE_WRITE_ROLES,
@@ -184,6 +185,11 @@ export async function uploadPatientFileAction(
     return { success: false, error: "ليس لديك صلاحية لرفع الملفات" };
   }
 
+  const fileFeatureGuard = await assertFeature(auth.tenantId, "patientFiles");
+  if (!fileFeatureGuard.allowed) {
+    return { success: false, error: fileFeatureGuard.reason! };
+  }
+
   const file = formData.get("file");
   if (!(file instanceof File)) {
     return { success: false, error: "لم يتم اختيار ملف" };
@@ -295,6 +301,11 @@ export async function deletePatientFileAction(
     return { success: false, error: "ليس لديك صلاحية لحذف الملفات" };
   }
 
+  const fileFeatureGuard = await assertFeature(auth.tenantId, "patientFiles");
+  if (!fileFeatureGuard.allowed) {
+    return { success: false, error: fileFeatureGuard.reason! };
+  }
+
   const file = await prisma.patientFile.findFirst({
     where: { id: fileId, tenantId: auth.tenantId },
     select: {
@@ -366,6 +377,11 @@ export async function attachFileToVisitNoteAction(
     return { success: false, error: "ليس لديك صلاحية لإرفاق الملفات" };
   }
 
+  const fileFeatureGuard = await assertFeature(auth.tenantId, "patientFiles");
+  if (!fileFeatureGuard.allowed) {
+    return { success: false, error: fileFeatureGuard.reason! };
+  }
+
   const visitNote = await prisma.visitNote.findFirst({
     where: { id: visitNoteId, tenantId: auth.tenantId },
     select: { id: true, patientId: true },
@@ -412,6 +428,11 @@ export async function detachFileFromVisitNoteAction(
     return { success: false, error: "ليس لديك صلاحية لإزالة المرفقات" };
   }
 
+  const fileFeatureGuard = await assertFeature(auth.tenantId, "patientFiles");
+  if (!fileFeatureGuard.allowed) {
+    return { success: false, error: fileFeatureGuard.reason! };
+  }
+
   const visitNote = await prisma.visitNote.findFirst({
     where: { id: visitNoteId, tenantId: auth.tenantId },
     select: { id: true, patientId: true },
@@ -442,6 +463,11 @@ export async function updatePatientFileNameAction(
 
   if (!canWritePatientFiles(auth.role)) {
     return { success: false, error: "ليس لديك صلاحية لتعديل الملفات" };
+  }
+
+  const fileFeatureGuard = await assertFeature(auth.tenantId, "patientFiles");
+  if (!fileFeatureGuard.allowed) {
+    return { success: false, error: fileFeatureGuard.reason! };
   }
 
   const cleanName = sanitizeName(name);

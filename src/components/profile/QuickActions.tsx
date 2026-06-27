@@ -21,6 +21,7 @@ interface QuickActionsProps {
   slug: string;
   phone: string | null;
   doctorCount: number;
+  isAppointmentsFull: boolean;
   socialLinks: SocialLink[];
 }
 
@@ -34,6 +35,7 @@ export default function QuickActions({
   slug,
   phone,
   doctorCount,
+  isAppointmentsFull,
   socialLinks,
 }: QuickActionsProps) {
   const [isBookingOpen, setIsBookingOpen] = useState(false);
@@ -72,7 +74,7 @@ export default function QuickActions({
           variant="default"
           size="lg"
           className="h-12 rounded-full"
-          disabled={doctorCount === 0}
+          disabled={doctorCount === 0 || isAppointmentsFull}
           onClick={() => setIsBookingOpen(true)}
         >
           <Calendar className="size-5" />
