@@ -160,7 +160,7 @@ export function PatientDetailPanel({
                 <div className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${status.class}`}>
                   {status.label}
                 </div>
-                {age && (
+                {age !== null && (
                   <span className="text-white/70 text-xs flex items-center gap-1">
                     <CalendarDays className="w-3 h-3" />
                     {age} سنة
@@ -203,7 +203,7 @@ export function PatientDetailPanel({
             </div>
             <div className="p-3 text-center">
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">العمر</p>
-              <p className="text-lg font-black text-slate-800">{age ? `${age}` : "—"}</p>
+              <p className="text-lg font-black text-slate-800">{age !== null ? `${age}` : "—"}</p>
             </div>
             <div className="p-3 text-center">
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">الجنس</p>
