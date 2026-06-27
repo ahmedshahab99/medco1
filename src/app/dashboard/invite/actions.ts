@@ -24,8 +24,8 @@ export async function createInvitation(formData: FormData) {
   }
 
   const adminProfile = await prisma.profile.findUnique({
-    where: { id: user.id },
-  });
+      where: { id: user.id, deletedAt: null },
+    });
 
   if (!adminProfile || adminProfile.role !== "ADMIN" || !adminProfile.tenantId) {
     return { error: "ليس لديك صلاحية إرسال الدعوات." };
@@ -44,7 +44,7 @@ export async function createInvitation(formData: FormData) {
   const { email, role } = validation.data;
 
   const existingProfile = await prisma.profile.findUnique({
-    where: { email },
+    where: { email, deletedAt: null },
   });
 
   if (existingProfile) {
@@ -109,8 +109,8 @@ export async function cancelInvitation(invitationId: string) {
   }
 
   const adminProfile = await prisma.profile.findUnique({
-    where: { id: user.id },
-  });
+      where: { id: user.id, deletedAt: null },
+    });
 
   if (!adminProfile || adminProfile.role !== "ADMIN" || !adminProfile.tenantId) {
     return { error: "ليس لديك صلاحية لإدارة الدعوات." };
@@ -149,7 +149,7 @@ export async function getInvitations() {
   }
 
   const profile = await prisma.profile.findUnique({
-    where: { id: user.id },
+    where: { id: user.id, deletedAt: null },
   });
 
   if (!profile || profile.role !== "ADMIN" || !profile.tenantId) {

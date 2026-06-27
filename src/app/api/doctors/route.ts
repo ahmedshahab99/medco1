@@ -15,7 +15,7 @@ export async function GET() {
   }
 
   const actor = await prisma.profile.findUnique({
-    where: { id: user.id },
+    where: { id: user.id, deletedAt: null },
   });
 
   if (!actor?.tenantId) {
@@ -26,6 +26,7 @@ export async function GET() {
     where: {
       tenantId: actor.tenantId,
       role: { in: ["DOCTOR", "ADMIN"] },
+      deletedAt: null,
     },
     orderBy: { firstName: "asc" },
   });

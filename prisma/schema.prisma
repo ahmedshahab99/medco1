@@ -65,8 +65,9 @@ model Subscription {
   // Reserved for future Stripe migration — left nullable intentionally.
   stripeCustomerId     String?
   stripeSubscriptionId String?
-  createdAt            DateTime   @default(now())
-  updatedAt            DateTime   @updatedAt
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model UsageCounter {
@@ -119,6 +120,8 @@ model Profile {
   acceptedInvitations Invitation[]  @relation("AcceptedInvitations")
   patientFilesUploaded PatientFile[]
 
+  deletedAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -136,7 +139,7 @@ model Patient {
   firstName       String
   lastName        String
   email           String?
-  phone           String?  @unique
+  phone           String?  
   dateOfBirth     DateTime?
   gender          Gender?
   status          String    @default("active")
@@ -153,6 +156,7 @@ model Patient {
   updatedAt DateTime @updatedAt
 
   @@index([firstName, lastName])
+  @@unique([tenantId, phone])
 }
 
 enum Gender {

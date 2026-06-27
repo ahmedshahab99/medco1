@@ -27,7 +27,7 @@ export async function GET(request: Request) {
   }
 
   const actor = await prisma.profile.findUnique({
-    where: { id: user.id },
+    where: { id: user.id, deletedAt: null },
   });
 
   if (!actor?.tenantId) {
@@ -78,7 +78,7 @@ export async function POST(request: Request) {
   }
 
   const actor = await prisma.profile.findUnique({
-    where: { id: user.id },
+    where: { id: user.id, deletedAt: null },
   });
 
   if (!actor?.tenantId) {
@@ -120,6 +120,7 @@ export async function POST(request: Request) {
       id: data.doctorId,
       tenantId: actor.tenantId,
       role: { in: ["DOCTOR", "ADMIN"] },
+      deletedAt: null,
     },
   });
 
@@ -176,7 +177,7 @@ export async function DELETE(request: Request) {
   }
 
   const actor = await prisma.profile.findUnique({
-    where: { id: user.id },
+    where: { id: user.id, deletedAt: null },
   });
 
   if (!actor?.tenantId) {

@@ -29,7 +29,7 @@ export async function enforceDoctorLimit(
   if (max === null) return { allowed: true };
 
   const current = await prisma.profile.count({
-    where: { tenantId, role: { in: ["DOCTOR", "ADMIN"] } },
+    where: { tenantId, role: { in: ["DOCTOR", "ADMIN"] }, deletedAt: null },
   });
 
   if (current + prospective > max) {

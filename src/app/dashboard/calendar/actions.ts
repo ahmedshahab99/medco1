@@ -16,7 +16,7 @@ export async function recordAppointmentPaymentAction(
   } = await supabase.auth.getUser();
   if (!user) return { success: false, error: "غير مصرح" };
 
-  const actor = await prisma.profile.findUnique({ where: { id: user.id } });
+  const actor = await prisma.profile.findUnique({ where: { id: user.id, deletedAt: null } });
   if (!actor?.tenantId) return { success: false, error: "غير مصرح" };
 
   const parsed = appointmentPaymentSchema.safeParse(input);

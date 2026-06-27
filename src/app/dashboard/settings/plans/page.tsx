@@ -19,7 +19,7 @@ export default async function PlanUsagePage() {
     getActivePlan(admin.tenantId),
     getCurrentUsage(admin.tenantId),
     prisma.profile.count({
-      where: { tenantId: admin.tenantId, role: { in: ["DOCTOR", "ADMIN"] } },
+      where: { tenantId: admin.tenantId, role: { in: ["DOCTOR", "ADMIN"] }, deletedAt: null },
     }),
     prisma.patient.count({ where: { tenantId: admin.tenantId } }),
     prisma.subscription.findUnique({

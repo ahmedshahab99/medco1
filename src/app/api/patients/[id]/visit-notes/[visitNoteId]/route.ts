@@ -33,7 +33,7 @@ export async function PUT(
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
-    const profile = await prisma.profile.findUnique({ where: { id: user.id } });
+    const profile = await prisma.profile.findUnique({ where: { id: user.id, deletedAt: null } });
     if (!profile || (profile.role !== "ADMIN" && profile.role !== "DOCTOR")) {
       return NextResponse.json({ error: "ليس لديك صلاحية" }, { status: 403 });
     }
@@ -101,7 +101,7 @@ export async function DELETE(
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
-    const profile = await prisma.profile.findUnique({ where: { id: user.id } });
+    const profile = await prisma.profile.findUnique({ where: { id: user.id, deletedAt: null } });
     if (!profile || (profile.role !== "ADMIN" && profile.role !== "DOCTOR")) {
       return NextResponse.json({ error: "ليس لديك صلاحية" }, { status: 403 });
     }

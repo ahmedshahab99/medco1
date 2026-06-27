@@ -28,7 +28,7 @@ async function getAuthorizedActor(): Promise<
   } = await supabase.auth.getUser();
   if (!user) return { error: "غير مصرح" };
 
-  const actor = await prisma.profile.findUnique({ where: { id: user.id } });
+  const actor = await prisma.profile.findUnique({ where: { id: user.id, deletedAt: null } });
   if (!actor || !actor.tenantId) return { error: "غير مصرح" };
 
   return { tenantId: actor.tenantId, role: actor.role, userId: actor.id };

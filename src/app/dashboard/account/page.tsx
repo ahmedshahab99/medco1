@@ -17,7 +17,7 @@ export default async function AccountPage() {
   const authProfile = await requireAuth();
 
   const profile = await prisma.profile.findUnique({
-    where: { id: authProfile.id },
+    where: { id: authProfile.id, deletedAt: null },
     include: {
       tenant: {
         select: { name: true, id: true },

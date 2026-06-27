@@ -21,7 +21,7 @@ export async function GET(
   }
 
   const actor = await prisma.profile.findUnique({
-    where: { id: user.id },
+    where: { id: user.id, deletedAt: null },
   });
 
   if (!actor?.tenantId) {
@@ -124,7 +124,7 @@ export async function PATCH(
   }
 
   const actor = await prisma.profile.findUnique({
-    where: { id: user.id },
+    where: { id: user.id, deletedAt: null },
   });
 
   if (!actor?.tenantId) {
@@ -206,7 +206,7 @@ export async function DELETE(
   }
 
   const actor = await prisma.profile.findUnique({
-    where: { id: user.id },
+    where: { id: user.id, deletedAt: null },
   });
 
   if (!actor?.tenantId) {

@@ -159,7 +159,12 @@ export async function submitSetupWizard(formData: FormData) {
           if (profile.id !== user.id) {
             await tx.profile.update({
               where: { id: profile.id },
-              data: { id: user.id }
+              data: { id: user.id, deletedAt: null }
+            });
+          } else if (profile.deletedAt) {
+            await tx.profile.update({
+              where: { id: profile.id },
+              data: { deletedAt: null }
             });
           }
         } else {
@@ -235,7 +240,7 @@ export async function submitSetupWizard(formData: FormData) {
 
         await tx.profile.update({
           where: { id: user.id },
-          data: { tenantId: newTenant.id, role: "ADMIN" }
+          data: { tenantId: newTenant.id, role: "ADMIN", deletedAt: null }
         });
 
         // Provision the default STARTER TRIAL subscription for the new tenant.
