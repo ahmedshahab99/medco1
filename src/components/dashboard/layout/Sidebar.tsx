@@ -144,7 +144,7 @@ export function Sidebar({ isCollapsed, onToggleCollapse, isMobileOpen, onCloseMo
         </div>
 
         {/* Footer */}
-        {!isCollapsed && plan && (
+        {/* {!isCollapsed && plan && (
           <div className="p-3 mx-3 mb-3 bg-white/5 rounded-xl border border-white/10 flex-shrink-0 space-y-2.5">
             <div className="flex items-center justify-between">
               <p className="text-xs font-bold text-white/80">
@@ -208,7 +208,7 @@ export function Sidebar({ isCollapsed, onToggleCollapse, isMobileOpen, onCloseMo
               <ArrowUpRight className="size-3" />
             </Link>
           </div>
-        )}
+        )} */}
       </aside>
     </>
   );
