@@ -48,7 +48,7 @@ export const navigationGroups: NavGroup[] = [
     items: [
       { title: "قائمة المرضى", href: "/dashboard/patients", icon: UsersRound },
       
-      { title: "التصنيفات", href: "/dashboard/patients/tags", icon: Tags },
+     
     ],
   },
   {
@@ -58,9 +58,10 @@ export const navigationGroups: NavGroup[] = [
     ],
   },
   {
-    label: "المالية",
+    label: "التحليلات",
     items: [
-      { title: "الفواتير والمدفوعات", href: "/dashboard/invoices", icon: CreditCard }
+      { title: "الفواتير والمدفوعات", href: "/dashboard/invoices", icon: CreditCard },
+      { title: "إحصاءات ", href: "/dashboard/analytics", icon: PieChart},
      
     ],
   },
@@ -68,19 +69,15 @@ export const navigationGroups: NavGroup[] = [
     label: "العمليات والإدارة",
     items: [
       { title: "الدعوات", href: "/dashboard/invite", icon: UserPlus },
+      { title: "المستخدمين والصلاحيات", href: "/dashboard/settings/users", icon: ShieldCheck }
     ],
   },
-  {
-    label: "التحليلات",
-    items: [
-      { title: "إحصاءات ", href: "/dashboard/analytics", icon: PieChart},
-    ],
-  },
+  
   {
     label: "الإعدادات",
     items: [
       { title: "حسابي", href: "/dashboard/account", icon: User },
-      { title: "المستخدمين والصلاحيات", href: "/dashboard/settings/users", icon: ShieldCheck },
+      
       { title: "الباقة والاستخدام", href: "/dashboard/settings/plans", icon: BarChart3 },
     ],
   },

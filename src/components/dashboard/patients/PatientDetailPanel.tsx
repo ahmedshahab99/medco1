@@ -120,13 +120,7 @@ export function PatientDetailPanel({
             ) : <div />}
 
             <div className="flex items-center gap-1.5">
-              <button
-                onClick={() => router.push(`/dashboard/patients/${patient.id}/prescribe`)}
-                className="px-3 py-1.5 rounded-xl bg-gradient-to-l from-emerald-400 to-emerald-300 text-emerald-950 text-xs font-bold hover:from-emerald-300 hover:to-emerald-200 transition-all shadow-lg shadow-emerald-900/30 hover:shadow-emerald-900/40 flex items-center gap-1.5"
-              >
-                <Stethoscope className="w-3.5 h-3.5" />
-                وصفة
-              </button>
+              
               {onEdit && (
                 <button onClick={onEdit} className="p-1.5 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors" title="تعديل">
                   <Pencil className="w-4 h-4" />

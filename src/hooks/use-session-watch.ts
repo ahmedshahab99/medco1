@@ -2,11 +2,10 @@
 
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/utils/supabase/client";
 import { useToast, type ToastType } from "@/components/ui/Toast";
 import { logout } from "@/app/auth/logout/action";
 
-const POLL_INTERVAL_MS = 60_000;
+const POLL_INTERVAL_MS = 600_000;
 
 interface SessionWatchResult {
   toast: { message: string; type: ToastType; visible: boolean };

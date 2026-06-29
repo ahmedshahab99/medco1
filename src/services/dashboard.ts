@@ -63,6 +63,7 @@ export const DashboardService = {
 
     for (let i = 5; i >= 0; i--) {
       const date = new Date();
+      date.setDate(1); // Set to the first day of the month
       date.setMonth(date.getMonth() - i);
       const year = date.getFullYear();
       const month = date.getMonth();
