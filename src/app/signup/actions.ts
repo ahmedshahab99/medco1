@@ -4,33 +4,54 @@ import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
-const signUpSchema = z.object({
-  email: z.string().email({ message: "Invalid email address" }),
+const emailSchema = z.object({
+  email: z.string().email({ message: "البريد الإلكتروني غير صالح" }),
 })
 
-export async function signup(formData: FormData) {
+const otpSchema = z.object({
+  email: z.string().email(),
+  token: z.string().length(6, { message: "يجب أن يتكون الرمز من 6 أرقام" }),
+})
+
+export async function sendSignupOtp(formData: FormData) {
   const supabase = await createClient()
 
   const email = formData.get('email')?.toString()
 
-  // Validate the inputs via Zod
-  const validation = signUpSchema.safeParse({ email })
+  const validation = emailSchema.safeParse({ email })
   if (!validation.success) {
-    return {
-      error: validation.error.issues[0].message,
-    }
+    return { error: validation.error.issues[0].message }
   }
-
-  // Define the base URL dynamically based on environment
-  const origin = process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
-
-  const callbackUrl = new URL(`${origin}/auth/callback`)
 
   const { error } = await supabase.auth.signInWithOtp({
     email: validation.data.email,
     options: {
-      emailRedirectTo: callbackUrl.toString(),
+      shouldCreateUser: true,
     },
+  })
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  return { success: true }
+}
+
+export async function verifySignupOtp(formData: FormData) {
+  const supabase = await createClient()
+
+  const email = formData.get('email')?.toString()
+  const token = formData.get('token')?.toString()
+
+  const validation = otpSchema.safeParse({ email, token })
+  if (!validation.success) {
+    return { error: validation.error.issues[0].message }
+  }
+
+  const { error } = await supabase.auth.verifyOtp({
+    email: validation.data.email,
+    token: validation.data.token,
+    type: 'email',
   })
 
   if (error) {
