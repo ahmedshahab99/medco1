@@ -131,7 +131,7 @@ export function useAppointments(from: Date, to: Date, opts?: AppointmentQueryOpt
   return useQuery({
     queryKey,
     queryFn: () => fetchAppointments(from, to, opts),
-    refetchInterval: opts?.status || opts?.doctorId ? 30_000 : undefined,
+    refetchInterval: opts?.status || opts?.doctorId ? 60_000 : undefined,
   });
 }
 

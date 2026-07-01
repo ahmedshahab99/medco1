@@ -6,6 +6,8 @@ import { getInviteExpiry } from "@/lib/invite";
 import { revalidatePath } from "next/cache";
 import type { UserRole } from "@/lib/types/auth";
 import { enforceDoctorLimit } from "@/lib/plans/enforce";
+import resendClient from "@/lib/resend";
+import { serviceRoleClient } from "@/utils/supabase/service-role";
 
 const createInviteSchema = z.object({
   email: z.string().email({ message: "البريد الإلكتروني غير صالح" }),
@@ -78,19 +80,45 @@ export async function createInvitation(formData: FormData) {
     },
   });
 
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/auth/callback?invitation_id=${invitation.id}`,
-      data: {
-        invitation_id: invitation.id,
-      },
-    },
-  });
+  // const { error } = await supabase.auth.signInWithOtp({
+  //   email,
+  //   options: {
+  //     emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/auth/callback?invitation_id=${invitation.id}`,
+  //     data: {
+  //       invitation_id: invitation.id,
+  //       type: "invite",
+  //     },
+  //   },
+  // });
 
+  const { data, error: generateLinkError } = await serviceRoleClient.auth.admin.generateLink({
+    email, type: "magiclink",
+  });
+  
+
+if (generateLinkError) {
+    return { error: generateLinkError.message };
+  };
+
+  const url = new URL(data.properties.action_link)
+const tokenHash = url.searchParams.get('token')
+
+  const { error } = await resendClient.emails.send({
+    from: "MedLink<contact@baghdadflow.com>",
+    to: email,
+    subject: "دعوة للانضمام إلى MedLink",
+    html: `<p>مرحباً،</p>
+    <p>لقد تلقيت دعوة للانضمام إلى MedLink كـ ${role.toLowerCase()}.</p>
+    <p>انقر على الرابط أدناه لتسجيل الدخول وإنهاء عملية الانضمام:</p>
+    <p><a href="${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/auth/callback?token_hash=${tokenHash}&type=magiclink&redirect=${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/auth/callback?invitation_id=${invitation.id}">انقر هنا</a></p>
+    <p>تحياتنا،</p>
+    <p>MedLink</p>`,
+  });
+  
   if (error) {
     return { error: error.message };
   }
+
 
   revalidatePath("/dashboard/invite");
 
