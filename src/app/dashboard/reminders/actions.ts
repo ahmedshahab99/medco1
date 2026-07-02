@@ -120,6 +120,7 @@ export interface MessageLogFilters {
   search?: string;
   status?: MessageStatus;
   type?: ReminderType;
+  patientId?: string;
   page?: number;
   pageSize?: number;
 }
@@ -137,6 +138,9 @@ export async function getMessageLogs(filters?: MessageLogFilters) {
   }
   if (filters?.type) {
     where.type = filters.type;
+  }
+  if (filters?.patientId) {
+    where.patientId = filters.patientId;
   }
   if (filters?.search?.trim()) {
     const q = filters.search.trim();

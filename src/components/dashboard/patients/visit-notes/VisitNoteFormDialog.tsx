@@ -158,7 +158,7 @@ export function VisitNoteFormDialog({
       appointmentId: prefillAppointmentId ?? null,
       content: "",
       diagnosis: "",
-      medications: [DEFAULT_MEDICATION],
+      medications: [],
       notes: "",
       validityDays: 30,
     },
@@ -223,7 +223,7 @@ export function VisitNoteFormDialog({
               duration: m.duration,
               instructions: m.instructions ?? "",
             }))
-          : [DEFAULT_MEDICATION],
+          : [],
         notes: editingData.notes ?? "",
         validityDays: editingData.validityDays ?? 30,
       });
@@ -232,7 +232,7 @@ export function VisitNoteFormDialog({
         appointmentId: prefillAppointmentId ?? null,
         content: "",
         diagnosis: "",
-        medications: [DEFAULT_MEDICATION],
+        medications: [],
         notes: "",
         validityDays: 30,
       });
@@ -538,7 +538,7 @@ export function VisitNoteFormDialog({
             </div>
 
             <div className="space-y-3">
-              {fields.map((field, idx) => (
+              {fields.length > 0 && fields.map((field, idx) => (
                 <div
                   key={field.id}
                   className="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-2.5"
@@ -547,7 +547,7 @@ export function VisitNoteFormDialog({
                     <span className="text-xs font-medium text-slate-500">
                       الدواء {idx + 1}
                     </span>
-                    {fields.length > 1 && (
+                    {fields.length > 0 && (
                       <button
                         type="button"
                         onClick={() => remove(idx)}
@@ -576,6 +576,7 @@ export function VisitNoteFormDialog({
                     <Input
                       placeholder="التكرار (مثل: 3 مرات يومياً)"
                       {...register(`medications.${idx}.frequency`)}
+                      
                       disabled={isSubmitting}
                     />
                     <Input

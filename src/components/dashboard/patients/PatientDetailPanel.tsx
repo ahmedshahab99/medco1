@@ -12,6 +12,7 @@ import { PaymentsTab } from "./tabs/PaymentsTab";
 import { CasesTab } from "./tabs/CasesTab";
 import { AppointmentsTab } from "./tabs/AppointmentsTab";
 import { FilesTab } from "./tabs/FilesTab";
+import { RemindersTab } from "./tabs/RemindersTab";
 import { PlanGate } from "@/components/ui/PlanGate";
 
 interface PatientDetailPanelProps {
@@ -335,9 +336,7 @@ export function PatientDetailPanel({
         )}
 
         {activeTab === "reminders" && (
-          <div className="flex flex-col items-center justify-center h-full py-20 text-slate-400">
-            <p className="text-lg font-medium">قريباً: التذكيرات والإشعارات</p>
-          </div>
+          <RemindersTab patientId={patient.id} />
         )}
       </div>
     </div>
