@@ -14,7 +14,7 @@ function mapPatient(p: {
   email: string | null;
   dateOfBirth: Date | null;
   gender: "MALE" | "FEMALE" | null;
-  status: string;
+  source: string | null;
   address: string | null;
   cases: { id: string; title: string; createdAt: Date }[];
   createdAt: Date;
@@ -27,7 +27,7 @@ function mapPatient(p: {
     email: p.email,
     dateOfBirth: p.dateOfBirth?.toISOString() ?? null,
     gender: p.gender,
-    status: p.status,
+    source: p.source,
     address: p.address,
     cases: p.cases.map((c) => ({
       id: c.id,
@@ -44,7 +44,7 @@ export async function GET(request: Request) {
   const search = searchParams.get("search") ?? "";
   const pageParam = searchParams.get("page");
   const pageSizeParam = searchParams.get("pageSize");
-  const status = searchParams.get("status");
+  const source = searchParams.get("source");
   const sortBy = searchParams.get("sortBy") ?? "createdAt";
   const sortOrder = (searchParams.get("sortOrder") ?? "desc") as "asc" | "desc";
 
@@ -74,8 +74,9 @@ export async function GET(request: Request) {
 
   const tokens = search.trim().split(/\s+/).filter(Boolean);
 
-  const statusFilter =
-    status === "active" || status === "inactive" ? { status } : {};
+  const sourceValues = ["SOCIAL_MEDIA", "GOOGLE_MAPS", "CLINIC_WEBSITE", "REFERRAL", "WALK_IN", "OTHER"];
+  const sourceFilter =
+    source && sourceValues.includes(source) ? { source: source as "SOCIAL_MEDIA" | "GOOGLE_MAPS" | "CLINIC_WEBSITE" | "REFERRAL" | "WALK_IN" | "OTHER" } : {};
 
   const orderBy =
     sortBy === "name"
@@ -84,7 +85,7 @@ export async function GET(request: Request) {
 
   const where: Prisma.PatientWhereInput = {
     tenantId: actor.tenantId,
-    ...statusFilter,
+    ...sourceFilter,
     ...(tokens.length > 0
       ? {
           AND: tokens.map((token) => ({
@@ -168,7 +169,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { firstName, lastName, phone, dateOfBirth, gender, address } = parsed.data;
+  const { firstName, lastName, phone, dateOfBirth, gender, address, source: parsedSource } = parsed.data;
 try {
 
   const guard = await enforcePatientLimit(actor.tenantId, 1);
@@ -183,6 +184,7 @@ try {
       phone: phone || undefined,
       dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
       gender: gender || undefined,
+      source: parsedSource || undefined,
       address: address || undefined,
       tenantId: actor.tenantId,
     },

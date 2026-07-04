@@ -142,7 +142,7 @@ model Patient {
   phone           String?  
   dateOfBirth     DateTime?
   gender          Gender?
-  status          String    @default("active")
+  source          PatientSource?
   address         String?
 
   appointments  Appointment[]
@@ -162,6 +162,15 @@ model Patient {
 enum Gender {
   MALE
   FEMALE
+}
+
+enum PatientSource {
+  SOCIAL_MEDIA
+  GOOGLE_MAPS
+  CLINIC_WEBSITE
+  REFERRAL
+  WALK_IN
+  OTHER
 }
 
 enum ReminderType {

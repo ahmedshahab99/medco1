@@ -13,8 +13,17 @@ export function OverviewTab({ patient }: OverviewTabProps) {
       <h2 className="text-lg font-bold text-slate-800">نظرة عامة</h2>
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-slate-50 rounded-xl p-4">
-          <p className="text-sm text-slate-500">الحالة</p>
-          <p className="font-semibold text-slate-800">{patient.status === "active" ? "نشط" : "غير نشط"}</p>
+          <p className="text-sm text-slate-500">المصدر</p>
+          <p className="font-semibold text-slate-800">
+            {patient.source ?
+              (patient.source === "SOCIAL_MEDIA" ? "وسائل التواصل" :
+               patient.source === "GOOGLE_MAPS" ? "خرائط جوجل" :
+               patient.source === "CLINIC_WEBSITE" ? "الموقع الإلكتروني" :
+               patient.source === "REFERRAL" ? "توصية" :
+               patient.source === "WALK_IN" ? "زيارة مباشرة" :
+               patient.source === "OTHER" ? "أخرى" :
+               patient.source) : "—"}
+          </p>
         </div>
         <div className="bg-slate-50 rounded-xl p-4">
           <p className="text-sm text-slate-500">عدد الزيارات</p>

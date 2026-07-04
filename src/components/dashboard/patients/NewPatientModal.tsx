@@ -8,7 +8,7 @@ import { Input } from "../../ui/Input";
 import { Button } from "../../ui/Button";
 import { Label } from "../../ui/Label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/Select";
-import { User, Phone, CalendarDays, UserCircle2, MapPin, DollarSign } from "lucide-react";
+import { User, Phone, CalendarDays, UserCircle2, MapPin, MessageSquareText } from "lucide-react";
 import { patientCreateSchema, type PatientCreateInput } from "@/lib/schemas/patient";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -129,6 +129,32 @@ export function NewPatientModal({ isOpen, onClose }: NewPatientModalProps) {
               )}
             />
           </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="source">
+            <MessageSquareText className="w-4 h-4 text-slate-400" />
+            مصدر المريض
+          </Label>
+          <Controller
+            control={control}
+            name="source"
+            render={({ field }) => (
+              <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                <SelectTrigger id="source" className="w-full">
+                  <SelectValue placeholder="اختر..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="SOCIAL_MEDIA">وسائل التواصل</SelectItem>
+                  <SelectItem value="GOOGLE_MAPS">خرائط جوجل</SelectItem>
+                  <SelectItem value="CLINIC_WEBSITE">الموقع الإلكتروني</SelectItem>
+                  <SelectItem value="REFERRAL">توصية</SelectItem>
+                  <SelectItem value="WALK_IN">زيارة مباشرة</SelectItem>
+                  <SelectItem value="OTHER">أخرى</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
         </div>
 
         <div className="space-y-1.5">

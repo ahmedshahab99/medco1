@@ -17,7 +17,7 @@ import { useAuth } from "@/hooks/use-auth";
 const PAGE_SIZE = 10;
 
 const DEFAULT_FILTERS: FilterState = {
-  status: "all",
+  source: "all",
 };
 
 function useDebounce<T>(value: T, delay: number): T {
@@ -46,7 +46,7 @@ const { data: result, isLoading, error, refetch } = usePatients({
   search,
   page,
   pageSize: PAGE_SIZE,
-  status: filters.status === "all" ? undefined : filters.status,
+  source: filters.source === "all" ? undefined : filters.source,
   sortBy,
   sortOrder,
 });
@@ -91,8 +91,8 @@ const showTodaySchedule = role && role !== "RECEPTIONIST";
     setPage(1);
   };
 
-  const handleClearStatusFilter = () => {
-    setFilters((f) => ({ ...f, status: "all" }));
+  const handleClearSourceFilter = () => {
+    setFilters((f) => ({ ...f, source: "all" }));
     setPage(1);
   };
 
@@ -101,7 +101,7 @@ const showTodaySchedule = role && role !== "RECEPTIONIST";
     setPage(1);
   };
 
-  const activeFilterCount = filters.status !== "all" ? 1 : 0;
+  const activeFilterCount = filters.source !== "all" ? 1 : 0;
 
   const handleSelectPatient = (p: { id: string }) => {
     router.push(`/dashboard/patients/${p.id}`);
@@ -176,10 +176,16 @@ const showTodaySchedule = role && role !== "RECEPTIONIST";
           {activeFilterCount > 0 && (
             <div className="px-4 py-2.5 border-b border-slate-50 flex items-center gap-2 flex-wrap bg-slate-50/50">
               <span className="text-xs text-slate-400 font-medium">فلاتر نشطة:</span>
-              {filters.status !== "all" && (
+              {filters.source !== "all" && (
                 <span className="text-xs font-bold bg-blue-100 text-blue-600 px-2.5 py-1 rounded-full flex items-center gap-1">
-                  {filters.status === "active" ? "نشط" : "غير نشط"}
-                  <button onClick={handleClearStatusFilter}><X className="w-3 h-3" /></button>
+                  {filters.source === "SOCIAL_MEDIA" ? "وسائل التواصل" :
+                   filters.source === "GOOGLE_MAPS" ? "خرائط جوجل" :
+                   filters.source === "CLINIC_WEBSITE" ? "الموقع الإلكتروني" :
+                   filters.source === "REFERRAL" ? "توصية" :
+                   filters.source === "WALK_IN" ? "زيارة مباشرة" :
+                   filters.source === "OTHER" ? "أخرى" :
+                   filters.source}
+                  <button onClick={handleClearSourceFilter}><X className="w-3 h-3" /></button>
                 </span>
               )}
               <button
