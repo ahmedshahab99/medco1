@@ -10,6 +10,7 @@ import {
   Users, CalendarCheck, TrendingUp, Clock, ArrowLeft,
   Activity, Stethoscope, CalendarDays, ChevronLeft, Loader2, HeartPulse, UserPlus,
 } from "lucide-react";
+import Link from "next/link";
 
 const STAT_ICONS = [Users, CalendarCheck, TrendingUp];
 
@@ -41,7 +42,7 @@ interface MonthlyCount {
 
 
 export default function DashboardClient({
-  profileName, role, doctorId, stats, initAppointments, monthlyAppointments,
+  profileName, role, doctorId, stats, initAppointments, monthlyAppointments,requireProfileName
 }: {
   profileName: string;
   role: UserRole;
@@ -49,6 +50,7 @@ export default function DashboardClient({
   stats: StatItem[];
   initAppointments: ApptItem[];
   monthlyAppointments: MonthlyCount[];
+  requireProfileName: boolean
 }) {
   const router = useRouter();
   const today = new Date();
@@ -102,7 +104,8 @@ export default function DashboardClient({
             <div className="flex items-center gap-3 mb-2">
               <span className="text-2xl md:text-3xl">{greetingEmoji}</span>
               <div className="min-w-0">
-                <h1 className="text-lg md:text-3xl font-black text-white truncate">{greetingTime}، {profileName}</h1>
+                <h1 className="text-lg md:text-3xl font-black text-white truncate">{greetingTime}، {profileName}  {requireProfileName && <Link href="/dashboard/account" className=" text-white/70 hover:text-white/90 underline transition-colors">ادخل اسمك</Link>}</h1>
+               
                 <p className="text-indigo-200 text-xs md:text-sm mt-0.5 font-medium">{todayStr}</p>
               </div>
             </div>

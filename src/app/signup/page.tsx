@@ -191,6 +191,9 @@ export default function SignUpPage() {
               ? 'أنشئ حسابًا لإدارة عيادتك بسهولة.'
               : 'أدخل رمز التحقق المرسل إلى بريدك الإلكتروني.'}
           </p>
+          {step === 'otp' && (
+            <p className="text-md font-bold text-red-600 mt-1">تحقق من الرسائل غير المرغوب فيها الخاص ببريدك الالكتروني (spam)</p>
+          )}
         </div>
 
         <div>

@@ -57,7 +57,7 @@ type VisitNoteFormValues = {
   appointmentId: string | null;
   content: string;
   diagnosis: string;
-  medications: { tempId: string; name: string; dose: string; frequency: string; duration: string; instructions: string }[];
+  medications: { tempId: string; name: string; dose?: string; frequency?: string; duration?: string; instructions?: string }[];
   notes: string;
   validityDays: number;
 };
@@ -70,10 +70,10 @@ const visitNoteFormSchema = z.object({
     z.object({
       tempId: z.string(),
       name: z.string(),
-      dose: z.string(),
-      frequency: z.string(),
-      duration: z.string(),
-      instructions: z.string(),
+      dose: z.string().optional(),
+      frequency: z.string().optional(),
+      duration: z.string().optional(),
+      instructions: z.string().optional(),
     })
   ),
   notes: z.string(),
@@ -87,9 +87,9 @@ interface EditingVisitNoteData {
   medications: {
     id: string;
     name: string;
-    dose: string;
-    frequency: string;
-    duration: string;
+    dose: string | null;
+    frequency: string | null;
+    duration: string | null;
     instructions: string | null;
   }[];
   notes: string | null;
@@ -218,9 +218,9 @@ export function VisitNoteFormDialog({
           ? editingData.medications.map((m, i) => ({
               tempId: String(i + 1),
               name: m.name,
-              dose: m.dose,
-              frequency: m.frequency,
-              duration: m.duration,
+              dose: m.dose ?? undefined,
+              frequency: m.frequency ?? undefined,
+              duration: m.duration ?? undefined,
               instructions: m.instructions ?? "",
             }))
           : [],
@@ -397,11 +397,6 @@ export function VisitNoteFormDialog({
 
     if (!hasContent && !hasDiagnosis && validMeds.length === 0) {
       toast.error("يجب إدخال ملاحظات أو تشخيص أو دواء واحد على الأقل");
-      return;
-    }
-
-    if (validMeds.length > 0 && validMeds.some((m) => !m.dose.trim() || !m.frequency.trim() || !m.duration.trim())) {
-      toast.error("جميع حقول الدواء مطلوبة");
       return;
     }
 

@@ -34,9 +34,9 @@ interface VisitNoteDetailActionsProps {
     medications: {
       id: string;
       name: string;
-      dose: string;
-      frequency: string;
-      duration: string;
+      dose: string | null;
+      frequency: string | null;
+      duration: string | null;
       instructions: string | null;
     }[];
     appointmentId: string | null;

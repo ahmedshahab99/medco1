@@ -61,6 +61,7 @@ export default async function DashboardPage() {
   const profileName = profile?.firstName
     ? (isDoctorRole ? `د. ${profile.firstName}` : profile.firstName)
     : (isDoctorRole ? "دكتور" : "مستخدم");
+  const requireProfileName: boolean = !profile?.firstName;
 
   return (
     <DashboardClient
@@ -70,6 +71,7 @@ export default async function DashboardPage() {
       stats={stats}
       initAppointments={appointments}
       monthlyAppointments={monthlyAppointments}
+      requireProfileName={requireProfileName}
     />
   );
 }

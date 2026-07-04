@@ -125,7 +125,7 @@ export async function POST(
     for (const med of medications) {
       await prisma.$executeRaw`
         INSERT INTO "Medication" (id, "visitNoteId", name, dose, frequency, duration, instructions)
-        VALUES (${crypto.randomUUID()}, ${noteId}, ${med.name}, ${med.dose}, ${med.frequency}, ${med.duration}, ${med.instructions ?? null})
+        VALUES (${crypto.randomUUID()}, ${noteId}, ${med.name}, ${med.dose || null}, ${med.frequency || null}, ${med.duration || null}, ${med.instructions || null})
       `;
     }
 
