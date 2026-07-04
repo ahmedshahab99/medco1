@@ -44,7 +44,7 @@ export function VisitNoteTab({ patientId, patientName }: VisitNoteTabProps) {
     appointmentId: string | null;
     content: string | null;
     diagnosis: string | null;
-    medications: { id: string; name: string; dose: string; frequency: string; duration: string; instructions: string | null }[];
+    medications: { id: string; name: string; dose: string | null; frequency: string | null; duration: string | null; instructions: string | null }[];
     notes: string | null;
     validityDays: number | null;
   } | null>(null);

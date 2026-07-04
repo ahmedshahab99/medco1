@@ -148,9 +148,9 @@ export default async function VisitNoteDetailPage({ params }: VisitNoteDetailPag
                   <tr key={med.id} className="border-b border-slate-50 last:border-b-0 hover:bg-slate-50/50">
                     <td className="px-3 py-2 text-slate-400 text-xs font-mono">{idx + 1}</td>
                     <td className="px-3 py-2 font-semibold text-slate-800 text-sm">{med.name}</td>
-                    <td className="px-3 py-2 text-slate-600 text-sm">{med.dose}</td>
-                    <td className="px-3 py-2 text-slate-600 text-sm">{med.frequency}</td>
-                    <td className="px-3 py-2 text-slate-600 text-sm">{med.duration}</td>
+                    <td className="px-3 py-2 text-slate-600 text-sm">{med.dose || "—"}</td>
+                    <td className="px-3 py-2 text-slate-600 text-sm">{med.frequency || "—"}</td>
+                    <td className="px-3 py-2 text-slate-600 text-sm">{med.duration || "—"}</td>
                     {note.medications.some((m) => m.instructions) && (
                       <td className="px-3 py-2 text-slate-500 text-xs">{med.instructions || "—"}</td>
                     )}

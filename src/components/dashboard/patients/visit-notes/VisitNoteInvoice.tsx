@@ -15,9 +15,9 @@ interface VisitNoteInvoiceProps {
     medications: {
       id: string;
       name: string;
-      dose: string;
-      frequency: string;
-      duration: string;
+      dose: string | null;
+      frequency: string | null;
+      duration: string | null;
       instructions: string | null;
     }[];
   };
@@ -59,7 +59,7 @@ export function VisitNoteInvoice({
       ? note.medications
           .map(
             (med, idx) =>
-              `<tr><td>${idx + 1}</td><td class="med-name-cell">${esc(med.name)}</td><td>${esc(med.dose)}</td><td>${esc(med.frequency)}</td><td>${esc(med.duration)}</td>${med.instructions ? `<td>${esc(med.instructions)}</td>` : ""}</tr>`
+              `<tr><td>${idx + 1}</td><td class="med-name-cell">${esc(med.name)}</td><td>${esc(med.dose ?? "")}</td><td>${esc(med.frequency ?? "")}</td><td>${esc(med.duration ?? "")}</td>${med.instructions ? `<td>${esc(med.instructions)}</td>` : ""}</tr>`
           )
           .join("")
       : "";

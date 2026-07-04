@@ -24,9 +24,9 @@ export interface VisitNoteRow {
   medications: {
     id: string;
     name: string;
-    dose: string;
-    frequency: string;
-    duration: string;
+    dose: string | null;
+    frequency: string | null;
+    duration: string | null;
     instructions: string | null;
   }[];
 }
@@ -52,9 +52,9 @@ export interface VisitNoteDetail {
   medications: {
     id: string;
     name: string;
-    dose: string;
-    frequency: string;
-    duration: string;
+    dose: string | null;
+    frequency: string | null;
+    duration: string | null;
     instructions: string | null;
   }[];
 }
@@ -242,10 +242,6 @@ export async function createVisitNoteAction(
     return { success: false, error: "يجب إدخال ملاحظات أو تشخيص أو دواء واحد على الأقل" };
   }
 
-  if (validMeds.length > 0 && validMeds.some((m) => !m.dose.trim() || !m.frequency.trim() || !m.duration.trim())) {
-    return { success: false, error: "جميع حقول الدواء مطلوبة" };
-  }
-
   const note = await prisma.visitNote.create({
     data: {
       tenantId: auth.tenantId,
@@ -258,10 +254,10 @@ export async function createVisitNoteAction(
       medications: {
         create: validMeds.map((m) => ({
           name: m.name,
-          dose: m.dose,
-          frequency: m.frequency,
-          duration: m.duration,
-          instructions: m.instructions ?? null,
+          dose: m.dose || null,
+          frequency: m.frequency || null,
+          duration: m.duration || null,
+          instructions: m.instructions || null,
         })),
       },
     },
@@ -315,10 +311,10 @@ export async function updateVisitNoteAction(
                 .filter((m) => m.name.trim())
                 .map((m) => ({
                   name: m.name,
-                  dose: m.dose,
-                  frequency: m.frequency,
-                  duration: m.duration,
-                  instructions: m.instructions ?? null,
+                  dose: m.dose || null,
+                  frequency: m.frequency || null,
+                  duration: m.duration || null,
+                  instructions: m.instructions || null,
                 })),
             },
           }

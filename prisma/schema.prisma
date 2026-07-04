@@ -371,9 +371,9 @@ model Medication {
   visitNoteId String
   visitNote   VisitNote @relation(fields: [visitNoteId], references: [id], onDelete: Cascade)
   name        String
-  dose        String
-  frequency   String
-  duration    String
+  dose        String?
+  frequency   String?
+  duration    String?
   instructions String?
 
   @@index([visitNoteId])

@@ -3,9 +3,9 @@ import { useCallback } from "react";
 export interface Medication {
   id?: string;
   name: string;
-  dose: string;
-  frequency: string;
-  duration: string;
+  dose?: string;
+  frequency?: string;
+  duration?: string;
   instructions?: string;
 }
 

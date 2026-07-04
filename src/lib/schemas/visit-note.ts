@@ -3,9 +3,9 @@ import { z } from "zod";
 export const medicationSchema = z.object({
   id: z.string().optional(),
   name: z.string("اسم الدواء مطلوب").min(1, "اسم الدواء مطلوب"),
-  dose: z.string("الجرعة مطلوبة").min(1, "الجرعة مطلوبة"),
-  frequency: z.string("التكرار مطلوب").min(1, "التكرار مطلوب"),
-  duration: z.string("المدة مطلوبة").min(1, "المدة مطلوبة"),
+  dose: z.string().optional(),
+  frequency: z.string().optional(),
+  duration: z.string().optional(),
   instructions: z.string().optional(),
 });
 
