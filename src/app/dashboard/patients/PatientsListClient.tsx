@@ -14,7 +14,7 @@ const PAGE_SIZE = 10;
 
 const DEFAULT_FILTERS: FilterState = {
   tags: [],
-  status: "all",
+  source: "all",
   doctor: "",
   lastVisit: "all",
   hasUpcoming: "all",
@@ -68,7 +68,7 @@ export default function PatientsListClient({ initialPatients }: PatientsListClie
         if (!nameMatch && !phoneMatch && !idMatch && !emailMatch) return false;
       }
       // Filters
-      if (filters.status !== "all" && p.status !== filters.status) return false;
+      if (filters.source !== "all" && p.source !== filters.source) return false;
       if (filters.doctor) return false;
       if (filters.tags?.length && !filters.tags.every((t) => p.tags?.includes(t) ?? false)) return false;
       if (!matchesLastVisit(p, filters.lastVisit)) return false;
@@ -89,7 +89,7 @@ export default function PatientsListClient({ initialPatients }: PatientsListClie
 
   const activeFilterCount =
     (filters.tags?.length ?? 0) +
-    (filters.status !== "all" ? 1 : 0) +
+    (filters.source !== "all" ? 1 : 0) +
     (filters.doctor ? 1 : 0) +
     (filters.lastVisit !== "all" ? 1 : 0) +
     (filters.hasUpcoming !== "all" ? 1 : 0);
@@ -107,7 +107,7 @@ export default function PatientsListClient({ initialPatients }: PatientsListClie
             المرضى
           </h1>
           <p className="text-sm text-slate-500 mt-0.5">
-            {initialPatients.length} مريض مسجّل · {initialPatients.filter((p) => p.status === "active").length} نشط
+            {initialPatients.length} مريض مسجّل
           </p>
         </div>
       </div>

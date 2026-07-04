@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Patient } from "../../../hooks/use-patients";
 import {
   X, Phone, Mail, CalendarDays, MapPin, Stethoscope, ChevronLeft, Pencil, Trash2,
-  Heart, User, CalendarClock, Hash, Clock, Tag,
+  Heart, User, CalendarClock, Hash, Clock, MessageSquareText,
 } from "lucide-react";
 import { VisitNoteTab } from "./tabs/VisitNoteTab";
 import { PaymentsTab } from "./tabs/PaymentsTab";
@@ -73,11 +73,15 @@ function formatDateFull(iso: string | null) {
   return new Date(iso).toLocaleDateString("ar-SA", { day: "numeric", month: "long", year: "numeric" });
 }
 
-function statusConfig(status: string) {
-  switch (status) {
-    case "active": return { label: "نشط", class: "bg-emerald-100 text-emerald-700 border-emerald-200" };
-    case "inactive": return { label: "غير نشط", class: "bg-slate-100 text-slate-500 border-slate-200" };
-    default: return { label: status, class: "bg-slate-100 text-slate-500 border-slate-200" };
+function sourceConfig(source: string | null | undefined) {
+  switch (source) {
+    case "SOCIAL_MEDIA": return { label: "وسائل التواصل", class: "bg-blue-100 text-blue-700 border-blue-200" };
+    case "GOOGLE_MAPS": return { label: "خرائط جوجل", class: "bg-emerald-100 text-emerald-700 border-emerald-200" };
+    case "CLINIC_WEBSITE": return { label: "الموقع الإلكتروني", class: "bg-violet-100 text-violet-700 border-violet-200" };
+    case "REFERRAL": return { label: "توصية", class: "bg-amber-100 text-amber-700 border-amber-200" };
+    case "WALK_IN": return { label: "زيارة مباشرة", class: "bg-cyan-100 text-cyan-700 border-cyan-200" };
+    case "OTHER": return { label: "أخرى", class: "bg-slate-100 text-slate-500 border-slate-200" };
+    default: return null;
   }
 }
 
@@ -93,7 +97,7 @@ export function PatientDetailPanel({
   const activeTab = searchParams.get("tab") || "overview";
   const age = calcAge(patient.dateOfBirth);
   const cIdx = getColorIndex(patient.id);
-  const status = statusConfig(patient.status);
+  const src = sourceConfig(patient.source);
 
   return (
     <div className={`flex flex-col bg-gradient-to-br from-slate-50 to-white h-full ${fullPage ? "w-full" : "w-full border-r border-slate-100 shadow-xl"}`}>
@@ -144,17 +148,16 @@ export function PatientDetailPanel({
               <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${AVATAR_GRADIENTS[cIdx]} flex items-center justify-center font-black text-white text-xl shadow-xl shadow-black/20`}>
                 {getInitials(patient.name)}
               </div>
-              <div className={`absolute -bottom-1 -end-1 w-5 h-5 rounded-full border-2 border-white/80 flex items-center justify-center ${patient.status === "active" ? "bg-emerald-500" : "bg-slate-400"}`}>
-                <div className={`w-1.5 h-1.5 rounded-full bg-white ${patient.status === "active" ? "animate-pulse" : ""}`} />
-              </div>
             </div>
 
             <div className="flex-1 min-w-0">
               <h2 className="font-black text-white text-xl leading-tight">{patient.name}</h2>
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5">
-                <div className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${status.class}`}>
-                  {status.label}
-                </div>
+                {src && (
+                  <div className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${src.class}`}>
+                    {src.label}
+                  </div>
+                )}
                 {age !== null && (
                   <span className="text-white/70 text-xs flex items-center gap-1">
                     <CalendarDays className="w-3 h-3" />
@@ -247,7 +250,7 @@ export function PatientDetailPanel({
                 <InfoCard icon={<User className="w-4 h-4" />} label="الجنس" value={formatGender(patient.gender)} />
                 <InfoCard icon={<MapPin className="w-4 h-4" />} label="العنوان" value={patient.address} className="col-span-2" />
                 <InfoCard icon={<Hash className="w-4 h-4" />} label="المعرّف" value={`#${patient.id.slice(0, 8)}`} />
-                <InfoCard icon={<Tag className="w-4 h-4" />} label="الحالة" value={status.label} />
+                <InfoCard icon={<MessageSquareText className="w-4 h-4" />} label="المصدر" value={src?.label ?? null} />
               </div>
             </div>
 

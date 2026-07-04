@@ -8,7 +8,7 @@ import { Input } from "../../ui/Input";
 import { Button } from "../../ui/Button";
 import { Label } from "../../ui/Label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/Select";
-import { User, Phone, CalendarDays, UserCircle2, MapPin } from "lucide-react";
+import { User, Phone, CalendarDays, UserCircle2, MapPin, MessageSquareText } from "lucide-react";
 import { patientUpdateSchema, type PatientUpdateInput } from "@/lib/schemas/patient";
 import { useUpdatePatient } from "@/hooks/use-patients";
 import type { Patient } from "@/hooks/use-patients";
@@ -28,7 +28,7 @@ function splitName(fullName: string): { firstName: string; lastName: string } {
 }
 
 export function EditPatientModal({ patient, isOpen, onClose }: EditPatientModalProps) {
-  const { name, phone, email, dateOfBirth, gender, address } = patient;
+  const { name, phone, email, dateOfBirth, gender, address, source } = patient;
   const { firstName: defaultFirstName, lastName: defaultLastName } = splitName(name);
 
   const {
@@ -46,6 +46,7 @@ export function EditPatientModal({ patient, isOpen, onClose }: EditPatientModalP
       email: email ?? "",
       dateOfBirth: dateOfBirth?.split("T")[0] ?? "",
       gender: (gender as "MALE" | "FEMALE" | undefined) ?? undefined,
+      source: (source as PatientUpdateInput["source"]) ?? undefined,
       address: address ?? "",
     },
   });
@@ -138,6 +139,32 @@ export function EditPatientModal({ patient, isOpen, onClose }: EditPatientModalP
               )}
             />
           </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="source">
+            <MessageSquareText className="w-4 h-4 text-slate-400" />
+            مصدر المريض
+          </Label>
+          <Controller
+            control={control}
+            name="source"
+            render={({ field }) => (
+              <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                <SelectTrigger id="source" className="w-full">
+                  <SelectValue placeholder="اختر..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="SOCIAL_MEDIA">وسائل التواصل</SelectItem>
+                  <SelectItem value="GOOGLE_MAPS">خرائط جوجل</SelectItem>
+                  <SelectItem value="CLINIC_WEBSITE">الموقع الإلكتروني</SelectItem>
+                  <SelectItem value="REFERRAL">توصية</SelectItem>
+                  <SelectItem value="WALK_IN">زيارة مباشرة</SelectItem>
+                  <SelectItem value="OTHER">أخرى</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
         </div>
 
         <div className="space-y-1.5">

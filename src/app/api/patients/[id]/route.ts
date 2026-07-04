@@ -81,7 +81,7 @@ export async function GET(
     email: patient.email,
     dateOfBirth: patient.dateOfBirth?.toISOString() ?? null,
     gender: patient.gender,
-    status: patient.status,
+    source: patient.source,
     address: patient.address,
     cases: patient.cases.map((c) => ({
       id: c.id, title: c.title, createdAt: c.createdAt.toISOString(),
@@ -156,7 +156,7 @@ export async function PATCH(
     );
   }
 
-  const { firstName, lastName, phone, dateOfBirth, gender, address } =
+  const { firstName, lastName, phone, dateOfBirth, gender, address, source } =
     validation.data;
 
   const updatedPatient = await prisma.patient.update({
@@ -169,6 +169,7 @@ export async function PATCH(
         dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
       }),
       ...(gender !== undefined && { gender }),
+      ...(source !== undefined && { source }),
       ...(address !== undefined && { address }),
     },
     include: { cases: true },
@@ -181,7 +182,7 @@ export async function PATCH(
     email: updatedPatient.email,
     dateOfBirth: updatedPatient.dateOfBirth?.toISOString() ?? null,
     gender: updatedPatient.gender,
-    status: updatedPatient.status,
+    source: updatedPatient.source,
     address: updatedPatient.address,
     cases: updatedPatient.cases.map((c: any) => ({ id: c.id, title: c.title, createdAt: c.createdAt.toISOString() })),
     createdAt: updatedPatient.createdAt.toISOString(),

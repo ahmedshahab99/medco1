@@ -35,7 +35,7 @@ export interface Patient {
   email: string | null;
   dateOfBirth: string | null;
   gender: string | null;
-  status: string;
+  source?: string | null;
   address: string | null;
   cases: PatientCase[];
   visitNotes?: VisitNote[];
@@ -50,7 +50,7 @@ export interface UsePatientsParams {
   search?: string;
   page?: number;
   pageSize?: number;
-  status?: string;
+  source?: string;
   sortBy?: string;
   sortOrder?: "asc" | "desc";
 }
@@ -68,7 +68,7 @@ function buildPatientsUrl(params: UsePatientsParams): URL {
   if (params.search) url.searchParams.set("search", params.search);
   if (params.page) url.searchParams.set("page", String(params.page));
   if (params.pageSize) url.searchParams.set("pageSize", String(params.pageSize));
-  if (params.status) url.searchParams.set("status", params.status);
+  if (params.source) url.searchParams.set("source", params.source);
   if (params.sortBy) url.searchParams.set("sortBy", params.sortBy);
   if (params.sortOrder) url.searchParams.set("sortOrder", params.sortOrder);
   return url;
@@ -145,6 +145,7 @@ export function useUpdatePatient() {
           ...(data.dateOfBirth !== undefined && { dateOfBirth: data.dateOfBirth }),
           ...(data.gender !== undefined && { gender: data.gender }),
           ...(data.address !== undefined && { address: data.address }),
+          ...(data.source !== undefined && { source: data.source }),
         });
       }
 

@@ -5,7 +5,7 @@ import { X, SlidersHorizontal, RotateCcw } from "lucide-react";
 import { Button } from "../../ui/Button";
 
 export interface FilterState {
-  status: "all" | "active" | "inactive";
+  source: string;
   tags?: string[];
   doctor?: string;
   lastVisit?: string;
@@ -40,19 +40,27 @@ export function PatientFilters({ isOpen, onClose, filters, onChange, onReset }: 
 
         <div className="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-7">
           <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">الحالة</p>
-            <div className="flex gap-2">
-              {(["all", "active", "inactive"] as const).map((s) => (
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">المصدر</p>
+            <div className="flex flex-wrap gap-2">
+              {([
+                { key: "all", label: "الكل" },
+                { key: "SOCIAL_MEDIA", label: "وسائل التواصل" },
+                { key: "GOOGLE_MAPS", label: "خرائط جوجل" },
+                { key: "CLINIC_WEBSITE", label: "الموقع الإلكتروني" },
+                { key: "REFERRAL", label: "توصية" },
+                { key: "WALK_IN", label: "زيارة مباشرة" },
+                { key: "OTHER", label: "أخرى" },
+              ]).map((s) => (
                 <button
-                  key={s}
-                  onClick={() => onChange({ status: s })}
-                  className={`flex-1 py-2 rounded-xl text-sm font-semibold border transition-all ${
-                    filters.status === s
+                  key={s.key}
+                  onClick={() => onChange({ source: s.key })}
+                  className={`py-2 px-3 rounded-xl text-sm font-semibold border transition-all ${
+                    filters.source === s.key
                       ? "bg-blue-600 text-white border-blue-600"
                       : "bg-white text-slate-600 border-slate-200 hover:border-blue-300"
                   }`}
                 >
-                  {s === "all" ? "الكل" : s === "active" ? "نشط" : "غير نشط"}
+                  {s.label}
                 </button>
               ))}
             </div>

@@ -36,7 +36,6 @@ export type StatCardData = {
 
 // ─── PATIENT ──────────────────────────────────────────────────────────────────
 
-export type PatientStatus = "active" | "inactive";
 export type PatientGender = "male" | "female";
 
 export type PatientVisit = {
@@ -76,7 +75,7 @@ export type Patient = {
   phone: string;
   dateOfBirth?: string;
   gender?: PatientGender;
-  status: PatientStatus;
+  source?: string;
   tags: string[];
   totalVisits: number;
   visitHistory: PatientVisit[];

@@ -1,6 +1,6 @@
 import prisma from "@/lib/prisma";
 import { getTenantId } from "@/lib/tenant";
-import { Patient, PatientStatus, PatientGender } from "@/lib/types/dashboard";
+import { Patient, PatientGender } from "@/lib/types/dashboard";
 import { enforcePatientLimit } from "@/lib/plans/enforce";
 
 /**
@@ -45,7 +45,7 @@ export const PatientService = {
       phone: p.phone || "",
       dateOfBirth: p.dateOfBirth?.toISOString(),
       gender: (p.gender?.toLowerCase() as PatientGender) || undefined,
-      status: (p.status as PatientStatus) || "active",
+      source: p.source || undefined,
       tags: [], // Tags might need a separate model or JSON field
       totalVisits: 0, // Should be calculated
       visitHistory: [],
@@ -90,7 +90,7 @@ export const PatientService = {
       lastName: patient.lastName,
       email: patient.email || undefined,
       phone: patient.phone || "",
-      status: (patient.status as PatientStatus) || "active",
+      source: patient.source || undefined,
       tags: [],
       totalVisits: patient.appointments.length,
       visitHistory: patient.appointments.map(app => ({
@@ -132,6 +132,7 @@ export const PatientService = {
     email?: string;
     phone?: string;
     gender?: PatientGender;
+    source?: string;
     dateOfBirth?: Date;
   }) {
     const tenantId = await getTenantId();
@@ -146,6 +147,7 @@ export const PatientService = {
         ...data,
         tenantId,
         gender: data.gender ? (data.gender.toUpperCase() as any) : undefined,
+        source: data.source ? (data.source.toUpperCase() as any) : undefined,
       },
     });
   }

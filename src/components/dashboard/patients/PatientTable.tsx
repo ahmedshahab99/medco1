@@ -111,7 +111,7 @@ export function PatientTable({
           {renderSortableHead("name", "الاسم")}
           <TableHead className="text-start">الهاتف</TableHead>
           <TableHead className="text-start">العمر / الجنس</TableHead>
-          <TableHead className="text-start">الحالة</TableHead>
+          <TableHead className="text-start">المصدر</TableHead>
           {renderSortableHead("createdAt", "تاريخ التسجيل")}
           <TableHead className="text-start w-10" />
         </TableRow>
@@ -168,16 +168,18 @@ export function PatientTable({
               </TableCell>
 
               <TableCell>
-                {patient.status === "active" ? (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full font-medium text-xs">
-                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-                    نشط
+                {patient.source ? (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full font-medium text-xs">
+                    {patient.source === "SOCIAL_MEDIA" ? "وسائل التواصل" :
+                     patient.source === "GOOGLE_MAPS" ? "خرائط جوجل" :
+                     patient.source === "CLINIC_WEBSITE" ? "الموقع الإلكتروني" :
+                     patient.source === "REFERRAL" ? "توصية" :
+                     patient.source === "WALK_IN" ? "زيارة مباشرة" :
+                     patient.source === "OTHER" ? "أخرى" :
+                     patient.source}
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 text-slate-600 rounded-full font-medium text-xs">
-                    <span className="w-1.5 h-1.5 bg-slate-400 rounded-full" />
-                    غير نشط
-                  </span>
+                  <span className="text-slate-300 text-xs">—</span>
                 )}
               </TableCell>
 
