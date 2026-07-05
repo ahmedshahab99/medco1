@@ -44,7 +44,7 @@ export async function GET(request: Request) {
       where: { tenantId, startTime: dateFilter },
       orderBy: { startTime: "desc" },
       include: {
-        patient: { select: { id: true, firstName: true, lastName: true, gender: true } },
+        patient: { select: { id: true, firstName: true, lastName: true, gender: true, dateOfBirth: true } },
         doctor: { select: { id: true, firstName: true, lastName: true } },
         service: { select: { name: true } },
       },
@@ -160,6 +160,8 @@ export async function GET(request: Request) {
       ? {
           id: a.patient.id,
           name: `${a.patient.firstName} ${a.patient.lastName}`,
+          gender: a.patient.gender ?? null,
+          dateOfBirth: a.patient.dateOfBirth ? a.patient.dateOfBirth.toISOString() : null,
         }
       : null,
     doctor: a.doctor

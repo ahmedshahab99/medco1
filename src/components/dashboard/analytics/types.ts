@@ -5,7 +5,7 @@ export type AnalyticsAppointment = {
   status: AppointmentStatus;
   startTime: string;
   endTime: string;
-  patient: { id: string; name: string } | null;
+  patient: { id: string; name: string; gender: string | null; dateOfBirth: string | null } | null;
   doctor: { id: string; name: string } | null;
   service: { name: string } | null;
 };
@@ -24,6 +24,22 @@ export type StatusBreakdown = {
 
 export type GenderBreakdown = {
   gender: string;
+  count: number;
+};
+
+export type ServiceBreakdown = {
+  serviceName: string;
+  count: number;
+};
+
+export type DayOfWeekBreakdown = {
+  day: number;
+  label: string;
+  count: number;
+};
+
+export type AgeBucket = {
+  label: string;
   count: number;
 };
 
