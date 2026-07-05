@@ -144,6 +144,7 @@ export default function QuickAppointmentModal({
           dateOfBirth: data.newPatient.dateOfBirth || undefined,
           gender: data.newPatient.gender || undefined,
           address: data.newPatient.address || undefined,
+          source: data.newPatient.source || undefined,
         }
         patientName = `${data.newPatient.firstName} ${data.newPatient.lastName}`.trim()
         patientPhone = data.newPatient.phone || null

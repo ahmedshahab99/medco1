@@ -162,6 +162,7 @@ export async function POST(request: Request) {
           firstName: data.newPatient.firstName,
           lastName: data.newPatient.lastName,
           phone: data.newPatient.phone,
+          source: data.newPatient.source,
         },
       });
       patientId = newPatient.id;

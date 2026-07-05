@@ -164,7 +164,7 @@ export async function PATCH(
     data: {
       ...(firstName && { firstName }),
       ...(lastName && { lastName }),
-      ...(phone !== undefined && { phone }),
+      ...(phone !== undefined && { phone:phone || null }),
       ...(dateOfBirth !== undefined && {
         dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
       }),

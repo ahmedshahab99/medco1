@@ -20,6 +20,7 @@ export const appointmentCreateSchema = z.object({
         .optional()
         .or(z.literal("")),
       gender: z.enum(["MALE", "FEMALE"]).optional(),
+      source: z.enum(["SOCIAL_MEDIA", "GOOGLE_MAPS", "CLINIC_WEBSITE", "REFERRAL", "WALK_IN", "OTHER"]).optional(),
       address: z
         .string()
         .min(3, "العنوان يجب أن يكون 3 أحرف على الأقل")

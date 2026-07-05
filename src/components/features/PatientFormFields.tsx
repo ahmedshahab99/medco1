@@ -131,6 +131,31 @@ export default function PatientFormFields() {
           <p className="mt-1 text-sm text-red-500">{fieldError("newPatient.gender")}</p>
         )}
       </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="newPatient.source">مصدر المريض</Label>
+        <Controller
+          name="newPatient.source"
+          control={control}
+          render={({ field }) => (
+            <Select value={field.value ?? ""} onValueChange={field.onChange}>
+              <SelectTrigger
+                id="newPatient.source"
+                className="w-full"
+              >
+                <SelectValue placeholder="اختر المصدر" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="SOCIAL_MEDIA">وسائل التواصل</SelectItem>
+                <SelectItem value="GOOGLE_MAPS">خرائط جوجل</SelectItem>
+                <SelectItem value="CLINIC_WEBSITE">الموقع الإلكتروني</SelectItem>
+                <SelectItem value="REFERRAL">توصية</SelectItem>
+                <SelectItem value="WALK_IN">زيارة مباشرة</SelectItem>
+                <SelectItem value="OTHER">أخرى</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+        />
+      </div>
       <div className="sm:col-span-2 space-y-1.5">
         <Label htmlFor="newPatient.address">العنوان</Label>
         <Controller
