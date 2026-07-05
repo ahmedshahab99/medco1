@@ -325,30 +325,32 @@ export default function CalendarShell() {
         onReschedule={handleReschedule}
       />
 
-      <NewAppointmentModal
-        isOpen={isNewApptOpen}
-        onClose={() => { setIsNewApptOpen(false); setRescheduleAppt(null); setNewApptSlot(null); }}
-        initialDate={currentDate}
-        doctors={doctors ?? []}
-        initialPatientId={rescheduleAppt ? rescheduleAppt.patientId : newApptPatientId}
-        initialDoctorId={selectedDoctorId !== "all" ? selectedDoctorId : undefined}
-        initialStart={newApptSlot?.start}
-        initialEnd={newApptSlot?.end}
-        editingAppointment={rescheduleAppt ?? undefined}
-        onCreate={(args) => createAppt(args)}
-        onUpdate={async (args) => {
-          const appt = rescheduleAppt;
-          await rescheduleApptAsync(args);
-          if (appt && reminderSettings?.rescheduleActive) {
-            setReminderDialog({
-              open: true,
-              appointmentId: appt.id,
-              patientName: appt.patientName,
-              type: "RESCHEDULE",
-            });
-          }
-        }}
-      />
+      {isNewApptOpen && (
+        <NewAppointmentModal
+          isOpen={isNewApptOpen}
+          onClose={() => { setIsNewApptOpen(false); setRescheduleAppt(null); setNewApptSlot(null); }}
+          initialDate={currentDate}
+          doctors={doctors ?? []}
+          initialPatientId={rescheduleAppt ? rescheduleAppt.patientId : newApptPatientId}
+          initialDoctorId={selectedDoctorId !== "all" ? selectedDoctorId : undefined}
+          initialStart={newApptSlot?.start}
+          initialEnd={newApptSlot?.end}
+          editingAppointment={rescheduleAppt ?? undefined}
+          onCreate={(args) => createAppt(args)}
+          onUpdate={async (args) => {
+            const appt = rescheduleAppt;
+            await rescheduleApptAsync(args);
+            if (appt && reminderSettings?.rescheduleActive) {
+              setReminderDialog({
+                open: true,
+                appointmentId: appt.id,
+                patientName: appt.patientName,
+                type: "RESCHEDULE",
+              });
+            }
+          }}
+        />
+      )}
 
       <UnavailableBlockModal
         isOpen={isBlockModalOpen}

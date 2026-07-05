@@ -327,13 +327,15 @@ export function WaitlistBoard({ doctorId }: WaitlistBoardProps) {
         </DragOverlay>
       </DndContext>
 
-      <QuickAppointmentModal
-        isOpen={isNewOpen}
-        onClose={() => { setIsNewOpen(false); setQuickPatientId(undefined); }}
-        initialStatus={targetStatus}
-        initialPatientId={quickPatientId}
-        onCreate={(args) => createAppointment(args)}
-      />
+      {isNewOpen && (
+        <QuickAppointmentModal
+          isOpen={isNewOpen}
+          onClose={() => { setIsNewOpen(false); setQuickPatientId(undefined); }}
+          initialStatus={targetStatus}
+          initialPatientId={quickPatientId}
+          onCreate={(args) => createAppointment(args)}
+        />
+      )}
 
       <AppointmentDetailModal
         appointment={selectedAppointment}
