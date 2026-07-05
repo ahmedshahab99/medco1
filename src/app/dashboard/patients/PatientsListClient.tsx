@@ -9,6 +9,7 @@ import { PatientTable } from "@/components/dashboard/patients/PatientTable";
 import { PatientFilters, FilterState } from "@/components/dashboard/patients/PatientFilters";
 import { NewPatientModal } from "@/components/dashboard/patients/NewPatientModal";
 import { Patient } from "@/hooks/use-patients";
+import { useDebounce } from "@/lib/utils/debounce";
 
 const PAGE_SIZE = 10;
 
@@ -20,14 +21,7 @@ const DEFAULT_FILTERS: FilterState = {
   hasUpcoming: "all",
 };
 
-function useDebounce<T>(value: T, delay: number): T {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const id = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(id);
-  }, [value, delay]);
-  return debounced;
-}
+
 
 function matchesLastVisit(patient: Patient, filter: FilterState["lastVisit"]) {
   if (filter === "all") return true;

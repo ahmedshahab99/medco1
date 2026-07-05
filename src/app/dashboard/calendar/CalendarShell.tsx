@@ -29,9 +29,12 @@ import AppointmentDetailModal from "./AppointmentDetailModal";
 import NewAppointmentModal from "./NewAppointmentModal";
 import UnavailableBlockModal from "./UnavailableBlockModal";
 import { SendReminderDialog } from "@/components/dashboard/appointments/SendReminderDialog";
+import { useDebounce } from "@/lib/utils/debounce";
 
 export default function CalendarShell() {
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const debouncedCurrentDate = useDebounce(currentDate, 350);
+  const isDebouncePending = currentDate.getTime() !== debouncedCurrentDate.getTime();
   const [viewMode, setViewMode] = useState<ViewMode>("day");
   const [selectedAppt, setSelectedAppt] = useState<CalendarAppointment | null>(null);
   const [isNewApptOpen, setIsNewApptOpen] = useState(false);
@@ -48,13 +51,13 @@ export default function CalendarShell() {
 
   const { from, to } = useMemo(() => {
     if (viewMode === "week") {
-      return { from: startOfWeek(currentDate, { weekStartsOn: 0 }), to: endOfWeek(currentDate, { weekStartsOn: 0 }) };
+      return { from: startOfWeek(debouncedCurrentDate, { weekStartsOn: 0 }), to: endOfWeek(debouncedCurrentDate, { weekStartsOn: 0 }) };
     }
     if (viewMode === "month") {
-      return { from: startOfMonth(currentDate), to: endOfMonth(currentDate) };
+      return { from: startOfMonth(debouncedCurrentDate), to: endOfMonth(debouncedCurrentDate) };
     }
-    return { from: startOfDay(currentDate), to: endOfDay(currentDate) };
-  }, [currentDate, viewMode]);
+    return { from: startOfDay(debouncedCurrentDate), to: endOfDay(debouncedCurrentDate) };
+  }, [debouncedCurrentDate, viewMode]);
 
   const { data: appointments, isLoading: apptsLoading } = useAppointments(from, to);
   const { data: doctors } = useDoctors();
@@ -247,7 +250,7 @@ export default function CalendarShell() {
       ) : null}
 
       <div className="flex-1 bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col relative">
-        {(apptsLoading || availabilityLoading) && (
+        {(apptsLoading || availabilityLoading || isDebouncePending) && (
           <div className="absolute inset-0 z-50 bg-white/80 backdrop-blur-sm flex items-center justify-center">
             <div className="flex flex-col items-center gap-3">
               <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
