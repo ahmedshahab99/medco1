@@ -53,6 +53,7 @@ export interface UsePatientsParams {
   source?: string;
   sortBy?: string;
   sortOrder?: "asc" | "desc";
+  enabled?: boolean;
 }
 
 export interface PaginatedPatients {
@@ -111,7 +112,7 @@ export function usePatients(params?: string | UsePatientsParams): import("@tanst
   return useQuery({
     queryKey: ["patients", options],
     queryFn: () => fetchPatients(options),
-    enabled: true,
+    enabled: options.enabled !== false,
   });
 }
 

@@ -24,7 +24,7 @@ export default function PatientSearchField({
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { data: patientsData, isFetching } = usePatients(debounced || undefined);
+  const { data: patientsData, isFetching } = usePatients({ search: debounced, enabled: !!debounced });
   const patients = patientsData ?? [];
 
   useEffect(() => {
