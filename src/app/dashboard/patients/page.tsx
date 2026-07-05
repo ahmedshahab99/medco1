@@ -13,6 +13,7 @@ import { NewPatientModal } from "@/components/dashboard/patients/NewPatientModal
 import { usePatients, PaginatedPatients } from "@/hooks/use-patients";
 import { useAppointments } from "@/hooks/use-appointments";
 import { useAuth } from "@/hooks/use-auth";
+import { useDebounce } from "@/lib/utils/debounce";
 
 const PAGE_SIZE = 10;
 
@@ -20,14 +21,7 @@ const DEFAULT_FILTERS: FilterState = {
   source: "all",
 };
 
-function useDebounce<T>(value: T, delay: number): T {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const id = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(id);
-  }, [value, delay]);
-  return debounced;
-}
+
 
 export default function PatientsPage() {
   const [searchRaw, setSearchRaw] = useState("");
