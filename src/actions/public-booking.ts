@@ -474,6 +474,7 @@ async function createPatientFromPayload(
         phone: payload.phone,
         dateOfBirth: new Date(payload.dateOfBirth),
         gender: payload.gender,
+        source: "CLINIC_WEBSITE",
       },
     });
   }

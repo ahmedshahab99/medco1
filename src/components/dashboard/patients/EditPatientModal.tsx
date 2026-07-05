@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Modal } from "../../ui/Modal";
@@ -52,6 +52,20 @@ export function EditPatientModal({ patient, isOpen, onClose }: EditPatientModalP
   });
 
   const updatePatient = useUpdatePatient();
+  useEffect(() =>{
+    const { name, phone, email, dateOfBirth, gender, address, source } = patient;
+  const { firstName: defaultFirstName, lastName: defaultLastName } = splitName(name);
+    reset(
+      {firstName: defaultFirstName,
+      lastName: defaultLastName,
+      phone: phone ?? "",
+      email: email ?? "",
+      dateOfBirth: dateOfBirth?.split("T")[0] ?? "",
+      gender: (gender as "MALE" | "FEMALE" | undefined) ?? undefined,
+      source: (source as PatientUpdateInput["source"]) ?? undefined,
+      address: address ?? "",}
+    );}
+  ,[patient])
 
   async function onSubmit(data: PatientUpdateInput) {
     await updatePatient.mutateAsync({ id: patient.id, data });
