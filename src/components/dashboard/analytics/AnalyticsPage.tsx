@@ -17,15 +17,21 @@ import { AppointmentsTrendChart } from "./AppointmentsTrendChart";
 import { AppointmentsByDoctorChart } from "./AppointmentsByDoctorChart";
 import { AppointmentStatusChart } from "./AppointmentStatusChart";
 import { PatientsDemographicsChart } from "./PatientsDemographicsChart";
+import { TopServicesChart } from "./TopServicesChart";
+import { AppointmentsByDayChart } from "./AppointmentsByDayChart";
+import { PatientAgeDistributionChart } from "./PatientAgeDistributionChart";
 import { AnalyticsMonthComparison } from "./AnalyticsMonthComparison";
 import { statusLabels, monthNames } from "./types";
 import type {
+  AgeBucket,
   AnalyticsAppointment,
   AnalyticsInitialData,
   AnalyticsSummary,
+  DayOfWeekBreakdown,
   DoctorAppointments,
   GenderBreakdown,
   MonthlyTrend,
+  ServiceBreakdown,
   StatusBreakdown,
 } from "./types";
 
@@ -89,6 +95,9 @@ export function AnalyticsPage({
   );
   const [monthlyTrend, setMonthlyTrend] = useState<MonthlyTrend[]>(
     initialData.monthlyTrend
+  );
+  const [genderFilter, setGenderFilter] = useState<"ALL" | "MALE" | "FEMALE">(
+    "ALL"
   );
 
   const loadData = useCallback(
@@ -213,6 +222,71 @@ export function AnalyticsPage({
     }));
   }, [periodMode, appointments, monthlyTrend, weekStartDate]);
 
+  // Top services (derived from appointments)
+  const topServices = React.useMemo<ServiceBreakdown[]>(() => {
+    const map = new Map<string, number>();
+    for (const a of appointments) {
+      const name = a.service?.name;
+      if (!name) continue;
+      map.set(name, (map.get(name) ?? 0) + 1);
+    }
+    return Array.from(map.entries())
+      .map(([serviceName, count]) => ({ serviceName, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [appointments]);
+
+  // Appointments by day of week (Arabic week order: Sat first)
+  const byDayOfWeek = React.useMemo<DayOfWeekBreakdown[]>(() => {
+    const dayLabels = [
+      "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت",
+    ];
+    const counts = [0, 0, 0, 0, 0, 0, 0];
+    for (const a of appointments) {
+      const d = new Date(a.startTime).getDay();
+      counts[d] += 1;
+    }
+    const order = [6, 0, 1, 2, 3, 4, 5];
+    return order.map((day) => ({ day, label: dayLabels[day], count: counts[day] }));
+  }, [appointments]);
+
+  // Patient age distribution (unique patients, filtered by gender)
+  const ageDistribution = React.useMemo<AgeBucket[]>(() => {
+    const buckets = [
+      { label: "0-17", count: 0 },
+      { label: "18-30", count: 0 },
+      { label: "31-45", count: 0 },
+      { label: "46-60", count: 0 },
+      { label: "60+", count: 0 },
+      { label: "غير محدد", count: 0 },
+    ];
+    const seen = new Set<string>();
+    const now = new Date();
+    for (const a of appointments) {
+      const p = a.patient;
+      if (!p || seen.has(p.id)) continue;
+      seen.add(p.id);
+      if (genderFilter !== "ALL" && (p.gender ?? null) !== genderFilter) continue;
+      if (!p.dateOfBirth) {
+        buckets[5].count += 1;
+        continue;
+      }
+      const birth = new Date(p.dateOfBirth);
+      let age = now.getFullYear() - birth.getFullYear();
+      const m = now.getMonth() - birth.getMonth();
+      if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) age--;
+      if (age < 0) {
+        buckets[5].count += 1;
+        continue;
+      }
+      if (age <= 17) buckets[0].count += 1;
+      else if (age <= 30) buckets[1].count += 1;
+      else if (age <= 45) buckets[2].count += 1;
+      else if (age <= 60) buckets[3].count += 1;
+      else buckets[4].count += 1;
+    }
+    return buckets;
+  }, [appointments, genderFilter]);
+
   const exportCSV = () => {
     const headers = ["التاريخ", "الحالة", "المريض", "الطبيب", "الخدمة"];
     const rows = appointments.map((a) => [
@@ -330,6 +404,45 @@ export function AnalyticsPage({
           <AppointmentStatusChart data={statusBreakdown} />
           <PatientsDemographicsChart data={genderBreakdown} />
         </div>
+      )}
+
+      {/* Charts Row 3: Top Services + By Day of Week */}
+      {loading ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {[1, 2].map((i) => (
+            <Card key={i}>
+              <CardHeader className="pb-2">
+                <Skeleton className="h-5 w-40" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-64 w-full rounded-lg" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <TopServicesChart data={topServices} />
+          <AppointmentsByDayChart data={byDayOfWeek} />
+        </div>
+      )}
+
+      {/* Charts Row 4: Patient Age Distribution */}
+      {loading ? (
+        <Card>
+          <CardHeader className="pb-2">
+            <Skeleton className="h-5 w-48" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-64 w-full rounded-lg" />
+          </CardContent>
+        </Card>
+      ) : (
+        <PatientAgeDistributionChart
+          data={ageDistribution}
+          genderFilter={genderFilter}
+          onGenderFilterChange={setGenderFilter}
+        />
       )}
 
       {/* Month Comparison */}
