@@ -6,6 +6,8 @@ import prisma from "@/lib/prisma";
 import { createClient } from "@/utils/supabase/server";
 import { revokeUserSessions } from "@/lib/session-revocation";
 import { enforceDoctorLimit } from "@/lib/plans/enforce";
+import { DEFAULT_SCHEDULE, DEFAULT_ADVANCED } from "@/components/features/availability/constants";
+import { Prisma } from "@prisma/client";
 
 const DOCTOR_LIKE_ROLES = new Set(["DOCTOR", "ADMIN"]);
 
@@ -100,6 +102,22 @@ export async function updateUserRole(formData: FormData) {
       where: { id: userId },
       data: { role },
     });
+
+    // When a user is promoted into a bookable role (DOCTOR/ADMIN), seed a
+    // default recurring schedule if they don't already have one, so they
+    // become available for booking immediately.
+    if (DOCTOR_LIKE_ROLES.has(role) && !DOCTOR_LIKE_ROLES.has(targetUser.role)) {
+      await prisma.doctorAvailability.upsert({
+        where: { doctorId: userId },
+        create: {
+          tenantId: actor.tenantId!,
+          doctorId: userId,
+          schedule: DEFAULT_SCHEDULE as unknown as Prisma.InputJsonValue,
+          settings: DEFAULT_ADVANCED as unknown as Prisma.InputJsonValue,
+        },
+        update: {},
+      });
+    }
 
     // Revoke all sessions and blacklist current JWT
     await revokeUserSessions(userId);

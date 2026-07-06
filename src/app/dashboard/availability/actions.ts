@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { createClient } from "@/utils/supabase/server";
+import { DEFAULT_SCHEDULE, DEFAULT_ADVANCED } from "@/components/features/availability/constants";
+import type { WeekSchedule, AdvancedSettings } from "@/components/features/availability/types";
 
 // ── Zod validation schemas ──────────────────────────────────────────
 
@@ -33,38 +35,99 @@ const saveAvailabilitySchema = z.object({
   settings: advancedSettingsSchema,
 });
 
+const DOCTOR_LIKE_ROLES = ["DOCTOR", "ADMIN"] as const;
+
 // ── Actions ─────────────────────────────────────────────────────────
 
-export async function getClinicAvailability() {
+/**
+ * Load a single doctor's availability (schedule + advanced settings).
+ * - A DOCTOR may omit `doctorId` to load their own.
+ * - An ADMIN must pass an explicit `doctorId`.
+ * Falls back to DEFAULT_SCHEDULE / DEFAULT_ADVANCED when no row exists yet.
+ */
+export async function getDoctorAvailability(doctorId?: string) {
   const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) return null;
 
-  const profile = await prisma.profile.findUnique({ where: { id: user.id, deletedAt: null } });
-  if (!profile || !profile.tenantId) return null;
+  const actor = await prisma.profile.findUnique({ where: { id: user.id, deletedAt: null } });
+  if (!actor || !actor.tenantId) return null;
 
-  const availability = await prisma.clinicAvailability.findUnique({
-    where: { tenantId: profile.tenantId },
+  const targetId = doctorId ?? actor.id;
+
+  // Authorization: a doctor may only read their own; admins may read any in-tenant doctor.
+  if (actor.role === "DOCTOR" && targetId !== actor.id) return null;
+  if (actor.role === "RECEPTIONIST") return null;
+
+  const target = await prisma.profile.findUnique({
+    where: { id: targetId, deletedAt: null },
+    select: { id: true, tenantId: true, role: true },
+  });
+  if (!target || target.tenantId !== actor.tenantId || !DOCTOR_LIKE_ROLES.includes(target.role as never)) {
+    return null;
+  }
+
+  const availability = await prisma.doctorAvailability.findUnique({
+    where: { doctorId: target.id },
   });
 
-  if (!availability) return null;
+  if (!availability) {
+    return {
+      schedule: DEFAULT_SCHEDULE as unknown as WeekSchedule,
+      settings: DEFAULT_ADVANCED as unknown as AdvancedSettings,
+    };
+  }
 
   return {
-    schedule: availability.schedule as never,
-    settings: availability.settings as never,
+    schedule: availability.schedule as unknown as WeekSchedule,
+    settings: availability.settings as unknown as AdvancedSettings,
   };
 }
 
-export async function saveClinicAvailability(data: {
-  schedule: unknown;
-  settings: unknown;
-}) {
+/**
+ * Load every bookable doctor's availability in the caller's tenant.
+ * Used by the calendar's "all doctors" aggregate view.
+ */
+export async function getAllDoctorsAvailability(): Promise<
+  { doctorId: string; schedule: WeekSchedule; settings: AdvancedSettings }[]
+> {
+  const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) return [];
+
+  const actor = await prisma.profile.findUnique({ where: { id: user.id, deletedAt: null } });
+  if (!actor || !actor.tenantId) return [];
+
+  const doctors = await prisma.profile.findMany({
+    where: {
+      tenantId: actor.tenantId,
+      role: { in: [...DOCTOR_LIKE_ROLES] },
+      deletedAt: null,
+    },
+    select: {
+      id: true,
+      availability: { select: { schedule: true, settings: true } },
+    },
+  });
+
+  return doctors.map((d) => ({
+    doctorId: d.id,
+    schedule: (d.availability?.schedule ?? DEFAULT_SCHEDULE) as unknown as WeekSchedule,
+    settings: (d.availability?.settings ?? DEFAULT_ADVANCED) as unknown as AdvancedSettings,
+  }));
+}
+
+export async function saveDoctorAvailability(
+  doctorId: string,
+  data: { schedule: unknown; settings: unknown },
+) {
   const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) return { error: "يرجى تسجيل الدخول أولاً." };
 
+  // Re-query the actor Profile from DB — never trust JWT for writes.
   const actor = await prisma.profile.findUnique({ where: { id: user.id, deletedAt: null } });
-  if (!actor || actor.role !== "ADMIN" || !actor.tenantId) {
+  if (!actor || !actor.tenantId) {
     return { error: "ليس لديك صلاحية تعديل أوقات العمل." };
   }
 
@@ -73,11 +136,26 @@ export async function saveClinicAvailability(data: {
     return { error: "بيانات غير صالحة: " + validation.error.issues[0].message };
   }
 
+  // Verify the target doctor belongs to the same tenant and is bookable.
+  const target = await prisma.profile.findUnique({
+    where: { id: doctorId, deletedAt: null },
+    select: { id: true, tenantId: true, role: true },
+  });
+  if (!target || target.tenantId !== actor.tenantId || !DOCTOR_LIKE_ROLES.includes(target.role as never)) {
+    return { error: "الطبيب غير موجود في هذه العيادة." };
+  }
+
+  // Authorization: admins may edit any in-tenant doctor; doctors may only edit their own.
+  if (actor.role !== "ADMIN" && actor.id !== doctorId) {
+    return { error: "ليس لديك صلاحية تعديل أوقات العمل." };
+  }
+
   try {
-    await prisma.clinicAvailability.upsert({
-      where: { tenantId: actor.tenantId },
+    await prisma.doctorAvailability.upsert({
+      where: { doctorId },
       create: {
         tenantId: actor.tenantId,
+        doctorId,
         schedule: validation.data.schedule,
         settings: validation.data.settings,
       },

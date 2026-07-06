@@ -1,6 +1,8 @@
 import prisma from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import type { UserRole } from "@/lib/types/auth";
 import { enforceDoctorLimit } from "@/lib/plans/enforce";
+import { DEFAULT_SCHEDULE, DEFAULT_ADVANCED } from "@/components/features/availability/constants";
 
 const INVITE_EXPIRY_DAYS = 7;
 
@@ -76,6 +78,19 @@ export async function acceptInvitation(
           role: invitation.role as UserRole,
           tenantId: invitation.tenantId,
           deletedAt: null,
+        },
+      });
+    }
+
+    // Seed a default recurring schedule for bookable roles so the new member
+    // is available for booking immediately; they can customize it later.
+    if (DOCTOR_LIKE_ROLES.includes(invitation.role as UserRole)) {
+      await tx.doctorAvailability.create({
+        data: {
+          tenantId: invitation.tenantId,
+          doctorId: userId,
+          schedule: DEFAULT_SCHEDULE as unknown as Prisma.InputJsonValue,
+          settings: DEFAULT_ADVANCED as unknown as Prisma.InputJsonValue,
         },
       });
     }

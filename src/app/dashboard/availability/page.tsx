@@ -1,20 +1,42 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Clock, Settings2, Save, CheckCircle2, AlertCircle } from "lucide-react";
+import { Clock, Settings2, Save, CheckCircle2, AlertCircle, Stethoscope } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/Select";
 import { WeeklySchedule } from "@/components/features/availability/WeeklySchedule";
 import { AdvancedSettingsTab } from "@/components/features/availability/AdvancedSettingsTab";
 import { CalendarPreview } from "@/components/features/availability/CalendarPreview";
 import { QuickSummary } from "@/components/features/availability/QuickSummary";
-import { getClinicAvailability, saveClinicAvailability } from "./actions";
+import { getDoctorAvailability, saveDoctorAvailability } from "./actions";
+import { useDoctors } from "@/hooks/use-doctors";
+import { useAuth } from "@/hooks/use-auth";
 import { uid } from "@/lib/date-utils";
 import type { WeekSchedule, AdvancedSettings } from "@/components/features/availability/types";
 import { DEFAULT_SCHEDULE, DEFAULT_ADVANCED } from "@/components/features/availability/constants";
 
 export default function AvailabilityPage() {
+  const { user, role } = useAuth();
+  const { data: doctors } = useDoctors();
+
+  // ADMIN picks a doctor; DOCTOR is fixed to their own profile.
+  const isAdmin = role === "ADMIN";
+  const [selectedDoctorId, setSelectedDoctorId] = useState<string>("");
+
+  // Default the admin's selection to their own profile once it's available.
+  useEffect(() => {
+    if (isAdmin && !selectedDoctorId && user?.id) {
+      setSelectedDoctorId(user.id);
+    }
+    if (!isAdmin && user?.id) {
+      setSelectedDoctorId(user.id);
+    }
+  }, [isAdmin, user?.id, selectedDoctorId]);
+
+  const effectiveDoctorId = selectedDoctorId || user?.id || "";
+
   const [schedule, setSchedule] = useState<WeekSchedule>(DEFAULT_SCHEDULE);
   const [advanced, setAdvanced] = useState<AdvancedSettings>(DEFAULT_ADVANCED);
   const [activeTab, setActiveTab] = useState("schedule");
@@ -24,20 +46,31 @@ export default function AvailabilityPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!effectiveDoctorId) return;
+    let cancelled = false;
     (async () => {
+      setLoading(true);
       try {
-        const data = await getClinicAvailability();
+        const data = await getDoctorAvailability(effectiveDoctorId);
+        if (cancelled) return;
         if (data) {
           setSchedule(data.schedule as WeekSchedule);
           setAdvanced(data.settings as AdvancedSettings);
+        } else {
+          setSchedule(DEFAULT_SCHEDULE);
+          setAdvanced(DEFAULT_ADVANCED);
         }
+        setError(null);
       } catch {
-        setError("تعذر تحميل الإعدادات. يرجى المحاولة مرة أخرى.");
+        if (!cancelled) setError("تعذر تحميل الإعدادات. يرجى المحاولة مرة أخرى.");
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [effectiveDoctorId]);
 
   const toggleDay = (key: string) => {
     setSchedule((prev) => ({
@@ -79,9 +112,10 @@ export default function AvailabilityPage() {
   };
 
   const handleSave = useCallback(async () => {
+    if (!effectiveDoctorId) return;
     setSaving(true);
     setError(null);
-    const result = await saveClinicAvailability({ schedule, settings: advanced });
+    const result = await saveDoctorAvailability(effectiveDoctorId, { schedule, settings: advanced });
     setSaving(false);
     if (result?.error) {
       setError(result.error);
@@ -89,7 +123,9 @@ export default function AvailabilityPage() {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     }
-  }, [schedule, advanced]);
+  }, [effectiveDoctorId, schedule, advanced]);
+
+  const selectedDoctorName = doctors?.find((d) => d.id === effectiveDoctorId)?.name;
 
   if (loading) {
     return (
@@ -111,9 +147,9 @@ export default function AvailabilityPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">أوقات العمل والتوفر</h1>
-          <p className="text-slate-500 mt-1">حدد ساعات عمل العيادة الأسبوعية وإعدادات الحجز عبر الإنترنت.</p>
+          <p className="text-slate-500 mt-1">حدد ساعات العمل الأسبوعية وإعدادات الحجز لكل طبيب على حدة.</p>
         </div>
-        <Button onClick={handleSave} disabled={saving} className="gap-2 shrink-0">
+        <Button onClick={handleSave} disabled={saving || !effectiveDoctorId} className="gap-2 shrink-0">
           {saving ? (
             <><Save className="w-5 h-5 animate-spin" /> جاري الحفظ...</>
           ) : saved ? (
@@ -123,6 +159,27 @@ export default function AvailabilityPage() {
           )}
         </Button>
       </div>
+
+      {isAdmin && (
+        <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-slate-200 shrink-0">
+          <Stethoscope className="size-4 text-emerald-500 shrink-0" />
+          <Select value={effectiveDoctorId} onValueChange={setSelectedDoctorId}>
+            <SelectTrigger className="h-9 w-64 bg-white">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {doctors?.map((d) => (
+                <SelectItem key={d.id} value={d.id}>
+                  {d.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {selectedDoctorName && (
+            <span className="text-xs text-slate-400">تعديل جدول الطبيب المحدد</span>
+          )}
+        </div>
+      )}
 
       {error && (
         <div className="flex items-start gap-3 p-4 bg-red-50 rounded-xl border border-red-100">
