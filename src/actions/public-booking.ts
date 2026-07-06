@@ -30,6 +30,7 @@ import { sendWhatsAppTemplateMessage } from "@/lib/whatsapp/service";
 import { WHATSAPP_TEMPLATES } from "@/lib/whatsapp/template-config";
 import type { AppointmentData } from "@/lib/whatsapp/types";
 import type { WeekSchedule, DaySchedule, AdvancedSettings } from "@/components/features/availability/types";
+import { DEFAULT_SCHEDULE, DEFAULT_ADVANCED } from "@/components/features/availability/constants";
 import { enforcePatientLimit, enforceAppointmentQuota, enforceWhatsappQuota } from "@/lib/plans/enforce";
 import { incrementAppointments, incrementWhatsapp } from "@/lib/plans/usage";
 
@@ -122,10 +123,15 @@ export async function getPublicClinicData(slug: string): Promise<PublicClinicDat
     select: {
       id: true,
       profiles: {
-        where: { role: { in: ["DOCTOR", "ADMIN"] } },
-        select: { id: true, firstName: true, lastName: true, role: true },
+        where: { role: { in: ["DOCTOR", "ADMIN"] }, deletedAt: null },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          role: true,
+          availability: { select: { schedule: true, settings: true } },
+        },
       },
-      clinicAvailability: { select: { schedule: true, settings: true } },
       reminders: {
         where: { type: "CONFIRM" },
         select: { isActive: true },
@@ -135,23 +141,46 @@ export async function getPublicClinicData(slug: string): Promise<PublicClinicDat
 
   if (!tenant) return null;
 
-  const schedule = tenant.clinicAvailability?.schedule as WeekSchedule | undefined;
-  const settings = tenant.clinicAvailability?.settings as AdvancedSettings | undefined;
+  // Aggregate per-doctor schedules: enabled days = union of any doctor's
+  // enabled day; bookingWindow = widest (max) so the date picker allows the
+  // full range and per-doctor enforcement happens in getAvailableSlots;
+  // minNotice = most restrictive (min) for UI hints.
+  const enabledDays = new Set<string>();
+  let bookingWindow = 30;
+  let minNotice = 0;
+  let hasAnySchedule = false;
 
-  const enabledDays: string[] = [];
-  if (schedule) {
-    for (const [dayKey, daySchedule] of Object.entries(schedule)) {
-      if ((daySchedule as DaySchedule).enabled) {
-        enabledDays.push(dayKey);
+  for (const doc of tenant.profiles) {
+    const docSchedule = doc.availability?.schedule as WeekSchedule | undefined;
+    const docSettings = doc.availability?.settings as AdvancedSettings | undefined;
+
+    if (docSchedule) {
+      hasAnySchedule = true;
+      for (const [dayKey, daySchedule] of Object.entries(docSchedule)) {
+        if ((daySchedule as DaySchedule).enabled) {
+          enabledDays.add(dayKey);
+        }
+      }
+    }
+    if (docSettings) {
+      hasAnySchedule = true;
+      if (docSettings.bookingWindow > bookingWindow) bookingWindow = docSettings.bookingWindow;
+      if (minNotice === 0 || docSettings.minNotice < minNotice) {
+        minNotice = docSettings.minNotice;
       }
     }
   }
 
   return {
-    doctors: tenant.profiles,
-    enabledDays,
-    bookingWindow: settings?.bookingWindow ?? 30,
-    minNotice: settings?.minNotice ?? 0,
+    doctors: tenant.profiles.map((p) => ({
+      id: p.id,
+      firstName: p.firstName,
+      lastName: p.lastName,
+      role: p.role,
+    })),
+    enabledDays: Array.from(enabledDays),
+    bookingWindow: hasAnySchedule ? bookingWindow : 30,
+    minNotice: hasAnySchedule ? minNotice : 0,
     requiresOtp: tenant.reminders.some((r) => r.isActive),
   };
 }
@@ -165,7 +194,6 @@ export async function getAvailableSlots(
     where: { slug },
     select: {
       id: true,
-      clinicAvailability: { select: { schedule: true, settings: true } },
       services: {
         where: { isActive: true },
         select: { duration: true },
@@ -178,16 +206,26 @@ export async function getAvailableSlots(
   if (!tenant) return { slots: [], error: "العيادة غير موجودة" };
 
   const serviceDuration = tenant.services[0]?.duration < 10 ? 30 : tenant.services[0]?.duration;
-  const schedule = tenant.clinicAvailability?.schedule as WeekSchedule | undefined;
-  const settings = tenant.clinicAvailability?.settings as AdvancedSettings | undefined;
 
-  if (!schedule) return { slots: [], error: "لم يتم إعداد أوقات العمل بعد" };
+  // Load the selected doctor's own recurring schedule + advanced settings.
+  const doctor = await prisma.profile.findFirst({
+    where: { id: doctorId, tenantId: tenant.id, role: { in: ["DOCTOR", "ADMIN"] }, deletedAt: null },
+    select: {
+      id: true,
+      availability: { select: { schedule: true, settings: true } },
+    },
+  });
 
-  const bufferBefore = settings?.bufferBefore ?? 0;
-  const bufferAfter = settings?.bufferAfter ?? 0;
-  const maxPerDay = settings?.maxPerDay ?? 99;
-  const bookingWindow = settings?.bookingWindow ?? 30;
-  const minNotice = settings?.minNotice ?? 0;
+  if (!doctor) return { slots: [], error: "الطبيب غير موجود في هذه العيادة" };
+
+  const schedule = (doctor.availability?.schedule as WeekSchedule | undefined) ?? (DEFAULT_SCHEDULE as unknown as WeekSchedule);
+  const settings = (doctor.availability?.settings as AdvancedSettings | undefined) ?? (DEFAULT_ADVANCED as unknown as AdvancedSettings);
+
+  const bufferBefore = settings.bufferBefore;
+  const bufferAfter = settings.bufferAfter;
+  const maxPerDay = settings.maxPerDay;
+  const bookingWindow = settings.bookingWindow;
+  const minNotice = settings.minNotice;
 
   const requestedDate = new Date(dateStr + "T00:00:00");
   const now = new Date();
@@ -358,7 +396,6 @@ async function prepareBooking(
         orderBy: { createdAt: "asc" },
         take: 1,
       },
-      clinicAvailability: { select: { settings: true } },
       reminders: {
         where: { type: "CONFIRM" },
         select: { isActive: true },
@@ -375,7 +412,12 @@ async function prepareBooking(
 
   const doctor = await prisma.profile.findFirst({
     where: { id: doctorId, tenantId: tenant.id, role: { in: ["DOCTOR", "ADMIN"] }, deletedAt: null },
-    select: { id: true, firstName: true, lastName: true },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      availability: { select: { settings: true } },
+    },
   });
   if (!doctor) return { success: false, error: "الطبيب غير موجود في هذه العيادة" };
 
@@ -385,9 +427,9 @@ async function prepareBooking(
   }
   const endDate = new Date(startDate.getTime() + service.duration * 60 * 1000);
   const dateStr = toDateKey(startDate);
-  const settings = tenant.clinicAvailability?.settings as AdvancedSettings | undefined;
-  const bufferBefore = settings?.bufferBefore ?? 0;
-  const bufferAfter = settings?.bufferAfter ?? 0;
+  const settings = (doctor.availability?.settings as AdvancedSettings | undefined) ?? (DEFAULT_ADVANCED as unknown as AdvancedSettings);
+  const bufferBefore = settings.bufferBefore;
+  const bufferAfter = settings.bufferAfter;
 
   const conflict = await prisma.appointment.findFirst({
     where: {
@@ -415,7 +457,7 @@ async function prepareBooking(
     return { success: false, error: "هذا الوقت غير متاح، يرجى اختيار وقت آخر" };
   }
 
-  if (settings?.maxPerDay) {
+  if (settings.maxPerDay) {
     const dayStart = new Date(dateStr + "T00:00:00");
     const dayEnd = new Date(dateStr + "T23:59:59");
     const dayCount = await prisma.appointment.count({
@@ -484,13 +526,13 @@ async function createPatientFromPayload(
 async function recheckSlotAvailability(
   pending: PendingBooking,
 ): Promise<string | null> {
-  const settingsRow = await prisma.tenant.findUnique({
-    where: { id: pending.tenantId },
-    select: { clinicAvailability: { select: { settings: true } } },
+  const doctor = await prisma.profile.findFirst({
+    where: { id: pending.doctorId, tenantId: pending.tenantId, deletedAt: null },
+    select: { availability: { select: { settings: true } } },
   });
-  const settings = settingsRow?.clinicAvailability?.settings as AdvancedSettings | undefined;
-  const bufferBefore = settings?.bufferBefore ?? 0;
-  const bufferAfter = settings?.bufferAfter ?? 0;
+  const settings = (doctor?.availability?.settings as AdvancedSettings | undefined) ?? (DEFAULT_ADVANCED as unknown as AdvancedSettings);
+  const bufferBefore = settings.bufferBefore;
+  const bufferAfter = settings.bufferAfter;
   const startDate = new Date(pending.startTime);
   const endDate = new Date(pending.endTime);
 
@@ -516,7 +558,7 @@ async function recheckSlotAvailability(
   });
   if (blockConflict) return "هذا الوقت غير متاح، يرجى اختيار وقت آخر";
 
-  if (settings?.maxPerDay) {
+  if (settings.maxPerDay) {
     const dateStr = toDateKey(startDate);
     const dayStart = new Date(dateStr + "T00:00:00");
     const dayEnd = new Date(dateStr + "T23:59:59");

@@ -31,9 +31,9 @@ model Tenant {
   cases              Case[]
   visitNotes         VisitNote[]
   transactions       Transaction[]
-  clinicAvailability ClinicAvailability?
   recurringExpenses  RecurringExpense[]
   doctorUnavailable  DoctorUnavailable[]
+  doctorAvailability DoctorAvailability[]
   reminders          Reminder[]
   messageLogs        MessageLog[]
   subscription       Subscription?
@@ -116,6 +116,7 @@ model Profile {
 
   appointments        Appointment[] @relation("DoctorAppointments")
   doctorUnavailable   DoctorUnavailable[]
+  availability        DoctorAvailability?
   sentInvitations     Invitation[]  @relation("SentInvitations")
   acceptedInvitations Invitation[]  @relation("AcceptedInvitations")
   patientFilesUploaded PatientFile[]
@@ -208,14 +209,18 @@ model Service {
   updatedAt DateTime @updatedAt
 }
 
-model ClinicAvailability {
+model DoctorAvailability {
   id        String   @id @default(uuid())
-  tenantId  String   @unique
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantId  String
+  doctorId  String   @unique
   schedule  Json
   settings  Json
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  doctor    Profile  @relation(fields: [doctorId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
 }
 
 model DoctorUnavailable {

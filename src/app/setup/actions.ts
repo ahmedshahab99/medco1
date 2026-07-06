@@ -229,12 +229,12 @@ export async function submitSetupWizard(formData: FormData) {
           }
         })
 
-        await tx.clinicAvailability.create({
+        await tx.doctorAvailability.create({
           data: {
             tenantId: newTenant.id,
+            doctorId: user.id,
             schedule: DEFAULT_SCHEDULE as unknown as Prisma.InputJsonValue,
             settings: DEFAULT_ADVANCED as unknown as Prisma.InputJsonValue,
-
           }
         })
 

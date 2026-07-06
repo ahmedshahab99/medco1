@@ -14,7 +14,8 @@ import { Skeleton } from "@/components/ui/Skeleton";
 
 import { useAppointments, useCreateAppointment, useUpdateAppointment, useDeleteAppointment, useRescheduleAppointment } from "@/hooks/use-appointments";
 import { useDoctors } from "@/hooks/use-doctors";
-import { useAvailability } from "@/hooks/use-availability";
+import { useAvailability, useAllDoctorsAvailability } from "@/hooks/use-availability";
+import { mergeSchedules } from "@/components/features/availability/merge-schedules";
 import { useUnavailableBlocks, useCreateUnavailableBlock, useDeleteUnavailableBlock } from "@/hooks/use-unavailable-blocks";
 import { useAuth } from "@/hooks/use-auth";
 import { useReminderSettings } from "@/hooks/use-reminder-settings";
@@ -61,7 +62,6 @@ export default function CalendarShell() {
 
   const { data: appointments, isLoading: apptsLoading } = useAppointments(from, to);
   const { data: doctors } = useDoctors();
-  const { data: availability, isLoading: availabilityLoading } = useAvailability();
 
   const { user, role } = useAuth();
   const [selectedDoctorId, setSelectedDoctorId] = useState<string>("all");
@@ -71,6 +71,24 @@ export default function CalendarShell() {
       setSelectedDoctorId(user.id);
     }
   }, [role, user?.id, selectedDoctorId]);
+
+  // Per-doctor schedule for the selected doctor, plus the full tenant map for
+  // the "all doctors" aggregate view. Both hooks are always called (rules of
+  // hooks); the effective schedule is chosen based on the current selection.
+  const isAggregate = selectedDoctorId === "all";
+  const { data: singleAvailability, isLoading: singleLoading } = useAvailability(
+    isAggregate ? undefined : selectedDoctorId || undefined,
+  );
+  const { data: allAvailability, isLoading: allLoading } = useAllDoctorsAvailability();
+
+  const effectiveSchedule = useMemo(() => {
+    if (isAggregate) {
+      return allAvailability?.length ? mergeSchedules(allAvailability.map((a) => a.schedule)) : undefined;
+    }
+    return singleAvailability?.schedule;
+  }, [isAggregate, allAvailability, singleAvailability]);
+
+  const availabilityLoading = isAggregate ? allLoading : singleLoading;
 
   const filteredAppointments = useMemo(() => {
     if (!appointments) return [];
@@ -95,13 +113,13 @@ export default function CalendarShell() {
     let minHour = 8;
     let maxHour = 20;
 
-    if (availability?.schedule) {
+    if (effectiveSchedule) {
       let earliest = 24;
       let latest = 0;
 
-      Object.values(availability.schedule as any).forEach((day: any) => {
+      Object.values(effectiveSchedule).forEach((day) => {
         if (day.enabled && day.segments && day.segments.length > 0) {
-          day.segments.forEach((seg: any) => {
+          day.segments.forEach((seg) => {
             const startH = parseInt(seg.start.split(":")[0], 10);
             const endH = parseInt(seg.end.split(":")[0], 10) + (parseInt(seg.end.split(":")[1], 10) > 0 ? 1 : 0);
             if (startH < earliest) earliest = startH;
@@ -117,7 +135,7 @@ export default function CalendarShell() {
     }
 
     return { dynamicStartHour: minHour, dynamicEndHour: maxHour };
-  }, [availability]);
+  }, [effectiveSchedule]);
 
   const { mutate: createAppt } = useCreateAppointment(from, to);
   const { mutate: updateAppt, isPending: isUpdatingAppt } = useUpdateAppointment(from, to);
@@ -265,7 +283,7 @@ export default function CalendarShell() {
             currentDate={currentDate}
             startHour={dynamicStartHour}
             endHour={dynamicEndHour}
-            schedule={availability?.schedule}
+            schedule={effectiveSchedule}
             unavailableBlocks={unavailableBlocks ?? []}
             onSelectAppt={setSelectedAppt}
             onUpdateTime={handleUpdateTime}
@@ -284,7 +302,7 @@ export default function CalendarShell() {
             currentDate={currentDate}
             startHour={dynamicStartHour}
             endHour={dynamicEndHour}
-            schedule={availability?.schedule}
+            schedule={effectiveSchedule}
             unavailableBlocks={unavailableBlocks ?? []}
             onSelectAppt={setSelectedAppt}
             onChangeDate={setCurrentDate}
